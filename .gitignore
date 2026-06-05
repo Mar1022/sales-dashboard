@@ -1,0 +1,20 @@
+# 数据库文件（每次部署自动生成）
+data.db
+
+# 虚拟环境
+venv/
+
+# Python缓存
+__pycache__/
+*.pyc
+
+# 上传文件
+uploads/*.xlsx
+uploads/*.csv
+
+# 本地脚本
+start.bat
+
+# IDE
+.vscode/
+.idea/

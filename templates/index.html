@@ -1,0 +1,1603 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>销售业绩管理系统</title>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: -apple-system, 'Segoe UI', 'Microsoft YaHei', sans-serif;
+    background: #F5F5F5;
+    color: #333;
+    font-size: 14px;
+    min-width: 860px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  .card-value, .td-amount, .page-info, #c-total, #c-cust, #c-new-cust, #c-old-cust {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ── 顶部固定栏 ── */
+  .top-bar {
+    position: sticky; top: 0; z-index: 100;
+    background: #fff;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  }
+  .top-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 28px;
+  }
+  .top-row h1 { font-size: 20px; font-weight: 600; color: #222; letter-spacing: 0.5px; }
+  .top-row .meta { font-size: 11px; color: #999; margin-top: 2px; display: none; }
+  #lastUpdate { font-size: 12px; color: #999; }
+
+  .nav-row {
+    display: flex; align-items: center;
+    padding: 0 28px;
+    border-top: 1px solid #F0F0F0;
+    border-bottom: 1px solid #E8E8E8;
+    min-height: 42px;
+  }
+  .nav-row .tab-list { display: flex; }
+  .tab-btn {
+    padding: 11px 20px;
+    cursor: pointer;
+    border: none; background: none;
+    font-size: 13px; font-weight: 500; color: #888;
+    border-bottom: 2px solid transparent;
+    transition: color .15s, border-color .15s;
+    letter-spacing: 0.3px;
+  }
+  .tab-btn:hover { color: #555; }
+  .tab-btn.active { color: #3B5998; border-bottom-color: #3B5998; }
+
+  .filter-inline {
+    display: flex; align-items: center; flex-wrap: wrap; gap: 6px;
+  }
+
+  .tab-content { display: none; }
+  .tab-content.active { display: block; height: calc(100vh - var(--topbar-height, 86px)); }
+  .tab-content.active.tab-flex { display: flex; flex-direction: column; overflow: hidden; }
+
+  /* ── 筛选栏 ── */
+  .filter-bar {
+    background: #fff;
+    padding: 12px 16px;
+    display: flex; align-items: center; flex-wrap: wrap; gap: 8px;
+    margin-bottom: 16px;
+    border-radius: 4px;
+    border: 1px solid #EDEDED;
+  }
+  .filter-label { font-size: 12px; color: #999; margin-right: 2px; }
+  .quick-btn {
+    padding: 5px 14px;
+    border: 1px solid #DDD;
+    background: #fff;
+    cursor: pointer;
+    font-size: 12px; color: #666;
+    border-radius: 3px;
+    transition: all .15s;
+  }
+  .quick-btn:hover { border-color: #3B5998; color: #3B5998; }
+  .quick-btn.active { background: #3B5998; color: #fff; border-color: #3B5998; }
+  .date-sep { color: #CCC; font-size: 12px; }
+  input[type="date"] {
+    padding: 5px 10px;
+    border: 1px solid #DDD;
+    background: #fff;
+    font-size: 12px; color: #333;
+    outline: none;
+    border-radius: 3px;
+    font-family: inherit;
+  }
+  input[type="date"]:focus { border-color: #3B5998; }
+  .detail-select {
+    padding: 5px 10px;
+    border: 1px solid #DDD;
+    background: #fff;
+    font-size: 12px; color: #333;
+    outline: none;
+    border-radius: 3px;
+    font-family: inherit;
+    min-width: 120px;
+  }
+  .detail-select:focus { border-color: #3B5998; }
+
+  .btn-apply {
+    padding: 5px 16px;
+    background: #3B5998; color: #fff;
+    border: 1px solid #3B5998;
+    cursor: pointer; font-size: 12px;
+    border-radius: 3px;
+    transition: background .15s;
+  }
+  .btn-apply:hover { background: #345189; }
+
+  /* ── Tab1 内部筛选栏（sticky） ── */
+  .tab-filter-sticky {
+    position: sticky; top: 0; z-index: 10;
+    background: #F5F5F5;
+    padding: 12px 28px;
+    border-bottom: 1px solid #EDEDED;
+  }
+  .tab-filter-sticky .filter-bar { margin-bottom: 0; }
+
+  /* ── Tab1 内容内边距 ── */
+  .tab-inner { padding: 12px 28px 28px; }
+
+  /* ── 概览卡片 ── */
+  .cards-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  @media (max-width: 1400px) { .cards-grid { grid-template-columns: repeat(3, 1fr); } }
+  @media (max-width: 900px) { .cards-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 500px) { .cards-grid { grid-template-columns: 1fr; } }
+
+  .card {
+    background: #fff;
+    padding: 18px 22px;
+    border-radius: 4px;
+  }
+  .card-label { font-size: 12px; color: #999; margin-bottom: 8px; }
+  .card-value {
+    font-size: clamp(22px, 2.4vw, 32px);
+    font-weight: 600; color: #222;
+    line-height: 1.2; word-break: break-all;
+  }
+  .card-sub { font-size: 12px; color: #999; margin-top: 10px; }
+  .card-sub .up { color: #43A047; }
+  .card-sub .down { color: #E53935; }
+  .rate-green { color: #43A047; }
+  .rate-orange { color: #EF6C00; }
+
+  .unit-sm { font-size: 0.55em; font-weight: 400; color: #999; margin-left: 2px; }
+
+  /* ── 齿轮按钮 ── */
+  .settings-btn {
+    background: none; border: none;
+    font-size: 18px; color: #BBB; cursor: pointer;
+    padding: 4px 6px; border-radius: 3px;
+    transition: color .15s, background .15s;
+    line-height: 1;
+  }
+  .settings-btn:hover { color: #3B5998; background: #F0F4FA; }
+
+  /* ── 新品标签 ── */
+  .tag-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .tag-item {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: #F0F4FA; color: #3B5998;
+    padding: 4px 10px; border-radius: 12px;
+    font-size: 12px;
+  }
+  .tag-item .tag-del {
+    cursor: pointer; font-size: 14px; color: #999;
+    margin-left: 2px; line-height: 1;
+  }
+  .tag-item .tag-del:hover { color: #D32F2F; }
+
+  /* ── 新品明细表 ── */
+  .section-title {
+    font-size: 14px; font-weight: 600; color: #222;
+    margin: 20px 0 12px;
+  }
+  .new-prod-table-wrap {
+    background: #fff; border-radius: 4px;
+    overflow: hidden; margin-bottom: 16px;
+  }
+  .new-prod-table-wrap table {
+    width: 100%; border-collapse: collapse;
+    font-size: 12px;
+  }
+  .new-prod-table-wrap th {
+    background: #FAFAFA; color: #777; font-weight: 500;
+    padding: 10px 12px; text-align: left;
+    border-bottom: 1px solid #EEE; white-space: nowrap;
+  }
+  .new-prod-table-wrap td {
+    padding: 8px 12px; border-bottom: 1px solid #F5F5F5;
+    color: #333; white-space: nowrap;
+  }
+  .new-prod-table-wrap .summary-row td {
+    font-weight: 600; color: #222;
+    border-top: 2px solid #DDD; border-bottom: none;
+    background: #FAFAFA;
+  }
+
+  /* ── 图表区 ── */
+  .charts-row {
+    display: grid;
+    grid-template-columns: 60% 40%;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  @media (max-width: 900px) { .charts-row { grid-template-columns: 1fr; } }
+
+  .chart-card {
+    background: #fff;
+    padding: 16px 20px 12px;
+    border-radius: 4px;
+  }
+  .chart-title {
+    font-size: 13px; font-weight: 600; color: #333;
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #F0F0F0;
+  }
+  .chart-box {
+    width: 100%;
+    height: clamp(240px, 30vh, 400px);
+  }
+
+  /* ── 明细Toolbar ── */
+  .detail-toolbar {
+    background: #fff;
+    padding: 12px 16px;
+    display: flex; align-items: center; flex-wrap: wrap; gap: 10px;
+    margin: 12px 28px;
+    border-radius: 4px;
+    border: 1px solid #EDEDED;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+  .detail-toolbar .left { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .detail-toolbar .right { display: flex; gap: 8px; flex-wrap: wrap; }
+
+  .btn-primary {
+    padding: 6px 14px;
+    background: #3B5998; color: #fff;
+    border: 1px solid #3B5998;
+    cursor: pointer; font-size: 12px;
+    border-radius: 3px;
+    transition: background .15s;
+  }
+  .btn-primary:hover { background: #345189; }
+  .btn-outline {
+    padding: 6px 14px;
+    border: 1px solid #DDD; color: #666;
+    background: #fff;
+    cursor: pointer; font-size: 12px;
+    border-radius: 3px;
+    transition: all .15s;
+  }
+  .btn-outline:hover { border-color: #3B5998; color: #3B5998; }
+  .btn-danger-outline {
+    padding: 6px 14px;
+    border: 1px solid #E0C0C0; color: #C44;
+    background: #fff;
+    cursor: pointer; font-size: 12px;
+    border-radius: 3px;
+    transition: all .15s;
+  }
+  .btn-danger-outline:hover { border-color: #C44; background: #FFF6F6; }
+
+  /* ── 表格 ── */
+  .table-wrap {
+    background: #fff;
+    border-radius: 4px;
+    border: 1px solid #EDEDED;
+    overflow: hidden;
+  }
+  .table-info {
+    padding: 10px 16px;
+    font-size: 12px; color: #999;
+    border-bottom: 1px solid #F0F0F0;
+    display: flex; justify-content: space-between; align-items: center;
+    flex-shrink: 0;
+  }
+  .table-scroll { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; }
+  thead th {
+    background: #FAFAFA;
+    padding: 9px 14px;
+    text-align: left;
+    font-size: 11px; font-weight: 600; color: #888;
+    border-bottom: 1px solid #EDEDED;
+    white-space: nowrap;
+    letter-spacing: 0.3px;
+  }
+  .table-scroll thead { position: sticky; top: 0; z-index: 10; }
+  tbody tr { transition: background .1s; }
+  tbody tr:hover { background: #F7FAFD; }
+  tbody td {
+    padding: 9px 14px;
+    font-size: 12px; color: #444;
+    border-bottom: 1px solid #F5F5F5;
+    white-space: nowrap;
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  .td-amount { font-weight: 500; color: #3B5998; font-variant-numeric: tabular-nums; }
+  .td-date { color: #999; }
+  .summary-row td {
+    font-weight: 600; color: #222;
+    border-top: 2px solid #DDD; border-bottom: none;
+    background: #FAFAFA;
+  }
+
+  /* ── 分页 ── */
+  .pagination {
+    display: flex; align-items: center; justify-content: flex-end;
+    gap: 3px;
+    padding: 12px 16px;
+    border-top: 1px solid #F0F0F0;
+    flex-shrink: 0;
+  }
+  .page-btn {
+    padding: 4px 10px;
+    border: 1px solid #DDD;
+    background: #fff;
+    cursor: pointer; font-size: 12px; color: #666;
+    border-radius: 3px;
+    transition: all .15s;
+  }
+  .page-btn:hover:not(:disabled) { border-color: #3B5998; color: #3B5998; }
+  .page-btn.active { background: #3B5998; color: #fff; border-color: #3B5998; }
+  .page-btn:disabled { opacity: .35; cursor: not-allowed; background: #F5F5F5; }
+  .page-info { font-size: 12px; color: #999; margin: 0 8px; }
+
+  /* ── Modal ── */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,.35); z-index: 999;
+    align-items: center; justify-content: center;
+  }
+  .modal-overlay.show { display: flex; }
+  .modal {
+    background: #fff; border-radius: 6px;
+    padding: 28px 32px; width: 440px; max-width: 95vw;
+    box-shadow: 0 4px 24px rgba(0,0,0,.1);
+  }
+  .modal h3 { font-size: 15px; margin-bottom: 16px; color: #222; font-weight: 600; }
+  .modal p { font-size: 13px; color: #777; line-height: 1.7; }
+  .modal-btns { display: flex; gap: 8px; margin-top: 22px; justify-content: flex-end; }
+  label.upload-area {
+    display: block; border: 1px dashed #DDD;
+    padding: 28px;
+    text-align: center; cursor: pointer;
+    color: #999; font-size: 13px;
+    border-radius: 4px;
+    transition: border .15s;
+    margin: 12px 0;
+  }
+  label.upload-area:hover { border-color: #3B5998; color: #555; }
+  label.upload-area input { display: none; }
+  .upload-icon { font-size: 32px; margin-bottom: 6px; color: #CCC; }
+
+  .empty-state { text-align: center; padding: 56px 20px; color: #CCC; }
+
+  /* toast */
+  .toast {
+    position: fixed; bottom: 28px; right: 28px;
+    background: #fff; color: #333;
+    padding: 10px 20px; border: 1px solid #EDEDED;
+    border-radius: 4px;
+    font-size: 12px; z-index: 9999;
+    box-shadow: 0 2px 12px rgba(0,0,0,.08);
+    opacity: 0; transform: translateY(8px);
+    transition: all .25s;
+    pointer-events: none;
+  }
+  .toast.success { border-color: #A5D6A7; color: #388E3C; }
+  .toast.error { border-color: #EF9A9A; color: #D32F2F; }
+  .toast.show { opacity: 1; transform: translateY(0); }
+
+  /* ── Drawer 抽屉 ── */
+  .drawer-overlay {
+    position: fixed; inset: 0; z-index: 1000;
+    background: rgba(0,0,0,.35);
+    opacity: 0; visibility: hidden;
+    transition: opacity .3s;
+  }
+  .drawer-overlay.show { opacity: 1; visibility: visible; }
+
+  .drawer-panel {
+    position: fixed; top: 0; right: 0; bottom: 0;
+    width: 360px; background: #fff; z-index: 1001;
+    transform: translateX(100%);
+    transition: transform .3s ease;
+    display: flex; flex-direction: column;
+    box-shadow: -2px 0 16px rgba(0,0,0,.08);
+  }
+  .drawer-overlay.show .drawer-panel { transform: translateX(0); }
+
+  .drawer-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 20px;
+    border-bottom: 1px solid #EDEDED;
+    flex-shrink: 0;
+  }
+  .drawer-header h3 { font-size: 15px; font-weight: 600; color: #222; margin: 0; }
+  .drawer-close {
+    width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;
+    cursor: pointer; font-size: 18px; color: #999; border: none; background: none;
+    border-radius: 4px; transition: all .15s;
+  }
+  .drawer-close:hover { background: #F5F5F5; color: #333; }
+
+  .drawer-body { flex: 1; overflow-y: auto; padding: 8px 0; }
+
+  .drawer-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 13px 20px;
+    border-bottom: 1px solid #F5F5F5;
+    transition: background .1s;
+  }
+  .drawer-item:last-child { border-bottom: none; }
+  .drawer-item-name { font-size: 13px; color: #333; }
+
+  .drawer-empty { text-align: center; padding: 60px 20px; color: #CCC; font-size: 13px; }
+
+  .btn-delete-sm {
+    padding: 4px 12px; border: 1px solid #E74C3C; color: #E74C3C;
+    background: #fff; font-size: 12px; cursor: pointer; border-radius: 3px;
+    transition: all .15s; white-space: nowrap;
+  }
+  .btn-delete-sm:hover { background: #E74C3C; color: #fff; }
+
+  /* ── 确认弹窗 ── */
+  .confirm-overlay {
+    position: fixed; inset: 0; z-index: 2000;
+    background: rgba(0,0,0,.35);
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; visibility: hidden; transition: opacity .2s;
+  }
+  .confirm-overlay.show { opacity: 1; visibility: visible; }
+  .confirm-box {
+    background: #fff; border-radius: 6px; padding: 28px 30px 20px;
+    max-width: 380px; width: 90%;
+    box-shadow: 0 4px 20px rgba(0,0,0,.12);
+  }
+  .confirm-box h3 { font-size: 15px; font-weight: 600; color: #222; margin: 0 0 10px; }
+  .confirm-box p { font-size: 13px; color: #666; margin: 0 0 20px; line-height: 1.6; }
+  .confirm-btns { display: flex; gap: 10px; justify-content: flex-end; }
+</style>
+</head>
+<body>
+
+<!-- ════════════ 顶部固定栏 ════════════ -->
+<div class="top-bar">
+  <div class="top-row">
+    <div>
+      <h1>Sur's 销售业绩管理系统</h1>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px">
+      <button class="settings-btn" onclick="openTargetModal()" title="业绩目标管理" style="font-size:12px;border:1px solid #DDD;background:#fff;color:#666;padding:5px 12px;border-radius:3px;cursor:pointer;font-family:inherit">业绩目标管理</button>
+      <div id="lastUpdate">数据更新：—</div>
+    </div>
+  </div>
+  <div class="nav-row">
+    <div class="tab-list">
+      <button class="tab-btn active" onclick="switchTab('dashboard')">首页看板</button>
+      <button class="tab-btn" onclick="switchTab('detail')">销售数据明细</button>
+      <button class="tab-btn" onclick="switchTab('newprod')">新品数据</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ Tab1: 首页看板 ═══════════════ -->
+<div id="tab-dashboard" class="tab-content active" style="overflow-y:auto">
+
+  <div class="tab-filter-sticky">
+    <div class="filter-bar">
+      <span class="filter-label">时间</span>
+      <button class="quick-btn active" id="qbtn-year" onclick="setQuick('year')">本年</button>
+      <button class="quick-btn" id="qbtn-last-year" onclick="setQuick('lastYear')">去年</button>
+      <button class="quick-btn" id="qbtn-month" onclick="setQuick('month')">本月</button>
+      <button class="quick-btn" id="qbtn-last-month" onclick="setQuick('lastMonth')">上月</button>
+      <button class="quick-btn" id="qbtn-week" onclick="setQuick('week')">本周</button>
+      <button class="quick-btn" id="qbtn-last-week" onclick="setQuick('lastWeek')">上周</button>
+      <button class="quick-btn" id="qbtn-custom" onclick="setQuick('custom')">自定义</button>
+      <span class="date-sep">|</span>
+      <input type="date" id="dateStart" onchange="setQuick('custom')">
+      <span class="date-sep">—</span>
+      <input type="date" id="dateEnd" onchange="setQuick('custom')">
+      <button class="btn-apply" onclick="refreshDashboard()">刷新</button>
+    </div>
+  </div>
+
+  <div class="tab-inner">
+    <div class="cards-grid">
+      <div class="card">
+        <div class="card-label">总销售额</div>
+        <div class="card-value" id="c-total">—</div>
+        <div class="card-sub" id="c-total-cmp">—</div>
+      </div>
+      <div class="card">
+        <div class="card-label">总客户数</div>
+        <div class="card-value" id="c-cust">—</div>
+      </div>
+      <div class="card">
+        <div class="card-label">新客户</div>
+        <div class="card-value" id="c-new-cust">—</div>
+      </div>
+      <div class="card">
+        <div class="card-label">老客户</div>
+        <div class="card-value" id="c-old-cust">—</div>
+      </div>
+      <div class="card">
+        <div class="card-label">业绩完成率</div>
+        <div class="card-value" id="c-rate">—</div>
+        <div class="card-sub" id="c-rate-cmp">—</div>
+      </div>
+      <div class="card" style="cursor:pointer" onclick="switchTab('newprod')" title="点击查看新品明细">
+        <div class="card-label">新产品销售额</div>
+        <div class="card-value" id="c-new-prod">—</div>
+      </div>
+    </div>
+
+    <div class="charts-row">
+      <div class="chart-card">
+        <div class="chart-title">销售额趋势</div>
+        <div class="chart-box" id="chart-trend"></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Top 10 客户</div>
+        <div class="chart-box" id="chart-top10"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ═══════════════ Tab2: 销售数据明细 ═══════════════ -->
+<div id="tab-detail" class="tab-content tab-flex">
+
+  <div class="detail-toolbar">
+    <div class="left">
+      <span class="filter-label">终审日期</span>
+      <input type="date" id="d-dateStart">
+      <span class="date-sep">—</span>
+      <input type="date" id="d-dateEnd">
+      <span class="filter-label" style="margin-left:8px">客户名称</span>
+      <input class="detail-select" id="d-cust" list="cust-datalist" placeholder="输入或选择客户" onchange="refreshDetail()" style="min-width:160px">
+      <datalist id="cust-datalist"></datalist>
+      <button class="btn-apply" onclick="refreshDetail()">查询</button>
+      <button class="btn-outline" onclick="resetDetailFilter()">重置</button>
+    </div>
+    <div class="right">
+      <button class="btn-primary" onclick="openImport()">导入 Excel</button>
+      <button class="btn-outline" onclick="exportData()">导出数据</button>
+      <button class="btn-outline" onclick="downloadTemplate()">下载模板</button>
+    </div>
+  </div>
+
+  <div class="table-wrap" style="flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden;margin:0 28px 28px">
+    <div class="table-info">
+      <span id="detail-count">共 0 条记录</span>
+      <span style="font-size:11px;color:#CCC">数据存储于 SQLite 数据库</span>
+    </div>
+    <div class="table-scroll" style="flex:1;overflow-y:auto">
+      <table id="detail-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>终审日期</th>
+            <th>客户名称</th>
+            <th>品名</th>
+            <th>货品规格</th>
+            <th>单位</th>
+            <th>受订数量</th>
+            <th>单价</th>
+            <th>本位币</th>
+          </tr>
+        </thead>
+        <tbody id="detail-tbody"></tbody>
+      </table>
+    </div>
+    <div class="pagination" id="pagination"></div>
+  </div>
+</div>
+
+<!-- ═══════════════ Tab3: 新品数据 ═══════════════ -->
+<div id="tab-newprod" class="tab-content tab-flex">
+
+  <div style="flex-shrink:0;background:#fff;border-radius:4px;padding:10px 16px;margin:16px 28px 12px;border:1px solid #EDEDED">
+    <div style="display:flex;gap:8px;align-items:center">
+      <span style="font-size:13px;font-weight:600;color:#222;white-space:nowrap">新品规格管理</span>
+      <input id="newprod-input-np" placeholder="输入货品规格，按回车添加" style="flex:1;padding:6px 10px;border:1px solid #DDD;border-radius:3px;font-size:13px;font-family:inherit;max-width:280px"
+             onkeydown="if(event.key==='Enter')addNewProdNp()">
+      <button class="btn-primary" onclick="addNewProdNp()" style="font-size:12px">添加</button>
+      <button class="btn-outline" onclick="openNewProdDrawer()" style="font-size:12px">管理</button>
+      <span style="font-size:12px;color:#999;white-space:nowrap;margin-left:auto" id="np-count-label">已添加 <b id="np-count-num">0</b> 个新品规格</span>
+    </div>
+  </div>
+
+  <div style="flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden;margin:0 28px 28px">
+    <div class="section-title" style="display:flex;align-items:center;justify-content:space-between;flex-shrink:0;margin:8px 0 12px">
+      <span>新品销售汇总</span>
+      <button class="btn-outline" onclick="exportNewProdData()" style="font-size:12px">导出Excel</button>
+    </div>
+    <div class="table-wrap" style="flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden;width:65%">
+      <div class="table-info">
+        <span id="np-summary-count">共 0 条规格</span>
+        <span style="font-size:11px;color:#CCC">按规格汇总</span>
+      </div>
+      <div class="table-scroll" style="flex:1;overflow-y:auto">
+        <table style="table-layout:fixed">
+          <thead>
+            <tr><th style="text-align:center;width:25%">货品规格</th><th style="text-align:center;width:20%">销售数量合计</th><th style="text-align:center;width:20%">销售额总计</th></tr>
+          </thead>
+          <tbody id="new-prod-summary-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ════ 导入 Modal ════ -->
+<div class="modal-overlay" id="import-modal">
+  <div class="modal">
+    <h3>导入 Excel 数据</h3>
+    <p>请上传符合模板格式的 Excel 文件（.xlsx / .xls），上传后数据将存入服务器数据库。</p>
+    <label class="upload-area" for="fileInput">
+      <div class="upload-icon">+</div>
+      <div>点击选择文件</div>
+      <div style="margin-top:4px;font-size:11px;color:#CCC">支持 .xlsx / .xls</div>
+      <input type="file" id="fileInput" accept=".xlsx,.xls" onchange="handleFileSelect(event)">
+    </label>
+    <div id="import-preview" style="font-size:12px;color:#777;margin-top:8px;"></div>
+    <div class="modal-btns">
+      <button class="btn-outline" onclick="closeImport()">取消</button>
+      <button class="btn-primary" id="btn-import-upload" onclick="doImport()" disabled>上传到服务器</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════ 目标设置 Modal ════ -->
+<div class="modal-overlay" id="target-modal">
+  <div class="modal" style="max-width:420px">
+    <h3>业绩目标管理</h3>
+    <div style="display:flex;gap:10px;align-items:center;margin-top:12px">
+      <span style="font-size:13px;color:#555;white-space:nowrap">年份</span>
+      <select id="target-year" style="padding:6px 10px;border:1px solid #DDD;border-radius:3px;font-size:13px;font-family:inherit"></select>
+      <span style="font-size:13px;color:#555;white-space:nowrap">年目标(元)</span>
+      <input id="target-amount" type="number" placeholder="如 5000000" style="padding:6px 10px;border:1px solid #DDD;border-radius:3px;font-size:13px;font-family:inherit;width:140px">
+    </div>
+    <div id="target-saved" style="font-size:12px;color:#999;margin-top:8px"></div>
+    <div class="modal-btns">
+      <button class="btn-danger-outline" onclick="deleteTarget()">删除目标</button>
+      <button class="btn-outline" onclick="closeTarget()">取消</button>
+      <button class="btn-primary" onclick="saveTarget()">保存</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- ════ Drawer：管理新品规格 ════ -->
+<div class="drawer-overlay" id="newprod-drawer" onclick="closeNewProdDrawer(event)">
+  <div class="drawer-panel" onclick="event.stopPropagation()">
+    <div class="drawer-header">
+      <h3>管理新品规格</h3>
+      <button class="drawer-close" onclick="closeNewProdDrawer()">×</button>
+    </div>
+    <div class="drawer-body" id="drawer-body"></div>
+  </div>
+</div>
+
+<!-- ════ 确认删除弹窗 ════ -->
+<div class="confirm-overlay" id="confirm-dialog" onclick="closeConfirm()">
+  <div class="confirm-box" onclick="event.stopPropagation()">
+    <h3>确认删除</h3>
+    <p>确定删除该规格？删除后相关数据将不再计入新品统计。</p>
+    <div class="confirm-btns">
+      <button class="btn-outline" onclick="closeConfirm()">取消</button>
+      <button class="btn-primary" id="confirm-delete-btn" style="background:#E74C3C;border-color:#E74C3C">删除</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ════════════ 硬编码假数据（API 不可用时的后备） ════════════
+const MOCK_DATA = [
+  { date:'2026-05-08', cust:'宇飞汽配贸易公司',    product:'三元催化载体', spec:'Φ130×120',  unit:'只', qty:4000, price:55,   amount:220000 },
+  { date:'2026-06-03', cust:'铂锐科技有限公司',    product:'铑粉',        spec:'RH-99.9%',  unit:'克', qty:150,  price:4600, amount:690000 },
+];
+
+// ════════════ 全局状态（从 API 加载） ════════════
+window._allData = null;
+window._targets = {};
+window._newProducts = [];
+
+const COL_MAP = {
+  '终审日期':   'date',
+  '客户名称':   'cust',
+  '品名':       'product',
+  '货品规格':   'spec',
+  '单位':       'unit',
+  '受订数量':   'qty',
+  '单价':       'price',
+  '本位币':     'amount',
+};
+
+let currentMode = 'year';
+let rangeStart = '', rangeEnd = '';
+let pendingImportFile = null;
+
+let detailPage = 1;
+const PAGE_SIZE = 15;
+let detailFiltered = [];
+let detailCustFilter = '';
+
+let chartTrend = null, chartTop10 = null;
+
+// ════════════ API 调用 ════════════
+async function apiGet(path) {
+  try {
+    const resp = await fetch(path);
+    return await resp.json();
+  } catch(e) { return null; }
+}
+
+async function apiPost(path, data) {
+  try {
+    const resp = await fetch(path, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(data)
+    });
+    return await resp.json();
+  } catch(e) { return null; }
+}
+
+async function apiDelete(path) {
+  try {
+    await fetch(path, {method: 'DELETE'});
+  } catch(e) {}
+}
+
+// ════════════ 数据加载 ════════════
+async function loadAllData() {
+  const data = await apiGet('/api/data');
+  if (data !== null && Array.isArray(data)) {
+    window._allData = data;
+  }
+}
+
+async function loadTargets() {
+  const data = await apiGet('/api/target');
+  if (data !== null) {
+    window._targets = data;
+  }
+}
+
+async function loadNewProducts() {
+  const data = await apiGet('/api/new-products');
+  if (data !== null && Array.isArray(data)) {
+    window._newProducts = data;
+  }
+  updateNewProdCount();
+}
+
+async function saveTargetsToServer(year, amount) {
+  return await apiPost('/api/target', {year: year, amount: amount});
+}
+
+async function deleteTargetFromServer(year) {
+  await apiDelete('/api/target?year=' + year);
+}
+
+async function saveNewProductsToServer() {
+  return await apiPost('/api/new-products', {specs: window._newProducts});
+}
+
+// ════════════ 本地数据访问器（替代 localStorage） ════════════
+function getAllData() {
+  if (window._allData && window._allData.length > 0) return window._allData;
+  return MOCK_DATA;
+}
+
+function getTargets() {
+  return window._targets || {};
+}
+
+function getTarget(year) {
+  const t = getTargets();
+  return t[year] || 0;
+}
+
+function getNewProducts() {
+  return window._newProducts || [];
+}
+
+// ════════════ 顶部栏高度 ──
+function updateTopbarHeight() {
+  var tb = document.querySelector('.top-bar');
+  if (tb) {
+    document.documentElement.style.setProperty('--topbar-height', tb.offsetHeight + 'px');
+  }
+}
+
+// ════════════ 目标设置 ════════════
+function openTargetModal() {
+  const sel = document.getElementById('target-year');
+  const cy = new Date().getFullYear();
+  sel.innerHTML = '';
+  for (let y = 2023; y <= cy + 1; y++) {
+    sel.innerHTML += '<option value="'+y+'">'+y+'年</option>';
+  }
+  sel.value = cy;
+  onTargetYearChange();
+  document.getElementById('target-modal').classList.add('show');
+}
+
+function onTargetYearChange() {
+  const y = document.getElementById('target-year').value;
+  const t = getTarget(y);
+  document.getElementById('target-amount').value = t || '';
+  document.getElementById('target-saved').textContent = t ? '已设定：¥' + t.toLocaleString() : '尚未设定目标';
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  const sel = document.getElementById('target-year');
+  if (sel) sel.addEventListener('change', onTargetYearChange);
+});
+
+async function saveTarget() {
+  const y = document.getElementById('target-year').value;
+  const v = parseFloat(document.getElementById('target-amount').value);
+  if (!v || v <= 0) { showToast('请输入有效的目标金额', 'error'); return; }
+  window._targets[y] = v;
+  const result = await saveTargetsToServer(parseInt(y), v);
+  if (result && result.success) {
+    showToast(y + '年目标已保存', 'success');
+  } else {
+    showToast('保存失败，请重试', 'error');
+  }
+  closeTarget();
+  refreshDashboard();
+}
+
+async function deleteTarget() {
+  const y = document.getElementById('target-year').value;
+  delete window._targets[y];
+  await deleteTargetFromServer(parseInt(y));
+  document.getElementById('target-amount').value = '';
+  document.getElementById('target-saved').textContent = '尚未设定目标';
+  showToast(y + '年目标已删除', 'success');
+  closeTarget();
+  refreshDashboard();
+}
+
+function closeTarget() {
+  document.getElementById('target-modal').classList.remove('show');
+}
+
+// ════════════ 新品管理 ════════════
+async function addNewProdNp() {
+  var inp = document.getElementById('newprod-input-np');
+  var v = inp.value.trim();
+  if (!v) return;
+  var list = getNewProducts();
+  if (list.includes(v)) { showToast('该规格已存在', 'error'); return; }
+  list.push(v);
+  inp.value = '';
+  await saveNewProductsToServer();
+  updateNewProdCount();
+  refreshNewProdTab();
+  if (currentMode) refreshDashboard();
+}
+
+async function removeNewProd(idx) {
+  const list = getNewProducts();
+  list.splice(idx, 1);
+  await saveNewProductsToServer();
+  updateNewProdCount();
+  renderDrawerList();
+  refreshDashboard();
+  if (document.getElementById('tab-newprod').classList.contains('active')) refreshNewProdTab();
+}
+
+function renderNewProdTags() {
+  updateNewProdCount();
+}
+
+// ════════════ 抽屉：管理新品规格 ════════════
+var pendingDeleteIdx = null;
+
+function openNewProdDrawer() {
+  renderDrawerList();
+  document.getElementById('newprod-drawer').classList.add('show');
+}
+function closeNewProdDrawer(e) {
+  if (e && e.target !== document.getElementById('newprod-drawer')) return;
+  document.getElementById('newprod-drawer').classList.remove('show');
+}
+function renderDrawerList() {
+  var list = getNewProducts();
+  var body = document.getElementById('drawer-body');
+  if (!list.length) {
+    body.innerHTML = '<div class="drawer-empty">暂无新品规格</div>';
+    return;
+  }
+  body.innerHTML = list.map(function(s,i){
+    return '<div class="drawer-item"><span class="drawer-item-name">'+s+'</span><button class="btn-delete-sm" onclick="confirmDeleteProd('+i+')">删除</button></div>';
+  }).join('');
+}
+function confirmDeleteProd(idx) {
+  pendingDeleteIdx = idx;
+  document.getElementById('confirm-dialog').classList.add('show');
+}
+function closeConfirm() {
+  pendingDeleteIdx = null;
+  document.getElementById('confirm-dialog').classList.remove('show');
+}
+document.getElementById('confirm-delete-btn').addEventListener('click', function(){
+  if (pendingDeleteIdx !== null) {
+    removeNewProd(pendingDeleteIdx);
+    pendingDeleteIdx = null;
+  }
+  document.getElementById('confirm-dialog').classList.remove('show');
+});
+
+function updateNewProdCount() {
+  var list = getNewProducts();
+  var el = document.getElementById('np-count-num');
+  if (el) el.textContent = list.length;
+}
+
+// ════════════ 日期工具 ════════════
+function today() { return new Date(); }
+function fmt(d) { return d.toISOString().slice(0, 10); }
+function startOfYear(d) { return new Date(d.getFullYear(), 0, 1); }
+function startOfMonth(d) { return new Date(d.getFullYear(), d.getMonth(), 1); }
+function startOfWeek(d) {
+  const day = d.getDay() || 7;
+  const s = new Date(d);
+  s.setDate(d.getDate() - day + 1);
+  return s;
+}
+function addYears(d, n) { const r = new Date(d); r.setFullYear(r.getFullYear() + n); return r; }
+function addMonths(d, n) { const r = new Date(d); r.setMonth(r.getMonth() + n); return r; }
+function addDays(d, n) { const r = new Date(d); r.setDate(r.getDate() + n); return r; }
+
+function getRange(mode) {
+  const t = today();
+  const y = t.getFullYear();
+  const m = t.getMonth() + 1;
+  if (mode === 'year') {
+    const s = y + '-01-01';
+    const e = fmt(t);
+    const py = y - 1;
+    return { s, e, prev_s: py + '-01-01', prev_e: py + '-12-31' };
+  }
+  if (mode === 'lastYear') {
+    const py = y - 1;
+    return {
+      s: py + '-01-01', e: py + '-12-31',
+      prev_s: (py - 1) + '-01-01', prev_e: (py - 1) + '-12-31'
+    };
+  }
+  if (mode === 'month') {
+    const s = y + '-' + String(m).padStart(2,'0') + '-01';
+    const e = fmt(t);
+    const pm = m === 1 ? 12 : m - 1, py2 = m === 1 ? y - 1 : y;
+    const pLastDay = new Date(py2, pm, 0).getDate();
+    return { s, e,
+      prev_s: py2 + '-' + String(pm).padStart(2,'0') + '-01',
+      prev_e: py2 + '-' + String(pm).padStart(2,'0') + '-' + String(pLastDay).padStart(2,'0')
+    };
+  }
+  if (mode === 'lastMonth') {
+    const pm = m === 1 ? 12 : m - 1, py2 = m === 1 ? y - 1 : y;
+    const lastDay = new Date(py2, pm, 0).getDate();
+    const pm2 = pm === 1 ? 12 : pm - 1, py3 = pm === 1 ? py2 - 1 : py2;
+    const pLastDay = new Date(py3, pm2, 0).getDate();
+    return {
+      s: py2 + '-' + String(pm).padStart(2,'0') + '-01',
+      e: py2 + '-' + String(pm).padStart(2,'0') + '-' + String(lastDay).padStart(2,'0'),
+      prev_s: py3 + '-' + String(pm2).padStart(2,'0') + '-01',
+      prev_e: py3 + '-' + String(pm2).padStart(2,'0') + '-' + String(pLastDay).padStart(2,'0')
+    };
+  }
+  if (mode === 'week') {
+    const dow = t.getDay();
+    const lastSat = addDays(t, -((dow + 1) % 7));
+    const thisFri = addDays(lastSat, 6);
+    const e = thisFri <= t ? fmt(thisFri) : fmt(t);
+    return {
+      s: fmt(lastSat), e,
+      prev_s: fmt(addDays(lastSat, -7)),
+      prev_e: fmt(addDays(lastSat, -1))
+    };
+  }
+  if (mode === 'lastWeek') {
+    const dow = t.getDay();
+    const lastSat = addDays(t, -((dow + 1) % 7));
+    const prevSat = addDays(lastSat, -7);
+    const prevFri = addDays(lastSat, -1);
+    return {
+      s: fmt(prevSat), e: fmt(prevFri),
+      prev_s: fmt(addDays(prevSat, -7)),
+      prev_e: fmt(addDays(prevSat, -1))
+    };
+  }
+  return { s: rangeStart, e: rangeEnd, prev_s: '', prev_e: '' };
+}
+
+function filterData(data, s, e) {
+  if (!s && !e) return data;
+  return data.filter(r => {
+    if (s && r.date < s) return false;
+    if (e && r.date > e) return false;
+    return true;
+  });
+}
+
+function fmtMoney(n) {
+  if (n >= 1e8) return '¥' + (n/1e8).toFixed(2) + '<span class="unit-sm">亿</span>';
+  if (n >= 1e4) return '¥' + (n/1e4).toFixed(2) + '<span class="unit-sm">万</span>';
+  return '¥' + n.toLocaleString();
+}
+
+function fmtMoneyFull(n) {
+  return '¥' + n.toLocaleString('zh-CN');
+}
+
+function pctStr(cur, prev) {
+  if (!prev || prev === 0) return '';
+  const pct = ((cur - prev) / prev * 100).toFixed(1);
+  const up = cur >= prev;
+  const label = mode2label();
+  return '<span class="'+(up?'up':'down')+'">'+(up?'↑':'↓')+Math.abs(pct)+'%</span> 环比'+label;
+}
+
+function mode2label() {
+  if (currentMode === 'year') return '去年同期';
+  if (currentMode === 'lastYear') return '前年同期';
+  if (currentMode === 'month') return '上月';
+  if (currentMode === 'lastMonth') return '再上月';
+  if (currentMode === 'week') return '上周';
+  if (currentMode === 'lastWeek') return '再上周';
+  return '对比期';
+}
+
+// ════════════ 快捷筛选 ════════════
+function setQuick(mode) {
+  currentMode = mode;
+  ['year','lastYear','month','lastMonth','week','lastWeek','custom'].forEach(m => {
+    const btn = document.getElementById('qbtn-'+m);
+    if (btn) btn.classList.toggle('active', m === mode);
+  });
+  const r = getRange(mode);
+  if (mode !== 'custom') {
+    rangeStart = r.s; rangeEnd = r.e;
+    syncFilterBars();
+    refreshDashboard();
+  }
+}
+function syncFilterBars() {
+  var ds = document.getElementById('dateStart');
+  var de = document.getElementById('dateEnd');
+  if (ds) ds.value = rangeStart;
+  if (de) de.value = rangeEnd;
+}
+
+// ════════════ 刷新看板 ════════════
+function refreshDashboard() {
+  if (currentMode === 'custom') {
+    rangeStart = document.getElementById('dateStart').value;
+    rangeEnd   = document.getElementById('dateEnd').value;
+  }
+  const allData = getAllData();
+  const r = getRange(currentMode);
+  const curData  = filterData(allData, r.s, r.e);
+  const prevData = r.prev_s ? filterData(allData, r.prev_s, r.prev_e) : [];
+
+  // 总销售额
+  const totalAmt = curData.reduce((s,x)=>s+x.amount,0);
+  const prevAmt  = prevData.reduce((s,x)=>s+x.amount,0);
+  document.getElementById('c-total').innerHTML = fmtMoney(totalAmt);
+  document.getElementById('c-total-cmp').innerHTML = prevAmt ? pctStr(totalAmt, prevAmt) : '暂无对比数据';
+
+  // 总客户数
+  const custs = [...new Set(curData.map(x=>x.cust))];
+  document.getElementById('c-cust').innerHTML = custs.length + '<span class="unit-sm">个</span>';
+
+  // 新/老客户
+  const firstOrder = {};
+  allData.forEach(r => {
+    if (!firstOrder[r.cust] || r.date < firstOrder[r.cust]) firstOrder[r.cust] = r.date;
+  });
+  const s = r.s, e = r.e;
+  const newCusts = custs.filter(c => firstOrder[c] >= s && firstOrder[c] <= e);
+  const oldCusts = custs.filter(c => firstOrder[c] < s);
+  const newAmt = curData.filter(x=>newCusts.includes(x.cust)).reduce((s,x)=>s+x.amount,0);
+  const oldAmt = curData.filter(x=>oldCusts.includes(x.cust)).reduce((s,x)=>s+x.amount,0);
+
+  document.getElementById('c-new-cust').innerHTML =
+    newCusts.length + '<span class="unit-sm">个</span>' +
+    '<span style="font-size:55%;color:#3B5998;font-weight:500;margin-left:6px">（' + fmtMoney(newAmt) + '）</span>';
+  document.getElementById('c-old-cust').innerHTML =
+    oldCusts.length + '<span class="unit-sm">个</span>' +
+    '<span style="font-size:55%;color:#3B5998;font-weight:500;margin-left:6px">（' + fmtMoney(oldAmt) + '）</span>';
+
+  // 业绩完成率
+  let targetYear = new Date().getFullYear();
+  let targetVal = getTarget(targetYear);
+  if (currentMode === 'lastYear') { targetYear = targetYear - 1; targetVal = getTarget(targetYear); }
+  const rateEl = document.getElementById('c-rate');
+  const rateCmp = document.getElementById('c-rate-cmp');
+  if (['year','lastYear','month','lastMonth'].includes(currentMode) && targetVal) {
+    let rate;
+    if (currentMode === 'year')  rate = totalAmt / targetVal * 100;
+    else if (currentMode === 'lastYear') rate = totalAmt / targetVal * 100;
+    else if (currentMode === 'month')   rate = totalAmt / (targetVal / 12) * 100;
+    else if (currentMode === 'lastMonth') rate = totalAmt / (targetVal / 12) * 100;
+    const cls = rate >= 100 ? 'rate-green' : 'rate-orange';
+    rateEl.innerHTML = '<span class="'+cls+'">'+rate.toFixed(1)+'%</span>';
+    rateEl.style.fontSize = ''; rateEl.style.color = '';
+    if (prevAmt && targetVal) {
+      let prevRate;
+      if (currentMode === 'year')  prevRate = prevAmt / targetVal * 100;
+      else if (currentMode === 'lastYear') prevRate = prevAmt / targetVal * 100;
+      else if (currentMode === 'month')   prevRate = prevAmt / (targetVal / 12) * 100;
+      else if (currentMode === 'lastMonth') prevRate = prevAmt / (targetVal / 12) * 100;
+      rateCmp.innerHTML = pctStr(rate, prevRate);
+    } else {
+      rateCmp.innerHTML = '';
+    }
+  } else {
+    rateEl.textContent = '—';
+    rateEl.style.fontSize = 'clamp(22px, 2.4vw, 32px)';
+    rateEl.style.color = '#222';
+    rateEl.className = 'card-value';
+    rateCmp.innerHTML = '';
+  }
+
+  // 新产品销售额
+  const npList = getNewProducts();
+  const npData = npList.length ? curData.filter(r => npList.includes(r.spec)) : [];
+  const npAmt = npData.reduce((s,x)=>s+x.amount,0);
+  document.getElementById('c-new-prod').innerHTML = fmtMoney(npAmt);
+
+  renderTrend(curData, r.s, r.e);
+  renderTop10(curData);
+
+  document.getElementById('lastUpdate').textContent = '数据更新：' + new Date().toLocaleString('zh-CN');
+  syncFilterBars();
+}
+
+// ════════════ 销售额趋势图 ════════════
+function renderTrend(data, s, e) {
+  if (!chartTrend) chartTrend = echarts.init(document.getElementById('chart-trend'));
+  if (!s || !e) { chartTrend.clear(); return; }
+
+  const diffDays = (new Date(e) - new Date(s)) / 86400000;
+  let granularity;
+  if (currentMode === 'year')       granularity = 'month';
+  else if (currentMode === 'month') granularity = 'week';
+  else if (currentMode === 'week')  granularity = 'day';
+  else {
+    if (diffDays > 90)      granularity = 'month';
+    else if (diffDays > 30) granularity = 'week';
+    else                    granularity = 'day';
+  }
+
+  const buckets = {};
+  data.forEach(r => {
+    let key;
+    if (granularity === 'month') {
+      key = r.date.slice(0, 7);
+    } else if (granularity === 'week') {
+      const d = new Date(r.date), sw = startOfWeek(d);
+      key = fmt(sw);
+    } else {
+      key = r.date;
+    }
+    buckets[key] = (buckets[key] || 0) + r.amount;
+  });
+
+  const keys = [];
+  if (granularity === 'month') {
+    let cur = new Date(s.slice(0,7)+'-01');
+    const end = new Date(e.slice(0,7)+'-01');
+    while (cur <= end) {
+      keys.push(cur.toISOString().slice(0,7));
+      cur = addMonths(cur, 1);
+    }
+  } else if (granularity === 'week') {
+    let cur = startOfWeek(new Date(s));
+    while (fmt(cur) <= e) { keys.push(fmt(cur)); cur = addDays(cur, 7); }
+  } else {
+    let cur = new Date(s);
+    while (fmt(cur) <= e) { keys.push(fmt(cur)); cur = addDays(cur, 1); }
+  }
+
+  const vals = keys.map(k => +( (buckets[k]||0)/10000 ).toFixed(2));
+
+  var showTarget = (currentMode === 'year' || currentMode === 'lastYear');
+  var targetLineData = [];
+  if (showTarget) {
+    var targetYear2 = new Date().getFullYear();
+    if (currentMode === 'lastYear') targetYear2 = targetYear2 - 1;
+    var targetVal2 = getTarget(targetYear2) || 0;
+    var targetLineVal = targetVal2 ? +(targetVal2 / 12 / 10000).toFixed(2) : 0;
+    targetLineData = targetLineVal ? keys.map(function(){ return targetLineVal; }) : [];
+  }
+
+  const opt = {
+    tooltip: {
+      trigger:'axis',
+      backgroundColor:'#fff',
+      borderColor:'#E8E8E8',
+      textStyle:{color:'#333',fontSize:12},
+      extraCssText:'box-shadow:0 2px 8px rgba(0,0,0,.08);border-radius:4px;',
+      formatter: params => {
+        let s = '<b>'+params[0].name+'</b><br/>';
+        params.forEach(p => s += p.marker+' '+p.seriesName+': ¥'+(p.value||0).toFixed(2)+'万<br/>');
+        return s;
+      }
+    },
+    legend: {
+      data:['销售额','趋势'].concat(targetLineData.length?['月度目标']:[]), bottom:0, left:'center',
+      textStyle:{color:'#999',fontSize:11}
+    },
+    grid: { left:54, right:22, bottom:50, top:14 },
+    xAxis: {
+      type:'category', data:keys,
+      axisLabel:{ rotate:keys.length>10?30:0, fontSize:10, color:'#999' },
+      axisTick:{alignWithLabel:true},
+      axisLine:{lineStyle:{color:'#E8E8E8'}},
+      splitLine:{show:false}
+    },
+    yAxis: {
+      type:'value', name:'万元',
+      nameTextStyle:{fontSize:10,color:'#999'},
+      axisLabel:{formatter:v=>v+'万',fontSize:10,color:'#999'},
+      splitLine:{lineStyle:{color:'#F0F0F0'}},
+      axisLine:{show:false}
+    },
+    series: [
+      {
+        name:'销售额', type:'bar', data:vals, barMaxWidth:36,
+        itemStyle:{ color:'#5B8FB9', borderRadius:[3,3,0,0] },
+        emphasis:{ itemStyle:{color:'#4A7DA6'} }
+      },
+      {
+        name:'趋势', type:'line', data:vals, smooth:true,
+        symbol:'circle', symbolSize:4,
+        lineStyle:{color:'#3B5998', width:1.5},
+        itemStyle:{color:'#3B5998', borderColor:'#fff', borderWidth:1.5},
+        emphasis:{itemStyle:{color:'#2D477A'}}
+      },
+      {
+        name:'月度目标', type:'line', data:targetLineData,
+        symbol:'none',
+        lineStyle:{color:'#D32F2F', width:2, type:'dashed'},
+        itemStyle:{color:'#D32F2F'},
+        emphasis:{lineStyle:{width:3}}
+      }
+    ]
+  };
+  chartTrend.setOption(opt, true);
+}
+
+// ════════════ Top10 客户 ════════════
+function renderTop10(data) {
+  if (!chartTop10) chartTop10 = echarts.init(document.getElementById('chart-top10'));
+  const agg = {};
+  data.forEach(r => agg[r.cust] = (agg[r.cust]||0) + r.amount);
+  const sorted = Object.entries(agg).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  const names  = sorted.map(x=>x[0]);
+  const vals   = sorted.map(x=>+(x[1]/10000).toFixed(2));
+
+  const maxLen = Math.max(...names.map(n=>n.length));
+  const gridLeft = Math.min(180, maxLen * 14 + 20);
+
+  const opt = {
+    tooltip: {
+      trigger:'axis', axisPointer:{type:'shadow'},
+      backgroundColor:'#fff',
+      borderColor:'#E8E8E8',
+      textStyle:{color:'#333',fontSize:12},
+      extraCssText:'box-shadow:0 2px 8px rgba(0,0,0,.08);border-radius:4px;',
+      formatter: p => p[0].name+'<br/>¥'+p[0].value+'万'
+    },
+    grid: { left:gridLeft, right:32, top:8, bottom:18 },
+    xAxis: {
+      type:'value',
+      axisLabel:{formatter:v=>v+'万', fontSize:10, color:'#999'},
+      splitLine:{lineStyle:{color:'#F0F0F0'}},
+      axisLine:{show:false}
+    },
+    yAxis: {
+      type:'category', data:names.slice().reverse(),
+      axisLabel:{fontSize:11, color:'#666', width:gridLeft-10, overflow:'truncate'},
+      axisLine:{show:false}, axisTick:{show:false}
+    },
+    series: [{
+      type:'bar', data:vals.slice().reverse(), barMaxWidth:18,
+      label:{ show:true, position:'right', formatter:p=>p.value+'万', fontSize:10, color:'#999' },
+      itemStyle:{ color:'#5B8FB9', borderRadius:[0,3,3,0] }
+    }]
+  };
+  chartTop10.setOption(opt, true);
+}
+
+// ══════════ 新产品 Tab3 汇总 ══════════
+function refreshNewProdTab() {
+  const npList = getNewProducts();
+  const tbody = document.getElementById('new-prod-summary-tbody');
+  const countEl = document.getElementById('np-summary-count');
+
+  if (!npList.length) {
+    countEl.textContent = '共 0 条规格';
+    tbody.innerHTML = '<tr><td colspan="3"><div style="color:#CCC;padding:40px;text-align:center">尚未添加新品规格，请在上方添加</div></td></tr>';
+    return;
+  }
+
+  const allData = getAllData();
+  const r = getRange(currentMode);
+  const curData = filterData(allData, r.s, r.e);
+  const npData = npList.length ? curData.filter(r2 => npList.includes(r2.spec)) : [];
+
+  if (!npData.length) {
+    countEl.textContent = '共 0 条记录';
+    tbody.innerHTML = '<tr><td colspan="3"><div style="color:#CCC;padding:40px;text-align:center">当前时间范围内无新品销售数据</div></td></tr>';
+    return;
+  }
+
+  var specAgg = {};
+  npData.forEach(function(d){
+    if (!specAgg[d.spec]) specAgg[d.spec] = { qty: 0, amt: 0 };
+    specAgg[d.spec].qty += (d.qty || 0);
+    specAgg[d.spec].amt += (d.amount || 0);
+  });
+  var sorted = Object.entries(specAgg).sort(function(a,b){ return b[1].amt - a[1].amt; });
+  countEl.textContent = '共 ' + sorted.length + ' 条规格';
+  var totalQty = 0, totalAmt = 0;
+  var rows = sorted.map(function(entry){
+    totalQty += entry[1].qty;
+    totalAmt += entry[1].amt;
+    return '<tr><td style="text-align:center">'+entry[0]+'</td><td style="text-align:center">'+entry[1].qty.toLocaleString()+'</td><td class="td-amount" style="text-align:center">¥'+entry[1].amt.toLocaleString()+'</td></tr>';
+  }).join('');
+  tbody.innerHTML = rows + '<tr class="summary-row"><td style="text-align:center">合计</td><td style="text-align:center">'+totalQty.toLocaleString()+'</td><td class="td-amount" style="text-align:center">¥'+totalAmt.toLocaleString()+'</td></tr>';
+}
+
+function exportNewProdData() {
+  var npList = getNewProducts();
+  if (!npList.length) { showToast('无新品数据可导出', 'error'); return; }
+  var allData = getAllData();
+  var r = getRange(currentMode);
+  var curData = filterData(allData, r.s, r.e);
+  var npData = npList.length ? curData.filter(function(r2){ return npList.includes(r2.spec); }) : [];
+  if (!npData.length) { showToast('当前时间范围内无新品销售数据', 'error'); return; }
+
+  var specAgg = {};
+  npData.forEach(function(d){
+    if (!specAgg[d.spec]) specAgg[d.spec] = { qty: 0, amt: 0 };
+    specAgg[d.spec].qty += (d.qty || 0);
+    specAgg[d.spec].amt += (d.amount || 0);
+  });
+  var sorted = Object.entries(specAgg).sort(function(a,b){ return b[1].amt - a[1].amt; });
+  var rows = sorted.map(function(entry){
+    return [entry[0], entry[1].qty, entry[1].amt];
+  });
+  var ws = XLSX.utils.aoa_to_sheet([['货品规格','销售数量合计','销售额总计'], ...rows]);
+  var wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, '新品销售数据');
+  XLSX.writeFile(wb, '新品销售数据_' + new Date().toISOString().slice(0,10) + '.xlsx');
+  showToast('导出成功 ' + rows.length + ' 条', 'success');
+}
+
+// ════════════ 明细Tab ════════════
+function populateCustFilter() {
+  const allData = getAllData();
+  const custs = [...new Set(allData.map(r => r.cust))].sort();
+  const dl = document.getElementById('cust-datalist');
+  dl.innerHTML = custs.map(c => '<option value="'+c+'">').join('');
+}
+
+function refreshDetail() {
+  const s = document.getElementById('d-dateStart').value;
+  const e = document.getElementById('d-dateEnd').value;
+  detailCustFilter = document.getElementById('d-cust').value;
+  const allData = getAllData();
+  let filtered = filterData(allData, s, e);
+  if (detailCustFilter) {
+    filtered = filtered.filter(r => r.cust === detailCustFilter);
+  }
+  filtered = [...filtered].sort((a,b) => b.date.localeCompare(a.date));
+  detailFiltered = filtered;
+  detailPage = 1;
+  renderDetailTable();
+}
+
+function resetDetailFilter() {
+  document.getElementById('d-dateStart').value = '';
+  document.getElementById('d-dateEnd').value   = '';
+  document.getElementById('d-cust').value       = '';
+  detailCustFilter = '';
+  const allData = getAllData();
+  detailFiltered = [...allData].sort((a,b) => b.date.localeCompare(a.date));
+  detailPage = 1;
+  renderDetailTable();
+}
+
+function renderDetailTable() {
+  const tbody = document.getElementById('detail-tbody');
+  const total  = detailFiltered.length;
+  const pages  = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  if (detailPage > pages) detailPage = pages;
+  const start = (detailPage-1) * PAGE_SIZE;
+  const slice = detailFiltered.slice(start, start+PAGE_SIZE);
+
+  document.getElementById('detail-count').textContent = '共 ' + total + ' 条记录';
+
+  if (total === 0) {
+    tbody.innerHTML = '<tr><td colspan="9"><div class="empty-state">暂无数据</div></td></tr>';
+    document.getElementById('pagination').innerHTML = '';
+    return;
+  }
+
+  tbody.innerHTML = slice.map((r, i) =>
+    '<tr>'+
+      '<td style="color:#999">'+(start+i+1)+'</td>'+
+      '<td class="td-date">'+r.date+'</td>'+
+      '<td>'+r.cust+'</td>'+
+      '<td>'+r.product+'</td>'+
+      '<td>'+r.spec+'</td>'+
+      '<td>'+r.unit+'</td>'+
+      '<td style="text-align:right">'+(r.qty||0).toLocaleString()+'</td>'+
+      '<td style="text-align:right">'+(r.price||0).toLocaleString()+'</td>'+
+      '<td class="td-amount" style="text-align:right">'+fmtMoneyFull(r.amount||0)+'</td>'+
+    '</tr>'
+  ).join('');
+
+  const pg = document.getElementById('pagination');
+  let html = '<span class="page-info">'+detailPage+' / '+pages+'</span>';
+  html += '<button class="page-btn" onclick="goPage(1)" '+(detailPage===1?'disabled':'')+'>&laquo;</button>';
+  html += '<button class="page-btn" onclick="goPage('+(detailPage-1)+')" '+(detailPage===1?'disabled':'')+'>&lsaquo;</button>';
+  const range = 2;
+  for (let p = Math.max(1,detailPage-range); p<=Math.min(pages,detailPage+range); p++) {
+    html += '<button class="page-btn '+(p===detailPage?'active':'')+'" onclick="goPage('+p+')">'+p+'</button>';
+  }
+  html += '<button class="page-btn" onclick="goPage('+(detailPage+1)+')" '+(detailPage===pages?'disabled':'')+'>&rsaquo;</button>';
+  html += '<button class="page-btn" onclick="goPage('+pages+')" '+(detailPage===pages?'disabled':'')+'>&raquo;</button>';
+  pg.innerHTML = html;
+}
+
+function goPage(p) {
+  detailPage = p;
+  renderDetailTable();
+}
+
+// ════════════ 导入/导出 ════════════
+function openImport() {
+  pendingImportFile = null;
+  document.getElementById('import-preview').textContent = '';
+  document.getElementById('fileInput').value = '';
+  document.getElementById('btn-import-upload').disabled = true;
+  document.getElementById('import-modal').classList.add('show');
+}
+function closeImport() {
+  document.getElementById('import-modal').classList.remove('show');
+}
+
+function handleFileSelect(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  pendingImportFile = file;
+  document.getElementById('import-preview').textContent =
+    '已选择文件：' + file.name + '（' + (file.size/1024).toFixed(1) + ' KB）';
+  document.getElementById('btn-import-upload').disabled = false;
+}
+
+async function doImport() {
+  if (!pendingImportFile) {
+    showToast('请先选择有效的 Excel 文件', 'error'); return;
+  }
+
+  const formData = new FormData();
+  formData.append('file', pendingImportFile);
+
+  showToast('正在上传并解析...', 'success');
+  try {
+    const resp = await fetch('/api/upload', {method: 'POST', body: formData});
+    const result = await resp.json();
+
+    if (result.error) {
+      showToast('上传失败：' + result.error, 'error');
+      return;
+    }
+
+    // 重新加载数据
+    await loadAllData();
+    closeImport();
+    showToast('上传成功：共 ' + result.count + ' 条记录', 'success');
+
+    populateCustFilter();
+    detailFiltered = [...getAllData()].sort((a,b)=>b.date.localeCompare(a.date));
+    detailPage = 1;
+    renderDetailTable();
+    refreshDashboard();
+  } catch(err) {
+    showToast('上传失败：' + err.message, 'error');
+  }
+}
+
+function downloadTemplate() {
+  const ws = XLSX.utils.aoa_to_sheet([['终审日期','客户名称','品名','货品规格','单位','受订数量','单价','本位币']]);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, '导入模板');
+  XLSX.writeFile(wb, '销售数据导入模板.xlsx');
+  showToast('模板已下载', 'success');
+}
+
+function exportData() {
+  const data = detailFiltered.length ? detailFiltered : getAllData();
+  if (!data.length) { showToast('无数据可导出', 'error'); return; }
+  const rows = data.map(r => [r.date, r.cust, r.product, r.spec, r.unit, r.qty, r.price, r.amount]);
+  const ws = XLSX.utils.aoa_to_sheet([['终审日期','客户名称','品名','货品规格','单位','受订数量','单价','本位币'], ...rows]);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, '销售数据');
+  XLSX.writeFile(wb, '销售数据导出_' + new Date().toISOString().slice(0,10) + '.xlsx');
+  showToast('导出成功 ' + rows.length + ' 条', 'success');
+}
+
+// ════════════ Tab 切换 ════════════
+function switchTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach((b,i)=>{
+    b.classList.toggle('active',
+      (i===0&&tab==='dashboard')||(i===1&&tab==='detail')||(i===2&&tab==='newprod'));
+  });
+  document.getElementById('tab-dashboard').classList.toggle('active', tab==='dashboard');
+  document.getElementById('tab-detail').classList.toggle('active', tab==='detail');
+  document.getElementById('tab-newprod').classList.toggle('active', tab==='newprod');
+  if (tab === 'detail') {
+    document.getElementById('d-cust').value = '';
+    detailCustFilter = '';
+    populateCustFilter();
+    detailFiltered = [...getAllData()].sort((a,b)=>b.date.localeCompare(a.date));
+    detailPage = 1;
+    renderDetailTable();
+  }
+  if (tab === 'dashboard') {
+    setTimeout(function(){ chartTrend&&chartTrend.resize(); chartTop10&&chartTop10.resize(); }, 60);
+  }
+  if (tab === 'newprod') {
+    updateNewProdCount();
+    refreshNewProdTab();
+  }
+  updateTopbarHeight();
+}
+
+function showToast(msg, type) {
+  const t = document.getElementById('toast');
+  t.className = 'toast'+(type?' '+type:'');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(function(){t.classList.remove('show');}, 2800);
+}
+
+// ════════════ resize ════════════
+let _resizeTimer = null;
+window.addEventListener('resize', function() {
+  clearTimeout(_resizeTimer);
+  _resizeTimer = setTimeout(function() {
+    updateTopbarHeight();
+    chartTrend  && chartTrend.resize();
+    chartTop10  && chartTop10.resize();
+  }, 80);
+});
+
+// ════════════ 初始化 ════════════
+(async function init() {
+  updateTopbarHeight();
+  // 并行加载所有数据
+  await Promise.all([loadAllData(), loadTargets(), loadNewProducts()]);
+  setQuick('year');
+})();
+</script>
+</body>
+</html>
