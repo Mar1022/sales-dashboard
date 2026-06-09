@@ -746,8 +746,10 @@
   <div class="chart-card" style="margin:8px 20px 16px">
     <div class="chart-title" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
       <span>📅 今日待跟进 <b id="today-task-count">0</b> 个</span>
-      <div style="display:flex;gap:8px">
-        <button class="btn-outline" onclick="batchMarkAllToday()" style="font-size:11px">一键标记全部已完成</button>
+      <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+        <label style="font-size:11px;color:#666;cursor:pointer;white-space:nowrap"><input type="radio" name="global-purpose-rule" value="auto" checked onchange="switchPurposeRule('auto')"> 自动</label>
+        <label style="font-size:11px;color:#666;cursor:pointer;white-space:nowrap"><input type="radio" name="global-purpose-rule" value="manual" onchange="switchPurposeRule('manual')"> 手动</label>
+        <button class="btn-outline" onclick="batchMarkAllToday()" style="font-size:11px">一键完成</button>
         <button class="btn-outline" onclick="loadTodayTasks()" style="font-size:11px">🔄 刷新</button>
       </div>
     </div>
@@ -758,39 +760,26 @@
   <div class="cards-grid" style="grid-template-columns:repeat(4,1fr);margin:0 20px 16px">
     <div class="card"><div class="card-label">今日完成</div><div class="card-value" id="today-completed">0</div><div class="card-sub" id="today-compare"></div></div>
     <div class="card"><div class="card-label">逾期客户</div><div class="card-value" id="overdue-count">0</div><div class="card-sub">⚠️ 需优先处理</div></div>
-    <div class="card" style="cursor:pointer" onclick="loadLevelStats();document.querySelector('#tab-customer details:last-of-type').open=true"><div class="card-label">待编码客户</div><div class="card-value" id="pending-code-count">0</div><div class="card-sub">点击导出补充</div></div>
+    <div class="card" style="cursor:pointer" onclick="openCustMgmtDrawer()"><div class="card-label">待编码客户</div><div class="card-value" id="pending-code-count">0</div><div class="card-sub">点击管理</div></div>
     <div class="card" onclick="openCustMgmtDrawer()" style="cursor:pointer"><div class="card-label">客户总数</div><div class="card-value" id="cust-mgmt-total">—</div><div class="card-sub">点击管理</div></div>
   </div>
 
-  <!-- 3. 本周预览 -->
-  <details style="margin:0 20px 16px">
-    <summary style="cursor:pointer;font-weight:500">📆 本周待跟进预览 <span id="week-task-badge" style="background:#3B5998;color:#fff;padding:0 6px;border-radius:10px;margin-left:6px">0</span></summary>
-    <div id="week-tasks-container" style="margin-top:12px"></div>
-  </details>
+  <!-- 3. 本周待跟进 -->
+  <div class="chart-card" style="margin:8px 20px 16px">
+    <div class="chart-title">📆 本周待跟进 <span id="week-task-badge" style="background:#3B5998;color:#fff;padding:0 6px;border-radius:10px;margin-left:6px">0</span></div>
+    <div id="week-tasks-container" style="max-height:260px;overflow-y:auto"></div>
+  </div>
 
-  <!-- 4. 任务目的规则设置 -->
-  <details style="margin:0 20px 16px">
-    <summary style="cursor:pointer;font-weight:500">⚙️ 任务目的规则设置</summary>
-    <div style="padding:12px;background:#FAFAFA;border-radius:4px;margin-top:8px">
-      <div style="margin-bottom:12px">
-        <label style="font-size:12px;color:#666;margin-right:16px">
-          <input type="radio" name="global-purpose-rule" value="auto" checked onchange="switchPurposeRule('auto')"> 自动判断（系统根据规则生成）
-        </label>
-        <label style="font-size:12px;color:#666">
-          <input type="radio" name="global-purpose-rule" value="manual" onchange="switchPurposeRule('manual')"> 手动编辑（可自定义话术）
-        </label>
-      </div>
-      <div id="manual-edit-area" style="display:none;margin-top:12px">
-        <div style="font-size:12px;color:#333;margin-bottom:8px">编辑客户建议话术：</div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-          <select id="edit-customer-select" style="padding:6px;border:1px solid #ddd;border-radius:3px;min-width:180px"></select>
-          <input type="text" id="edit-suggestion-input" placeholder="输入自定义话术" style="flex:1;padding:6px;border:1px solid #ddd;border-radius:3px">
-          <button class="btn-primary" onclick="saveCustomSuggestion()">保存</button>
-        </div>
-      </div>
-      <div style="margin-top:12px;font-size:11px;color:#999">💡 自动判断规则：紧急跟进 > 逾期提醒 > 客情维护 > 唤醒 > 挽回 > 风险预警 > 回访 > 常规跟进</div>
+  <!-- 4. 手动编辑话术面板（手动模式时显示） -->
+  <div id="manual-edit-panel" style="display:none;margin:0 20px 16px;padding:12px;background:#FAFAFA;border-radius:4px;border:1px solid #EDEDED">
+    <div style="font-size:12px;font-weight:600;color:#333;margin-bottom:8px">编辑客户建议话术</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+      <select id="edit-customer-select" style="padding:6px;border:1px solid #ddd;border-radius:3px;min-width:180px"></select>
+      <input type="text" id="edit-suggestion-input" placeholder="输入自定义话术" style="flex:1;padding:6px;border:1px solid #ddd;border-radius:3px">
+      <button class="btn-primary" onclick="saveCustomSuggestion()">保存</button>
     </div>
-  </details>
+    <div style="margin-top:8px;font-size:11px;color:#999">💡 优先级：紧急跟进 > 逾期提醒 > 客情维护 > 唤醒 > 挽回 > 风险预警 > 回访 > 常规跟进</div>
+  </div>
 
   <!-- 5. 客户等级分布 + 编码管理 -->
   <details style="margin:0 20px 16px">
@@ -2553,7 +2542,6 @@ function renderTaskCard(task) {
     var cardClass = isOverdue ? 'overdue' : (task.next_followup === new Date().toISOString().slice(0,10) ? 'today' : 'normal');
     var levelClass = 'task-level-' + task.level;
     var suggestion = task.custom_suggestion || task.suggestion;
-    var isManual = currentPurposeRule === 'manual';
     var tagCls = getPurposeTagClass(task.purpose);
     var peakBadge = (task.peak_level && task.peak_level !== task.level)
         ? '<span class="task-badge" style="font-size:10px;padding:2px 6px;border-radius:10px;background:#FFF8E1;color:#F9A825;margin-left:6px">曾'+task.peak_level+'类</span>' : '';
@@ -2561,8 +2549,6 @@ function renderTaskCard(task) {
     var escName = safeName.replace(/'/g, "\\'");
     var escSugg = escapeHtml(suggestion).replace(/'/g, "\\'");
     var escDate = (task.next_followup||'').replace(/'/g, "\\'");
-    var editClick = isManual ? ' onclick="editSuggestionInline(\''+escName+'\',\''+escSugg+'\')"' : '';
-    var editIcon = isManual ? '<span style="font-size:10px;color:#999;margin-left:6px">✏️</span>' : '';
     return '<div class="task-card '+cardClass+'" data-cust="'+safeName+'">'+
         '<div class="task-header">'+
             '<div>'+
@@ -2575,7 +2561,7 @@ function renderTaskCard(task) {
         '</div>'+
         '<div class="task-body">'+
             '<span style="font-size:12px;color:#666;flex-shrink:0"><strong>目的：</strong>'+task.purpose+'</span>'+
-            '<span class="task-suggestion'+(isManual?' editable':'')+'"'+editClick+'>💡 '+(suggestion||'暂无建议')+editIcon+'</span>'+
+            '<span class="task-suggestion editable" onclick="editSuggestionInline(\''+escName+'\',\''+escSugg+'\')">💡 '+(suggestion||'暂无建议')+'<span style="font-size:10px;color:#999;margin-left:6px">✏️</span></span>'+
             '<div class="task-buttons">'+
                 '<button class="task-btn task-btn-done" onclick="markFollowupAndRefresh(\''+escName+'\')">✓ 已完成</button>'+
                 '<button class="task-btn task-btn-postpone" onclick="postponeTask(\''+escName+'\',\''+escDate+'\')">⏰ 改期</button>'+
@@ -2657,7 +2643,7 @@ async function loadKeyMetrics() {
 
 function switchPurposeRule(rule) {
     currentPurposeRule = rule;
-    document.getElementById('manual-edit-area').style.display = rule === 'manual' ? 'block' : 'none';
+    document.getElementById('manual-edit-panel').style.display = rule === 'manual' ? 'block' : 'none';
     if (rule === 'manual') populateEditCustomerSelect();
     loadTodayTasks();
 }
