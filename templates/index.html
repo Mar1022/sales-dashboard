@@ -718,8 +718,8 @@
     <div style="display:flex;gap:8px;align-items:center">
       <span style="font-size:13px;font-weight:600;color:#222;white-space:nowrap">客户管理</span>
       <input id="cust-mgmt-search" placeholder="搜索客户名称或编码" style="flex:1;padding:6px 10px;border:1px solid #DDD;border-radius:3px;font-size:13px;font-family:inherit;max-width:260px"
-             onkeydown="if(event.key==='Enter')loadCustMgmtDrawer()">
-      <button class="btn-primary" onclick="loadCustMgmtDrawer()" style="font-size:12px">搜索</button>
+             onkeydown="if(event.key==='Enter')openCustMgmtDrawer()">
+      <button class="btn-primary" onclick="openCustMgmtDrawer()" style="font-size:12px">搜索</button>
       <button class="btn-outline" onclick="openCustMgmtDrawer()" style="font-size:12px">管理</button>
       <span style="font-size:12px;color:#999;white-space:nowrap;margin-left:auto">共 <b id="cust-mgmt-total">—</b> 个客户</span>
       <button class="btn-outline" onclick="importCodesFile()" style="font-size:12px">导入编码</button>
@@ -2686,8 +2686,10 @@ async function loadCustCount() {
 
 function openCustMgmtDrawer() {
     custMgmtPage = 1;
-    custMgmtSearch = '';
-    document.getElementById('cust-mgmt-drawer-search').value = '';
+    // 同步主栏搜索词到抽屉搜索框
+    const mainSearch = document.getElementById('cust-mgmt-search').value.trim();
+    custMgmtSearch = mainSearch;
+    document.getElementById('cust-mgmt-drawer-search').value = mainSearch;
     document.getElementById('cust-mgmt-drawer').classList.add('show');
     loadCustMgmtDrawer();
 }
@@ -2698,8 +2700,12 @@ function closeCustMgmtDrawer(e) {
 }
 
 async function loadCustMgmtDrawer() {
-    const searchInput = document.getElementById('cust-mgmt-drawer-search');
-    if (searchInput) custMgmtSearch = searchInput.value.trim();
+    // 优先读抽屉搜索框，回退读主栏搜索框
+    let searchInput = document.getElementById('cust-mgmt-drawer-search');
+    if (!searchInput || !searchInput.value.trim()) {
+        searchInput = document.getElementById('cust-mgmt-search');
+    }
+    custMgmtSearch = searchInput ? searchInput.value.trim() : '';
     const params = new URLSearchParams({page: custMgmtPage, limit: 50});
     if (custMgmtSearch) params.set('search', custMgmtSearch);
     try {
