@@ -711,20 +711,34 @@
 <!-- ═══════════════ Tab4: 客户管理与跟进 ═══════════════ -->
 <div id="tab-customer" class="tab-content" style="overflow-y:auto">
 
-  <!-- 1. 今日跟进任务 -->
+  <!-- 1. 客户管理 -->
+  <div style="background:#fff;border-radius:4px;padding:10px 16px;margin:16px 20px 12px;border:1px solid #EDEDED">
+    <div style="display:flex;gap:8px;align-items:center">
+      <span style="font-size:13px;font-weight:600;color:#222;white-space:nowrap">客户管理</span>
+      <input id="cust-mgmt-search" placeholder="搜索客户名称或编码" style="flex:1;padding:6px 10px;border:1px solid #DDD;border-radius:3px;font-size:13px;font-family:inherit;max-width:260px"
+             onkeydown="if(event.key==='Enter')loadCustMgmtDrawer()">
+      <button class="btn-primary" onclick="loadCustMgmtDrawer()" style="font-size:12px">搜索</button>
+      <button class="btn-outline" onclick="openCustMgmtDrawer()" style="font-size:12px">管理</button>
+      <span style="font-size:12px;color:#999;white-space:nowrap;margin-left:auto">共 <b id="cust-mgmt-total">—</b> 个客户</span>
+      <button class="btn-outline" onclick="importCodesFile()" style="font-size:12px">导入编码</button>
+      <button class="btn-outline" onclick="exportPendingCodesFile()" style="font-size:12px">导出待编码</button>
+    </div>
+  </div>
+
+  <!-- 2. 今日跟进任务 -->
   <div class="chart-card" style="margin-bottom:16px">
     <div class="chart-title">📅 今日待跟进客户</div>
     <div id="today-tasks-container"></div>
     <div id="batch-buttons" style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap"></div>
   </div>
 
-  <!-- 2. 本周待办 -->
+  <!-- 3. 本周待办 -->
   <details style="margin-bottom:16px">
     <summary style="cursor:pointer;font-weight:500">📆 本周待跟进客户</summary>
     <div id="week-tasks-container" style="margin-top:12px"></div>
   </details>
 
-  <!-- 3. 客户等级分布 -->
+  <!-- 4. 客户等级分布 -->
   <div class="chart-card" style="margin-bottom:16px">
     <div class="chart-title" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
       <span>📊 客户等级分布</span>
@@ -732,16 +746,6 @@
     </div>
     <div id="level-stats-container" style="display:flex;gap:20px;flex-wrap:wrap;margin-top:12px"></div>
   </div>
-
-  <!-- 4. 编码管理 -->
-  <details style="margin-bottom:16px">
-    <summary style="cursor:pointer;font-weight:500">📇 编码管理（仅核对，不影响业务）</summary>
-    <div style="padding:12px;display:flex;gap:12px;flex-wrap:wrap">
-      <button class="btn-outline" onclick="importCodesFile()">导入编码对照表</button>
-      <button class="btn-outline" onclick="exportPendingCodesFile()">导出待编码客户</button>
-    </div>
-    <div style="font-size:11px;color:#999;margin-top:8px">💡 导入Excel需包含「客户名称」「编码」两列</div>
-  </details>
 
   <!-- 5. 原有分析报表 -->
   <details>
@@ -932,6 +936,23 @@
       <button class="btn-outline" onclick="closeConfirm()">取消</button>
       <button class="btn-primary" id="confirm-delete-btn" style="background:#E74C3C;border-color:#E74C3C">删除</button>
     </div>
+  </div>
+</div>
+
+<!-- ════ 客户管理抽屉 ════ -->
+<div class="drawer-overlay" id="cust-mgmt-drawer" onclick="closeCustMgmtDrawer(event)">
+  <div class="drawer-panel wide" onclick="event.stopPropagation()" style="width:620px">
+    <div class="drawer-header">
+      <h3>客户管理</h3>
+      <button class="drawer-close" onclick="closeCustMgmtDrawer()">×</button>
+    </div>
+    <div style="padding:8px 16px;border-bottom:1px solid #F5F5F5;display:flex;gap:8px">
+      <input id="cust-mgmt-drawer-search" placeholder="搜索客户名称或编码" style="flex:1;padding:6px 10px;border:1px solid #DDD;border-radius:3px;font-size:12px;font-family:inherit"
+             onkeydown="if(event.key==='Enter')loadCustMgmtDrawer()">
+      <button class="btn-primary" onclick="loadCustMgmtDrawer()" style="font-size:12px">搜索</button>
+    </div>
+    <div class="drawer-body" id="cust-mgmt-drawer-body"></div>
+    <div id="cust-mgmt-pagination" style="padding:10px 16px;display:flex;justify-content:flex-end;gap:6px;border-top:1px solid #F0F0F0"></div>
   </div>
 </div>
 
@@ -2615,6 +2636,65 @@ async function exportPendingCodesFile() {
     window.open('/api/customers/export-pending-codes', '_blank');
 }
 
+// ==================== 客户管理抽屉 ====================
+let custMgmtPage = 1;
+let custMgmtSearch = '';
+
+async function loadCustCount() {
+    const resp = await fetch('/api/customers/all?limit=1');
+    const result = await resp.json();
+    if (result.success) {
+        document.getElementById('cust-mgmt-total').textContent = result.total;
+    }
+}
+
+function openCustMgmtDrawer() {
+    custMgmtPage = 1;
+    custMgmtSearch = '';
+    document.getElementById('cust-mgmt-drawer-search').value = '';
+    document.getElementById('cust-mgmt-drawer').classList.add('show');
+    loadCustMgmtDrawer();
+}
+
+function closeCustMgmtDrawer(e) {
+    if (e && e.target !== document.getElementById('cust-mgmt-drawer')) return;
+    document.getElementById('cust-mgmt-drawer').classList.remove('show');
+}
+
+async function loadCustMgmtDrawer() {
+    const searchInput = document.getElementById('cust-mgmt-drawer-search');
+    if (searchInput) custMgmtSearch = searchInput.value.trim();
+    const params = new URLSearchParams({page: custMgmtPage, limit: 50});
+    if (custMgmtSearch) params.set('search', custMgmtSearch);
+    const resp = await fetch('/api/customers/all?' + params.toString());
+    const result = await resp.json();
+    if (!result.success) return;
+    const body = document.getElementById('cust-mgmt-drawer-body');
+    if (result.data.length === 0) {
+        body.innerHTML = '<div class="drawer-empty">暂无客户数据</div>';
+    } else {
+        body.innerHTML = result.data.map((cust, i) => `
+            <div class="drawer-item">
+                <span class="drawer-item-name" style="font-weight:500;min-width:120px">${escapeHtml(cust.code) || '<span style=\"color:#CCC\">—</span>'}</span>
+                <span style="flex:1;font-size:13px">${escapeHtml(cust.name)}</span>
+                <span class="cust-level cust-level-${cust.level.toLowerCase()}">${cust.level}类</span>
+            </div>
+        `).join('');
+    }
+    const totalPages = Math.ceil(result.total / 50);
+    const pg = document.getElementById('cust-mgmt-pagination');
+    pg.innerHTML = totalPages > 1 ? `
+        <button class="page-btn" onclick="custMgmtGoPage(${custMgmtPage-1})" ${custMgmtPage<=1?'disabled':''}>上一页</button>
+        <span class="page-info">第${custMgmtPage}/${totalPages}页（共${result.total}个）</span>
+        <button class="page-btn" onclick="custMgmtGoPage(${custMgmtPage+1})" ${custMgmtPage>=totalPages?'disabled':''}>下一页</button>
+    ` : `<span class="page-info" style="font-size:12px;color:#999">共 ${result.total} 个客户</span>`;
+}
+
+function custMgmtGoPage(p) {
+    custMgmtPage = p;
+    loadCustMgmtDrawer();
+}
+
 function initCustomerTab() {
     const yearSelect = document.getElementById('level-year-select');
     const currentYear = new Date().getFullYear();
@@ -2630,6 +2710,7 @@ function initCustomerTab() {
     loadLevelStats();
     loadTodayTasks();
     loadWeekTasks();
+    loadCustCount();
 }
 
 function escapeHtml(str) {

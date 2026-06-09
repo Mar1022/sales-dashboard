@@ -1118,6 +1118,43 @@ def batch_mark_followup():
         conn.close()
 
 
+@app.route('/api/customers/all')
+def get_all_customers():
+    """获取全部客户列表（支持分页），按编码降序"""
+    page = int(request.args.get('page', 1))
+    limit = int(request.args.get('limit', 50))
+    search = request.args.get('search', '')
+    conn = get_db()
+    cur = get_cursor(conn)
+    try:
+        if search:
+            cur.execute(
+                "SELECT COUNT(*) as cnt FROM customers WHERE name ILIKE %s OR code ILIKE %s",
+                (f'%{search}%', f'%{search}%')
+            )
+        else:
+            cur.execute("SELECT COUNT(*) as cnt FROM customers")
+        total = cur.fetchone()['cnt']
+
+        offset = (page - 1) * limit
+        if search:
+            cur.execute(
+                "SELECT name, code, level FROM customers WHERE name ILIKE %s OR code ILIKE %s ORDER BY code DESC NULLS LAST, name ASC LIMIT %s OFFSET %s",
+                (f'%{search}%', f'%{search}%', limit, offset)
+            )
+        else:
+            cur.execute(
+                "SELECT name, code, level FROM customers ORDER BY code DESC NULLS LAST, name ASC LIMIT %s OFFSET %s",
+                (limit, offset)
+            )
+        rows = cur.fetchall()
+        data = [{'name': r['name'], 'code': r['code'] or '', 'level': r['level']} for r in rows]
+        return jsonify({'success': True, 'data': data, 'total': total, 'page': page, 'limit': limit})
+    finally:
+        cur.close()
+        conn.close()
+
+
 @app.route('/api/customers/import-codes', methods=['POST'])
 def import_codes():
     """导入编码对照表（Excel）— 自动识别表头列名"""
