@@ -2549,33 +2549,39 @@ async function loadTodayTasks() {
 }
 
 function renderTaskCard(task) {
-    const isOverdue = task.next_followup < new Date().toISOString().slice(0,10);
-    const cardClass = isOverdue ? 'overdue' : (task.next_followup === new Date().toISOString().slice(0,10) ? 'today' : 'normal');
-    const levelClass = 'task-level-' + task.level;
-    const suggestion = task.custom_suggestion || task.suggestion;
-    const isManual = currentPurposeRule === 'manual';
-    const tagCls = getPurposeTagClass(task.purpose);
-    const peakBadge = (task.peak_level && task.peak_level !== task.level)
+    var isOverdue = task.next_followup < new Date().toISOString().slice(0,10);
+    var cardClass = isOverdue ? 'overdue' : (task.next_followup === new Date().toISOString().slice(0,10) ? 'today' : 'normal');
+    var levelClass = 'task-level-' + task.level;
+    var suggestion = task.custom_suggestion || task.suggestion;
+    var isManual = currentPurposeRule === 'manual';
+    var tagCls = getPurposeTagClass(task.purpose);
+    var peakBadge = (task.peak_level && task.peak_level !== task.level)
         ? '<span class="task-badge" style="font-size:10px;padding:2px 6px;border-radius:10px;background:#FFF8E1;color:#F9A825;margin-left:6px">曾'+task.peak_level+'类</span>' : '';
-    return `<div class="task-card ${cardClass}" data-cust="${escapeHtml(task.name)}">
-        <div class="task-header">
-            <div>
-                <span class="task-cust">${escapeHtml(task.name)}</span>
-                <span class="task-level ${levelClass}" style="display:inline-block;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:500">${task.level}类</span>
-                ${peakBadge}
-                <span class="task-purpose-tag ${tagCls}">${task.purpose}</span>
-            </div>
-            <div style="font-size:11px;color:#999">应跟进：${task.next_followup}</div>
-        </div>
-        <div class="task-body">
-            <span style="font-size:12px;color:#666;flex-shrink:0"><strong>目的：</strong>${task.purpose}</span>
-            <span class="task-suggestion ${isManual?'editable':''}" onclick="${isManual?`editSuggestionInline('${escapeHtml(task.name).replace(/'/g,\"\\\\'\")}','${escapeHtml(suggestion).replace(/'/g,\"\\\\'\")}')`:''}">💡 ${suggestion||'暂无建议'}${isManual?'<span style=\"font-size:10px;color:#999;margin-left:6px\">✏️</span>':''}</span>
-            <div class="task-buttons">
-                <button class="task-btn task-btn-done" onclick="markFollowupAndRefresh('${escapeHtml(task.name).replace(/'/g,\"\\\\'\")}')">✓ 已完成</button>
-                <button class="task-btn task-btn-postpone" onclick="postponeTask('${escapeHtml(task.name).replace(/'/g,\"\\\\'\")}','${task.next_followup||''}')">⏰ 改期</button>
-            </div>
-        </div>
-    </div>`;
+    var safeName = escapeHtml(task.name);
+    var escName = safeName.replace(/'/g, "\\'");
+    var escSugg = escapeHtml(suggestion).replace(/'/g, "\\'");
+    var escDate = (task.next_followup||'').replace(/'/g, "\\'");
+    var editClick = isManual ? ' onclick="editSuggestionInline(\''+escName+'\',\''+escSugg+'\')"' : '';
+    var editIcon = isManual ? '<span style="font-size:10px;color:#999;margin-left:6px">✏️</span>' : '';
+    return '<div class="task-card '+cardClass+'" data-cust="'+safeName+'">'+
+        '<div class="task-header">'+
+            '<div>'+
+                '<span class="task-cust">'+safeName+'</span>'+
+                '<span class="task-level '+levelClass+'" style="display:inline-block;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:500">'+task.level+'类</span>'+
+                peakBadge+
+                '<span class="task-purpose-tag '+tagCls+'">'+task.purpose+'</span>'+
+            '</div>'+
+            '<div style="font-size:11px;color:#999">应跟进：'+task.next_followup+'</div>'+
+        '</div>'+
+        '<div class="task-body">'+
+            '<span style="font-size:12px;color:#666;flex-shrink:0"><strong>目的：</strong>'+task.purpose+'</span>'+
+            '<span class="task-suggestion'+(isManual?' editable':'')+'"'+editClick+'>💡 '+(suggestion||'暂无建议')+editIcon+'</span>'+
+            '<div class="task-buttons">'+
+                '<button class="task-btn task-btn-done" onclick="markFollowupAndRefresh(\''+escName+'\')">✓ 已完成</button>'+
+                '<button class="task-btn task-btn-postpone" onclick="postponeTask(\''+escName+'\',\''+escDate+'\')">⏰ 改期</button>'+
+            '</div>'+
+        '</div>'+
+    '</div>';
 }
 
 async function markFollowupAndRefresh(custName) {
@@ -2643,8 +2649,7 @@ async function loadKeyMetrics() {
     const today = new Date().toISOString().slice(0,10);
     const overdue = result.data.filter(t => t.next_followup < today).length;
     document.getElementById('overdue-count').innerText = overdue;
-    const pendingResp = await fetch('/api/customers/all?limit=1&search=code:null');
-    // Use the count from the all API to get total
+    document.getElementById('today-completed').innerText = result.data.filter(t => t.next_followup > today).length;
     const allResp = await fetch('/api/customers/all?limit=1');
     const allResult = await allResp.json();
     if (allResult.success) document.getElementById('cust-mgmt-total').innerText = allResult.total;
@@ -2730,11 +2735,10 @@ async function exportPendingCodesFile() { window.open('/api/customers/export-pen
 // 客户管理抽屉（保持）
 let custMgmtPage = 1, custMgmtSearch = '';
 async function loadCustCount() { const resp=await fetch('/api/customers/all?limit=1'); const result=await resp.json(); if(result.success)document.getElementById('cust-mgmt-total').innerText=result.total; }
-function openCustMgmtDrawer() { custMgmtPage=1; const mainSearch=document.getElementById('cust-mgmt-search'); custMgmtSearch=mainSearch?mainSearch.value.trim():''; const ds=document.getElementById('cust-mgmt-drawer-search'); if(ds)ds.value=custMgmtSearch; document.getElementById('cust-mgmt-drawer').classList.add('show'); loadCustMgmtDrawer(); }
+function openCustMgmtDrawer() { custMgmtPage=1; custMgmtSearch=''; const ds=document.getElementById('cust-mgmt-drawer-search'); if(ds)ds.value=''; document.getElementById('cust-mgmt-drawer').classList.add('show'); loadCustMgmtDrawer(); }
 function closeCustMgmtDrawer(e) { if(e&&e.target!==document.getElementById('cust-mgmt-drawer'))return; document.getElementById('cust-mgmt-drawer').classList.remove('show'); }
 async function loadCustMgmtDrawer() {
     let si = document.getElementById('cust-mgmt-drawer-search');
-    if(!si||!si.value.trim()) si = document.getElementById('cust-mgmt-search');
     custMgmtSearch = si?si.value.trim():'';
     const params = new URLSearchParams({page:custMgmtPage, limit:50}); if(custMgmtSearch)params.set('search',custMgmtSearch);
     try {
