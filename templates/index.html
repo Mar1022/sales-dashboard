@@ -746,9 +746,10 @@
   <div class="chart-card" style="margin:8px 20px 16px">
     <div class="chart-title" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
       <span>📅 今日待跟进 <b id="today-task-count">0</b> 个</span>
-      <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
         <label style="font-size:11px;color:#666;cursor:pointer;white-space:nowrap"><input type="radio" name="global-purpose-rule" value="auto" checked onchange="switchPurposeRule('auto')"> 自动</label>
         <label style="font-size:11px;color:#666;cursor:pointer;white-space:nowrap"><input type="radio" name="global-purpose-rule" value="manual" onchange="switchPurposeRule('manual')"> 手动</label>
+        <button class="btn-outline" onclick="showRuleModal()" style="font-size:11px" title="查看判断规则">⚙️ 判断规则</button>
         <button class="btn-outline" onclick="batchMarkAllToday()" style="font-size:11px">一键完成</button>
         <button class="btn-outline" onclick="loadTodayTasks()" style="font-size:11px">🔄 刷新</button>
       </div>
@@ -770,18 +771,7 @@
     <div id="week-tasks-container" style="max-height:260px;overflow-y:auto"></div>
   </div>
 
-  <!-- 4. 手动编辑话术面板（手动模式时显示） -->
-  <div id="manual-edit-panel" style="display:none;margin:0 20px 16px;padding:12px;background:#FAFAFA;border-radius:4px;border:1px solid #EDEDED">
-    <div style="font-size:12px;font-weight:600;color:#333;margin-bottom:8px">编辑客户建议话术</div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-      <select id="edit-customer-select" style="padding:6px;border:1px solid #ddd;border-radius:3px;min-width:180px"></select>
-      <input type="text" id="edit-suggestion-input" placeholder="输入自定义话术" style="flex:1;padding:6px;border:1px solid #ddd;border-radius:3px">
-      <button class="btn-primary" onclick="saveCustomSuggestion()">保存</button>
-    </div>
-    <div style="margin-top:8px;font-size:11px;color:#999">💡 优先级：紧急跟进 > 逾期提醒 > 客情维护 > 唤醒 > 挽回 > 风险预警 > 回访 > 常规跟进</div>
-  </div>
-
-  <!-- 5. 客户等级分布 + 编码管理 -->
+  <!-- 4. 客户等级分布 + 编码管理 -->
   <details style="margin:0 20px 16px">
     <summary style="cursor:pointer;font-weight:500">📊 客户等级分布 & 编码管理</summary>
     <div style="margin-top:16px">
@@ -797,7 +787,7 @@
     </div>
   </details>
 
-  <!-- 6. 原有分析报表 -->
+  <!-- 5. 原有分析报表 -->
   <details style="margin:0 20px 16px">
     <summary style="cursor:pointer;font-weight:500">📈 分析报表（偶尔查看）</summary>
     <div style="margin-top:16px">
@@ -981,6 +971,37 @@
     </div>
     <div class="drawer-body" id="cust-mgmt-drawer-body"></div>
     <div id="cust-mgmt-pagination" style="padding:10px 16px;display:flex;justify-content:flex-end;gap:6px;border-top:1px solid #F0F0F0"></div>
+  </div>
+</div>
+
+<!-- ════ 判断规则弹窗 ════ -->
+<div class="modal-overlay" id="rule-modal" onclick="if(event.target===this)closeRuleModal()">
+  <div class="modal" style="width:520px;max-width:90vw;max-height:80vh;overflow-y:auto">
+    <h3>⚙️ 判断规则</h3>
+    <div style="margin-bottom:12px">
+      <label style="font-size:13px;color:#666;margin-right:20px;cursor:pointer"><input type="radio" name="modal-purpose-rule" value="auto" checked onchange="syncRuleFromModal('auto')"> 自动判断（系统生成）</label>
+      <label style="font-size:13px;color:#666;cursor:pointer"><input type="radio" name="modal-purpose-rule" value="manual" onchange="syncRuleFromModal('manual')"> 手动编辑</label>
+    </div>
+    <div id="rule-modal-manual" style="display:none;margin-bottom:12px">
+      <div style="font-size:12px;color:#333;margin-bottom:6px">编辑客户建议话术：</div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <select id="edit-customer-select" style="padding:6px;border:1px solid #ddd;border-radius:3px;min-width:160px;font-size:12px"></select>
+        <input type="text" id="edit-suggestion-input" placeholder="输入自定义话术" style="flex:1;padding:6px;border:1px solid #ddd;border-radius:3px;font-size:12px">
+        <button class="btn-primary" onclick="saveCustomSuggestion()">保存</button>
+      </div>
+    </div>
+    <div style="background:#FAFAFA;padding:12px;border-radius:4px;font-size:12px;line-height:1.8">
+      <div style="font-weight:600;margin-bottom:6px">优先级规则：</div>
+      <div>🔴 P1 紧急跟进 — 逾期超7天 A/B类</div>
+      <div>🟠 P2 逾期提醒 — 逾期超3天</div>
+      <div>🟢 P3 客情维护 — A类 30天内有订单</div>
+      <div>🟣 P4 唤醒 — A类 超60天无订单</div>
+      <div>🟡 P5 挽回 — C/D类 历史曾A/B</div>
+      <div>🔶 P6 风险预警 — 连续2月销售下降</div>
+      <div>🔵 P7 回访 — 新客户 14天内</div>
+      <div>⚪ P8 常规跟进 — 默认</div>
+    </div>
+    <div class="modal-btns"><button class="btn-outline" onclick="closeRuleModal()">关闭</button></div>
   </div>
 </div>
 
@@ -2643,9 +2664,31 @@ async function loadKeyMetrics() {
 
 function switchPurposeRule(rule) {
     currentPurposeRule = rule;
-    document.getElementById('manual-edit-panel').style.display = rule === 'manual' ? 'block' : 'none';
+    // 同步 radio：标题行和弹窗
+    var radios = document.querySelectorAll('input[name="global-purpose-rule"], input[name="modal-purpose-rule"]');
+    radios.forEach(function(r){ if(r.value===rule) r.checked = true; });
+    var panel = document.getElementById('rule-modal-manual');
+    if (panel) panel.style.display = rule === 'manual' ? 'block' : 'none';
     if (rule === 'manual') populateEditCustomerSelect();
     loadTodayTasks();
+}
+
+function showRuleModal() {
+    // 打开前同步当前规则状态
+    var radios = document.querySelectorAll('input[name="modal-purpose-rule"]');
+    radios.forEach(function(r){ r.checked = (r.value === currentPurposeRule); });
+    var panel = document.getElementById('rule-modal-manual');
+    if (panel) panel.style.display = currentPurposeRule === 'manual' ? 'block' : 'none';
+    if (currentPurposeRule === 'manual') populateEditCustomerSelect();
+    document.getElementById('rule-modal').classList.add('show');
+}
+
+function closeRuleModal() {
+    document.getElementById('rule-modal').classList.remove('show');
+}
+
+function syncRuleFromModal(rule) {
+    switchPurposeRule(rule);
 }
 
 async function populateEditCustomerSelect() {
