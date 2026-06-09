@@ -533,32 +533,33 @@
   details summary { padding: 8px 12px; margin: 0 -12px; border-radius: 4px; }
   details summary:hover { background: #F5F5F5; }
   /* 任务卡片 */
+  /* Tab4 新布局 */
+  .task-tab.active { border-color:#333 !important; }
+  .task-tab:hover { background:#F5F5F5 !important; }
+  .task-row { display:flex; align-items:center; padding:10px 16px; border-bottom:1px solid #F0F0F0; font-size:13px; transition:opacity .2s; background:#fff; }
+  .task-row:hover { background:#FAFAFA; }
+  .task-row .rule-icon { width:18px; height:18px; display:inline-flex; align-items:center; justify-content:center; border-radius:50%; background:#F0F0F0; color:#999; font-size:11px; cursor:pointer; margin-left:4px; flex-shrink:0; }
+  .task-row .rule-icon:hover { background:#DDD; color:#333; }
+  .mark-done-btn { padding:6px 16px; background:#E8F5E9; color:#2E7D32; border:none; border-radius:16px; cursor:pointer; font-size:12px; font-family:inherit; transition:all .15s; white-space:nowrap; }
+  .mark-done-btn:hover { background:#C8E6C9; }
+  .fade-out { opacity:0; pointer-events:none; transition:opacity .2s; }
   .task-card { background:#fff; border-radius:4px; margin-bottom:8px; border:1px solid #EDEDED; overflow:hidden; }
-  .task-card.overdue { border-color:#FFCDD2; }
-  .task-card.today { border-color:#FFE0B2; }
-  .task-header { padding:8px 12px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px; border-bottom:1px solid #F5F5F5; }
-  .task-cust { font-weight:500; font-size:13px; }
   .task-purpose-tag { display:inline-block; padding:1px 7px; border-radius:10px; font-size:10px; margin-left:6px; }
   .task-purpose-tag.emerge { background:#FFEBEE; color:#C62828; }
   .task-purpose-tag.overdue-tag { background:#FFF3E0; color:#E65100; }
   .task-purpose-tag.maintain { background:#E8F5E9; color:#2E7D32; }
   .task-purpose-tag.wake { background:#F3E5F5; color:#6A1B9A; }
   .task-purpose-tag.recover { background:#FFF8E1; color:#F57F17; }
-  .task-purpose-tag.warn { background:#FFEBEE; color:#BF360C; }
   .task-purpose-tag.revisit { background:#E3F2FD; color:#1565C0; }
   .task-purpose-tag.routine { background:#F5F5F5; color:#888; }
-  .task-body { padding:8px 12px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; }
-  .task-suggestion { font-size:12px; color:#666; flex:1; min-width:180px; }
-  .task-suggestion .editable-icon { color:#CCC; cursor:pointer; font-size:11px; margin-left:4px; }
-  .task-suggestion .editable-icon:hover { color:#3B5998; }
-  .task-buttons { display:flex; gap:6px; }
   .task-btn { padding:4px 10px; border-radius:3px; cursor:pointer; font-size:11px; font-family:inherit; }
   .task-btn-done { background:#fff; border:1px solid #C8E6C9; color:#388E3C; }
-  .task-btn-done:hover { background:#E8F5E9; }
   .task-btn-postpone { background:#fff; border:1px solid #DDD; color:#999; }
-  .task-btn-postpone:hover { border-color:#999; color:#666; }
-  .task-expand { text-align:center; padding:6px; cursor:pointer; color:#3B5998; font-size:12px; }
-  .task-expand:hover { text-decoration:underline; }
+  .level-badge { display:inline-block; padding:2px 8px; border-radius:10px; font-size:11px; font-weight:500; }
+  .level-badge-A { background:#E8F5E9; color:#2E7D32; }
+  .level-badge-B { background:#E3F2FD; color:#1565C0; }
+  .level-badge-C { background:#FFF3E0; color:#E65100; }
+  .level-badge-D { background:#EEEEEE; color:#424242; }
 </style>
 </head>
 <body>
@@ -738,33 +739,57 @@
 </div>
 
 <!-- ═══════════════ Tab4: 客户管理与跟进 ═══════════════ -->
-<div id="tab-customer" class="tab-content" style="overflow-y:auto">
+<div id="tab-customer" class="tab-content" style="overflow-y:auto;background:#F8F9FA">
 
-  <!-- 1. 今日待跟进（核心区） -->
-  <div class="chart-card" style="margin:8px 20px 16px">
-    <div class="chart-title" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
-      <span>📅 今日待跟进 <b id="today-task-count">0</b> 个</span>
-      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-        <button class="btn-outline" onclick="showRuleModal()" style="font-size:11px">⚙️ 判断规则</button>
-        <button class="btn-outline" onclick="batchMarkAllToday()" style="font-size:11px">一键完成</button>
-        <button class="btn-outline" onclick="loadTodayTasks()" style="font-size:11px">🔄 刷新</button>
-      </div>
+  <!-- ⓘ 规则说明按钮 -->
+  <div style="display:flex;justify-content:flex-end;padding:12px 20px 0;gap:8px">
+    <button class="btn-outline" onclick="showRuleInfoOverlay()" style="font-size:12px">ⓘ 规则说明</button>
+  </div>
+
+  <!-- 标签区 -->
+  <div id="task-tabs" style="display:flex;gap:16px;padding:12px 20px 16px">
+    <div class="task-tab active" data-tab="overdue" onclick="switchTaskTab('overdue')" style="padding:12px 20px;background:#fff;border-radius:8px;cursor:pointer;min-width:140px;border:2px solid transparent;transition:all .15s">
+      <div style="font-size:13px;color:#E53935;font-weight:500">🔴 逾期跟进</div>
+      <div style="font-size:24px;font-weight:600;color:#E53935;margin-top:4px" id="tab-count-overdue">0</div>
     </div>
-    <div id="today-tasks-container"></div>
+    <div class="task-tab" data-tab="regular" onclick="switchTaskTab('regular')" style="padding:12px 20px;background:#fff;border-radius:8px;cursor:pointer;min-width:140px;border:2px solid transparent;transition:all .15s">
+      <div style="font-size:13px;color:#333;font-weight:500">📋 常规跟进</div>
+      <div style="font-size:24px;font-weight:600;color:#333;margin-top:4px" id="tab-count-regular">0</div>
+    </div>
+    <div class="task-tab" data-tab="recovery" onclick="switchTaskTab('recovery')" style="padding:12px 20px;background:#fff;border-radius:8px;cursor:pointer;min-width:140px;border:2px solid transparent;transition:all .15s">
+      <div style="font-size:13px;color:#F9A825;font-weight:500">🔄 挽回任务</div>
+      <div style="font-size:24px;font-weight:600;color:#F9A825;margin-top:4px" id="tab-count-recovery">0</div>
+    </div>
   </div>
 
-  <!-- 2. 关键指标卡片 -->
-  <div class="cards-grid" style="grid-template-columns:repeat(4,1fr);margin:0 20px 16px">
-    <div class="card"><div class="card-label">今日完成</div><div class="card-value" id="today-completed">0</div><div class="card-sub" id="today-compare"></div></div>
-    <div class="card"><div class="card-label">逾期客户</div><div class="card-value" id="overdue-count">0</div><div class="card-sub">⚠️ 需优先处理</div></div>
-    <div class="card" style="cursor:pointer" onclick="openCustMgmtDrawer()"><div class="card-label">待编码客户</div><div class="card-value" id="pending-code-count">0</div><div class="card-sub">点击管理</div></div>
-    <div class="card" onclick="openCustMgmtDrawer()" style="cursor:pointer"><div class="card-label">客户总数</div><div class="card-value" id="cust-mgmt-total">—</div><div class="card-sub">点击管理</div></div>
+  <!-- 客户列表区 -->
+  <div style="margin:0 20px">
+    <!-- 表头 -->
+    <div style="display:flex;padding:8px 16px;font-size:12px;color:#999;font-weight:500;border-bottom:1px solid #EDEDED">
+      <span style="width:22%">客户名称</span>
+      <span style="width:12%">等级</span>
+      <span style="width:14%">上次跟进</span>
+      <span style="width:14%">计划跟进</span>
+      <span style="width:26%">建议内容</span>
+      <span style="width:12%;text-align:right">操作</span>
+    </div>
+    <!-- 列表 -->
+    <div id="task-list-container" style="min-height:200px"></div>
   </div>
 
-  <!-- 3. 客户等级分布 + 编码管理 -->
+  <!-- 底部统计 -->
+  <div id="task-stats-bar" style="margin:24px 20px;padding:16px 24px;background:#fff;border-radius:8px;display:flex;gap:40px;font-size:14px;color:#666">
+    <div>今日已完成 <b style="font-size:20px;color:#2E7D32" id="stat-completed">0</b> 个</div>
+    <div style="color:#DDD">|</div>
+    <div>逾期客户 <b style="font-size:20px;color:#E53935" id="stat-overdue">0</b> 个</div>
+    <div style="color:#DDD">|</div>
+    <div>客户总数 <b style="font-size:20px;color:#333" id="stat-total">—</b> 个</div>
+  </div>
+
+  <!-- 客户等级分布 & 编码管理 -->
   <details style="margin:0 20px 16px">
-    <summary style="cursor:pointer;font-weight:500">📊 客户等级分布 & 编码管理</summary>
-    <div style="margin-top:16px">
+    <summary style="cursor:pointer;font-weight:500;padding:8px 12px">📊 客户等级分布 & 编码管理</summary>
+    <div style="margin-top:12px">
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:12px">
         <span class="chart-title" style="margin:0">客户等级分布</span>
         <select id="level-year-select" style="padding:4px 8px;border-radius:4px;border:1px solid #ddd" onchange="loadLevelStats()"></select>
@@ -777,9 +802,9 @@
     </div>
   </details>
 
-  <!-- 4. 原有分析报表 -->
+  <!-- 原有分析报表 -->
   <details style="margin:0 20px 16px">
-    <summary style="cursor:pointer;font-weight:500">📈 分析报表（偶尔查看）</summary>
+    <summary style="cursor:pointer;font-weight:500;padding:8px 12px">📈 分析报表（偶尔查看）</summary>
     <div style="margin-top:16px">
       <div class="tab-filter-sticky">
         <div class="filter-bar">
@@ -825,6 +850,35 @@
     </div>
   </details>
 
+</div>
+
+<!-- 规则说明浮层 -->
+<div class="overlay-backdrop" id="rule-info-overlay" style="display:none;position:fixed;inset:0;z-index:1500;background:rgba(0,0,0,.3)" onclick="closeRuleInfoOverlay()">
+  <div style="position:fixed;right:0;top:0;bottom:0;width:420px;background:#fff;z-index:1501;overflow-y:auto;padding:24px;box-shadow:-2px 0 16px rgba(0,0,0,.08)" onclick="event.stopPropagation()">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+      <h3 style="font-size:16px;font-weight:600">ⓘ 规则说明</h3>
+      <button onclick="closeRuleInfoOverlay()" style="border:none;background:none;font-size:20px;cursor:pointer;color:#999">&times;</button>
+    </div>
+    <div style="font-size:13px;line-height:1.8;color:#555">
+      <div style="font-weight:600;color:#333;margin-bottom:8px">等级定义及跟进频率</div>
+      <div>A类（年销售额≥50万）：<b>每7天</b>跟进一次</div>
+      <div>B类（年销售额≥10万）：<b>每14天</b>跟进一次</div>
+      <div>C类（年销售额>0）：<b>每30天</b>跟进一次</div>
+      <div>D类（无销售额）：<b>每30天</b>跟进一次</div>
+      <div style="font-weight:600;color:#333;margin:16px 0 8px">挽回规则</div>
+      <div>近3年内历史最高等级为A或B，且当前等级为C或D</div>
+      <div>挽回间隔：<b>每60天</b></div>
+      <div style="font-weight:600;color:#333;margin:16px 0 8px">逾期判断</div>
+      <div>当前日期 > 计划跟进日期 = 逾期</div>
+      <div style="font-weight:600;color:#333;margin:16px 0 8px">任务类型优先级</div>
+      <div>1. 逾期跟进 > 2. 挽回任务 > 3. 常规跟进</div>
+    </div>
+  </div>
+</div>
+
+<!-- 客户规则详情浮层 -->
+<div id="rule-detail-tooltip" style="display:none;position:fixed;z-index:1600;background:#fff;border-radius:12px;box-shadow:0 4px 24px rgba(0,0,0,.12);padding:16px 20px;font-size:13px;line-height:1.7;max-width:380px;color:#555">
+  <div id="rule-detail-content"></div>
 </div>
 
 <!-- ════ 客户订单明细弹窗 ════ -->
@@ -2514,366 +2568,214 @@ document.addEventListener("click", function(e){
     if (el) el.style.display = el.style.display === 'none' ? '' : 'none';
 }
 
+var taskData = [];
+var activeTaskTab = 'overdue';
+
+function switchTaskTab(tab) {
+    activeTaskTab = tab;
+    document.querySelectorAll('.task-tab').forEach(function(el){
+        el.classList.toggle('active', el.getAttribute('data-tab') === tab);
+    });
+    renderTaskList();
+}
+
 async function loadTodayTasks() {
     var resp = await fetch('/api/customers/followup/today');
     var result = await resp.json();
     if (!result.success) return;
-    var data = result.data;
+    taskData = result.data;
     var today = new Date().toISOString().slice(0,10);
-    document.getElementById('today-task-count').innerText = data.length;
-    var container = document.getElementById('today-tasks-container');
-    if (data.length === 0) {
-        container.innerHTML = '<div style="padding:20px;text-align:center;color:#999">今日无待跟进客户</div>';
-        document.getElementById('overdue-count').innerText = '0';
+    var overdue = taskData.filter(function(t){return t.next_followup < today;});
+    document.getElementById('tab-count-overdue').innerText = overdue.length;
+    document.getElementById('tab-count-regular').innerText = taskData.filter(function(t){
+        return t.next_followup === today && !(t.peak_level && (t.peak_level==='A'||t.peak_level==='B') && (t.level==='C'||t.level==='D'));
+    }).length;
+    document.getElementById('tab-count-recovery').innerText = taskData.filter(function(t){
+        return t.peak_level && (t.peak_level==='A'||t.peak_level==='B') && (t.level==='C'||t.level==='D') && t.next_followup === today;
+    }).length;
+    switchTaskTab('overdue');
+    loadTaskStats();
+}
+
+function renderTaskList() {
+    var container = document.getElementById('task-list-container');
+    if (!taskData.length) {
+        container.innerHTML = '<div style="padding:60px;text-align:center;color:#CCC;font-size:14px">暂无待跟进客户</div>';
         return;
     }
-    var overdue = data.filter(function(t){return t.next_followup < today;});
-    var todayDue = data.filter(function(t){return t.next_followup === today;});
-    var weekDue = data.filter(function(t){return t.next_followup > today && t.next_followup <= getWeekEnd();});
-    document.getElementById('overdue-count').innerText = overdue.length;
+    var today = new Date().toISOString().slice(0,10);
+    var list;
+    if (activeTaskTab === 'overdue') {
+        list = taskData.filter(function(t){return t.next_followup < today;});
+    } else if (activeTaskTab === 'recovery') {
+        list = taskData.filter(function(t){
+            return t.peak_level && (t.peak_level==='A'||t.peak_level==='B') && (t.level==='C'||t.level==='D') && t.next_followup === today;
+        });
+    } else {
+        list = taskData.filter(function(t){
+            return t.next_followup === today && !(t.peak_level && (t.peak_level==='A'||t.peak_level==='B') && (t.level==='C'||t.level==='D'));
+        });
+    }
+    if (!list.length) {
+        var labels = {overdue:'逾期跟进',regular:'常规跟进',recovery:'挽回任务'};
+        container.innerHTML = '<div style="padding:40px;text-align:center;color:#CCC;font-size:13px">暂无'+labels[activeTaskTab]+'客户</div>';
+        return;
+    }
     var html = '';
-    function groupByPurpose(list) {
-        var groups = {};
-        list.forEach(function(t){
-            var p = t.purpose || '';
-            if (!groups[p]) groups[p] = {purpose:p, priority:t.priority||8, items:[]};
-            groups[p].items.push(t);
-        });
-        return Object.values(groups).sort(function(a,b){return a.priority - b.priority;});
-    }
-    function renderSection(list, label, color, icon) {
-        if (list.length === 0) return '';
-        var groups = groupByPurpose(list);
-        var h = '';
-        h += '<div style="margin-bottom:8px"><div style="font-size:12px;font-weight:600;color:'+color+';margin-bottom:4px;padding-bottom:4px;border-bottom:1px solid #F0F0F0">'+icon+' '+label+'\uff08'+list.length+'\u4e2a\uff09</div>';
-        groups.forEach(function(g, gi){
-            var gid = 'gp_'+icon+'_'+gi;
-            h += '<div style="margin-bottom:3px">';
-            h += '<div class="group-toggle" data-group-id="'+gid+'" style="display:flex;align-items:center;gap:8px;font-size:11px;color:#555;cursor:pointer;padding:2px 0">';
-            h += '<span class="task-purpose-tag '+getPurposeTagClass(g.purpose)+'">'+g.purpose+'</span>';
-            h += '<span style="font-weight:500">'+g.items.length+'\u4e2a</span>';
-            h += '<span style="flex:1"></span>';
-            h += '<button class="task-btn task-btn-done" onclick="event.stopPropagation();batchMarkGroup(\''+icon+'\','+gi+')" style="font-size:10px;padding:2px 6px">\u6279\u91cf\u5b8c\u6210</button>';
-            h += '</div>';
-            h += '<div id="'+gid+'" style="display:none">'+g.items.map(function(t){return renderTaskRow(t);}).join('')+'</div>';
-            h += '</div>';
-        });
-        h += '</div>';
-        return h;
-    }
-    html += renderSection(overdue, '\u903e\u671f', '#E53935', 'od');
-    html += renderSection(todayDue, '\u4eca\u65e5\u5e94\u8ddf\u8fdb', '#FF9800', 'td');
+    list.forEach(function(task){
+        var safeName = escapeHtml(task.name);
+        var lvlClass = 'level-badge level-badge-' + task.level;
+        var escName = safeName.replace(/'/g, "\\'");
+        html += '<div class="task-row" id="row_'+escName+'">';
+        html += '<span style="width:22%;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+safeName+'<span class="rule-icon" onclick="event.stopPropagation();showRuleDetail(\''+escName+'\')" title="查看计算详情">?</span></span>';
+        html += '<span style="width:12%"><span class="'+lvlClass+'" title="'+(task.level==='A'?'A类：每7天':'')+(task.level==='B'?'B类：每14天':'')+(task.level==='C'?'C类：每30天':'')+(task.level==='D'?'D类：每30天':'')+'">'+task.level+'类</span></span>';
+        html += '<span style="width:14%;font-size:12px;color:#999">'+(task.last_followup||'—')+'</span>';
+        html += '<span style="width:14%;font-size:12px;color:#999" title="基于上次跟进+间隔天数">'+task.next_followup+'</span>';
+        html += '<span style="width:26%;font-size:12px;color:#666;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(task.suggestion||'')+'</span>';
+        html += '<span style="width:12%;text-align:right"><button class="mark-done-btn" onclick="markDone(\''+escName+'\')">标记完成</button></span>';
+        html += '</div>';
+    });
     container.innerHTML = html;
 }
 
-function batchMarkGroup(section, gi) {
-    var today = new Date().toISOString().slice(0,10);
-    fetch('/api/customers/followup/today').then(function(r){return r.json();}).then(function(result){
-        if (!result.success) return;
-        var data = result.data;
-        var list;
-        if (section === 'od') list = data.filter(function(t){return t.next_followup < today;});
-        else if (section === 'td') list = data.filter(function(t){return t.next_followup === today;});
-        else list = data.filter(function(t){return t.next_followup > today && t.next_followup <= getWeekEnd();});
-        var groups = [];
-        var gmap = {};
-        list.forEach(function(t){
-            var p = t.purpose || '';
-            if (!gmap[p]) { gmap[p] = groups.length; groups.push([]); }
-            groups[gmap[p]].push(t);
-        });
-        if (!groups[gi]) return;
-        var names = groups[gi].map(function(t){return t.name;});
-        var done = 0;
-        function markNext() {
-            if (done >= names.length) { showToast('\u6279\u91cf\u5b8c\u6210 '+names.length+' \u4e2a', 'success'); loadTodayTasks(); loadWeekTasks(); loadKeyMetrics(); return; }
-            fetch('/api/customers/followup/mark', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({customer_name:names[done]})})
-                .then(function(){done++; markNext();});
-        }
-        markNext();
-    });
-}
-
-function renderTaskRow(task) {
-    var isOverdue = task.next_followup < new Date().toISOString().slice(0,10);
-    var levelClass = 'task-level-' + task.level;
-    var safeName = escapeHtml(task.name);
-    var escName = safeName.replace(/'/g, "\\'");
-    var escDate = (task.next_followup||'').replace(/'/g, "\\'");
-    var overdueHtml = '';
-    if (isOverdue) {
-        var d1 = new Date(task.next_followup);
-        var d2 = new Date();
-        overdueHtml = ' <span style="color:#E53935;font-size:10px">\u903e\u671f'+Math.floor((d2-d1)/86400000)+'\u5929</span>';
-    }
-    var peakBadge = (task.peak_level && task.peak_level !== task.level)
-        ? '<span style="font-size:9px;padding:1px 4px;border-radius:8px;background:#FFF8E1;color:#F9A825;margin-left:4px">\u66fe'+task.peak_level+'</span>' : '';
-    var html = '<div style="display:flex;align-items:center;gap:6px;padding:3px 0;border-bottom:1px dotted #F0F0F0;font-size:12px">';
-    html += '<span style="font-weight:500;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+safeName+'</span>';
-    html += '<span class="task-level '+levelClass+'" style="display:inline-block;padding:1px 5px;border-radius:8px;font-size:10px;white-space:nowrap">'+task.level+'</span>';
-    html += peakBadge;
-    html += '<span style="color:#999;font-size:10px;white-space:nowrap;margin-left:auto">'+task.next_followup+overdueHtml+'</span>';
-    html += '<span class="editable-icon" style="font-size:10px" data-cust="'+safeName+'" title="\u7f16\u8f91\u8bdd\u672f">\u270e</span>';
-    html += '<button class="task-btn task-btn-done" onclick="markFollowupAndRefresh(' + JSON.stringify(escName) + ')" style="font-size:10px;padding:2px 6px">\u5b8c\u6210</button>';
-    html += '<button class="task-btn task-btn-postpone" onclick="postponeTask(' + JSON.stringify(escName) + ',' + JSON.stringify(escDate) + ')" style="font-size:10px;padding:2px 6px">\u6539\u671f</button>';
-    html += '</div>';
-    return html;
-}
-
-// Delegated click: expand group when clicking its header
-document.addEventListener('click', function(e){
-    var el = e.target.closest('.group-toggle');
-    if (!el) return;
-    var gid = el.getAttribute('data-group-id');
-    var list = document.getElementById(gid);
-    if (list) list.style.display = list.style.display === 'none' ? '' : 'none';
-});
-
-async function markFollowupAndRefresh(custName) {
-    const resp = await fetch('/api/customers/followup/mark', {
+async function markDone(custName) {
+    var row = document.getElementById('row_'+custName);
+    if (row) row.classList.add('fade-out');
+    var resp = await fetch('/api/customers/followup/mark', {
         method:'POST', headers:{'Content-Type':'application/json'},
         body:JSON.stringify({customer_name:custName})
     });
-    const result = await resp.json();
-    if (result.success) { showToast('已标记跟进完成', 'success'); loadTodayTasks(); loadWeekTasks(); loadKeyMetrics(); }
-    else { showToast(result.error, 'error'); }
+    var result = await resp.json();
+    if (result.success) {
+        setTimeout(function(){
+            taskData = taskData.filter(function(t){return t.name !== custName;});
+            var tab = activeTaskTab;
+            loadTodayTasks().then(function(){switchTaskTab(tab);});
+        }, 200);
+    } else {
+        if (row) row.classList.remove('fade-out');
+        showToast(result.error, 'error');
+    }
 }
 
-async function batchMarkAllToday() {
-    if (!confirm('确定标记今日所有待跟进客户为已完成吗？')) return;
-    const resp = await fetch('/api/customers/followup/batch', {
-        method:'POST', headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({level:''})
-    });
-    const result = await resp.json();
-    if (result.success) { showToast(result.message, 'success'); loadTodayTasks(); loadWeekTasks(); loadKeyMetrics(); }
+async function loadTaskStats() {
+    var statsResp = await fetch('/api/customers/followup/today-stats');
+    var statsResult = await statsResp.json();
+    if (statsResult.success) {
+        document.getElementById('stat-overdue').innerText = statsResult.data.overdue_total;
+        document.getElementById('stat-total').innerText = statsResult.data.today_total;
+    }
+    var allResp = await fetch('/api/customers/all?limit=1');
+    var allResult = await allResp.json();
+    if (allResult.success) document.getElementById('stat-total').innerText = allResult.total;
+    var today = new Date().toISOString().slice(0,10);
+    var completed = taskData.filter(function(t){return t.next_followup > today;}).length;
+    document.getElementById('stat-completed').innerText = completed;
 }
 
-async function postponeTask(custName, currentDate) {
-    const newDate = prompt('请输入新的跟进日期（YYYY-MM-DD）：', currentDate);
-    if (!newDate || !/^\d{4}-\d{2}-\d{2}$/.test(newDate)) { showToast('日期格式错误', 'error'); return; }
-    const resp = await fetch('/api/customers/followup/postpone', {
-        method:'POST', headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({customer_name:custName, new_followup_date:newDate})
-    });
-    const result = await resp.json();
-    if (result.success) { showToast('已改期至 '+newDate, 'success'); loadTodayTasks(); loadWeekTasks(); }
-    else { showToast(result.error, 'error'); }
+var completedCount = 0;
+function incrementCompleted() {
+    completedCount++;
+    document.getElementById('stat-completed').innerText = completedCount;
 }
 
-async function loadWeekTasks() {
-    const resp = await fetch('/api/customers/followup/week');
-    const result = await resp.json();
+async function showRuleDetail(custName) {
+    var resp = await fetch('/api/customers/followup/rule-detail?customer_name='+encodeURIComponent(custName));
+    var result = await resp.json();
     if (!result.success) return;
-    const today = new Date().toISOString().slice(0,10);
-    const data = result.data.filter(t => t.next_followup > today);
-    document.getElementById('week-task-badge').innerText = data.length;
-    const container = document.getElementById('week-tasks-container');
-    if (data.length === 0) {
-        container.innerHTML = '<div style="padding:12px;color:#999;text-align:center">本周无其他待跟进客户</div>'; return;
+    var d = result.data;
+    var html = '<div style="font-weight:600;color:#333;margin-bottom:8px">'+escapeHtml(d.customer_name)+'</div>';
+    html += '<div>当前等级：<b>'+d.current_level+'类</b>（每'+d.followup_frequency+'天跟进）</div>';
+    html += '<div>历史最高等级：<b>'+d.peak_level+'类</b></div>';
+    if (d.is_recovery) {
+        html += '<div style="color:#F9A825">挽回规则适用：历史A/B + 当前C/D → 每'+d.recovery_interval+'天跟进</div>';
     }
-    const grouped = {};
-    data.forEach(t => { const d = t.next_followup; if (!grouped[d]) grouped[d] = []; grouped[d].push(t); });
-    let html = '';
-    for (const [date, tasks] of Object.entries(grouped).sort()) {
-        html += '<div style="margin-bottom:10px"><div style="font-size:12px;font-weight:600;color:#666;margin-bottom:4px">📅 '+date+'</div>';
-        html += tasks.map(t =>
-            '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #F0F0F0;font-size:12px">'+
-            '<div><span style="font-weight:500">'+escapeHtml(t.name)+'</span> <span class="task-level task-level-'+t.level+'" style="display:inline-block;padding:2px 8px;border-radius:12px;font-size:11px">'+t.level+'类</span></div>'+
-            '<button class="task-btn task-btn-done" style="padding:3px 8px" onclick="markFollowupAndRefresh(\''+escapeHtml(t.name).replace(/'/g,"\\'")+'\')">✓</button></div>'
-        ).join('');
-        html += '</div>';
+    html += '<div>上次跟进：'+(d.last_followup_date||'从未')+'</div>';
+    html += '<div>计划跟进：<b>'+d.next_followup_date+'</b>（基于'+d.effective_interval+'天间隔）</div>';
+    html += '<div>今天：'+d.today+'</div>';
+    html += '<div style="font-weight:600;margin-top:4px;color:'+(d.is_overdue?'#E53935':'#2E7D32')+'">判断结果：'+d.judgment+'</div>';
+    document.getElementById('rule-detail-content').innerHTML = html;
+    var tip = document.getElementById('rule-detail-tooltip');
+    tip.style.display = 'block';
+    // Position near mouse
+    if (window.event) {
+        tip.style.left = Math.min(window.event.clientX+10, window.innerWidth-400)+'px';
+        tip.style.top = Math.min(window.event.clientY+10, window.innerHeight-300)+'px';
     }
-    container.innerHTML = html;
 }
 
-async function loadKeyMetrics() {
-    const resp = await fetch('/api/customers/followup/today');
-    const result = await resp.json();
-    if (!result.success) return;
-    const today = new Date().toISOString().slice(0,10);
-    const overdue = result.data.filter(t => t.next_followup < today).length;
-    document.getElementById('overdue-count').innerText = overdue;
-    document.getElementById('today-completed').innerText = result.data.filter(t => t.next_followup > today).length;
-    const allResp = await fetch('/api/customers/all?limit=1');
-    const allResult = await allResp.json();
-    if (allResult.success) document.getElementById('cust-mgmt-total').innerText = allResult.total;
+function showRuleInfoOverlay() {
+    document.getElementById('rule-info-overlay').style.display = 'block';
 }
 
-// ==================== 规则编辑器（localStorage） ====================
-var DEFAULT_RULES = [
-    {p:'紧急跟进', c:'逾期超7天 且 A/B类', s:'客户已逾期一周，建议立即电话联系，了解是否存在问题'},
-    {p:'逾期提醒', c:'逾期超3天', s:'已逾期，建议尽快联系客户'},
-    {p:'客情维护', c:'A类 30天内有订单', s:'了解使用情况，推送新品信息，保持良好的客户关系'},
-    {p:'唤醒', c:'A类 超60天无订单', s:'客户长时间未下单，了解是否被竞争对手抢占，邀请参加新品发布会'},
-    {p:'挽回', c:'C/D类 历史曾为A/B', s:'历史大客户已流失，发送优惠券或新品资料，了解流失原因'},
-    {p:'风险预警', c:'连续2月销售额下降', s:'销售额连续下降，了解客户经营状况，是否需要支持'},
-    {p:'回访', c:'新客户 首次成交14天内', s:'新客户首次购买后回访，询问使用体验，收集反馈'},
-    {p:'常规跟进', c:'默认', s:'了解近期需求，推送产品资料，保持联系'}
-];
-var currentRules = [];
-
-function loadRules() {
-    try {
-        var saved = localStorage.getItem('followup_rules');
-        currentRules = saved ? JSON.parse(saved) : JSON.parse(JSON.stringify(DEFAULT_RULES));
-    } catch(e) { currentRules = JSON.parse(JSON.stringify(DEFAULT_RULES)); }
+function closeRuleInfoOverlay() {
+    document.getElementById('rule-info-overlay').style.display = 'none';
 }
 
-function saveRules() {
-    localStorage.setItem('followup_rules', JSON.stringify(currentRules));
-    loadTodayTasks();
-}
-
-function showRuleModal() {
-    loadRules();
-    renderRuleTable();
-    document.getElementById('rule-modal').classList.add('show');
-}
-
-function closeRuleModal() {
-    document.getElementById('rule-modal').classList.remove('show');
-}
-
-function renderRuleTable() {
-    var container = document.getElementById('rule-table-container');
-    var colors = ['#E53935','#EF6C00','#43A047','#7B1FA2','#F9A825','#D84315','#1565C0','#888'];
-    var html = '<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:#FAFAFA">'+
-        '<th style="padding:8px;text-align:center;width:40px">#</th>'+
-        '<th style="padding:8px;width:80px">目的</th>'+
-        '<th style="padding:8px;width:160px">判断条件</th>'+
-        '<th style="padding:8px">建议话术/行动</th>'+
-        '<th style="padding:8px;width:60px"></th></tr></thead><tbody>';
-    for (var i=0; i<currentRules.length; i++) {
-        var r = currentRules[i]; var c = colors[i] || '#888';
-        html += '<tr style="border-bottom:1px solid #F0F0F0">'+
-            '<td style="padding:6px 8px;text-align:center;color:'+c+';font-weight:600">P'+(i+1)+'</td>'+
-            '<td style="padding:6px 8px;font-weight:600;color:#333" contenteditable="true" onblur="updateRule('+i+',\'p\',this.textContent)">'+escapeHtml(r.p)+'</td>'+
-            '<td style="padding:6px 8px;color:#555" contenteditable="true" onblur="updateRule('+i+',\'c\',this.textContent)">'+escapeHtml(r.c)+'</td>'+
-            '<td style="padding:6px 8px;color:#555;background:#FFFEF5" contenteditable="true" onblur="updateRule('+i+',\'s\',this.textContent)">'+escapeHtml(r.s)+'</td>'+
-            '<td style="padding:6px 8px;text-align:center"><button class="btn-delete-sm" onclick="deleteRule('+i+')" style="padding:2px 8px;font-size:10px">删除</button></td>'+
-            '</tr>';
+// Close tooltip on outside click
+document.addEventListener('click', function(e){
+    var tip = document.getElementById('rule-detail-tooltip');
+    if (tip && !e.target.closest('.rule-icon') && !e.target.closest('#rule-detail-tooltip')) {
+        tip.style.display = 'none';
     }
-    html += '</tbody></table>';
-    container.innerHTML = html;
-}
+});
 
-function updateRule(idx, field, value) {
-    loadRules();
-    currentRules[idx][field] = value.trim();
-    saveRules();
-}
-
-function deleteRule(idx) {
-    loadRules();
-    currentRules.splice(idx, 1);
-    saveRules();
-    renderRuleTable();
-}
-
-function addRuleRow() {
-    loadRules();
-    currentRules.push({p:'新规则', c:'点击编辑条件', s:'点击编辑话术'});
-    saveRules();
-    renderRuleTable();
-}
-
-function resetRulesToDefault() {
-    if (!confirm('确定恢复为默认规则？自定义内容将丢失。')) return;
-    currentRules = JSON.parse(JSON.stringify(DEFAULT_RULES));
-    saveRules();
-    renderRuleTable();
-}
-
-// populateEditCustomerSelect kept for compatibility
-async function populateEditCustomerSelect() {
-    const resp = await fetch('/api/customers/all?limit=500');
-    const result = await resp.json();
-    if (!result.success) return;
-    const sel = document.getElementById('edit-customer-select');
-    sel.innerHTML = '<option value="">选择客户</option>' + result.data.map(c =>
-        '<option value="'+escapeHtml(c.name)+'">'+escapeHtml(c.name)+' ('+(c.code||'无编码')+')</option>'
-    ).join('');
-}
-
-async function saveCustomSuggestion(custName, suggestion) {
-    if (!custName) {
-        custName = document.getElementById('edit-customer-select').value;
-        suggestion = document.getElementById('edit-suggestion-input').value;
-    }
-    if (!custName) { showToast('请选择客户', 'error'); return; }
-    const resp = await fetch('/api/customers/followup/update-suggestion', {
-        method:'POST', headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({customer_name:custName, custom_suggestion:suggestion, purpose_rule:currentPurposeRule})
-    });
-    const result = await resp.json();
-    if (result.success) { showToast('建议话术已保存', 'success'); loadTodayTasks(); }
-    else { showToast(result.error, 'error'); }
-}
-
-function editSuggestionInline(custName, currentText) {
-    const newTxt = prompt('编辑建议话术：', currentText);
-    if (newTxt !== null && newTxt !== currentText) saveCustomSuggestion(custName, newTxt);
-}
-
-// 等级分布（保持）
+// Load level stats (keep existing)
 async function loadLevelStats() {
-    const year = document.getElementById('level-year-select').value || (new Date().getFullYear()-1);
-    const resp = await fetch('/api/customers/stats?year='+year);
-    const result = await resp.json();
+    var year = document.getElementById('level-year-select').value || (new Date().getFullYear()-1);
+    var resp = await fetch('/api/customers/stats?year='+year);
+    var result = await resp.json();
     if (!result.success) return;
-    const stats = result.data;
-    const container = document.getElementById('level-stats-container');
-    container.innerHTML = `
-        <div class="level-card" onclick="showLevelCustomers('A')"><div class="level-num">${stats.A}</div><div class="level-label">A类</div></div>
-        <div class="level-card" onclick="showLevelCustomers('B')"><div class="level-num">${stats.B}</div><div class="level-label">B类</div></div>
-        <div class="level-card" onclick="showLevelCustomers('C')"><div class="level-num">${stats.C}</div><div class="level-label">C类</div></div>
-        <div class="level-card" onclick="showLevelCustomers('D')"><div class="level-num">${stats.D}</div><div class="level-label">D类</div></div>
-    `;
+    var stats = result.data;
+    var container = document.getElementById('level-stats-container');
+    container.innerHTML = '<div class="level-card" onclick="showLevelCustomers(\'A\')"><div class="level-num">'+stats.A+'</div><div class="level-label">A类</div></div>'+
+        '<div class="level-card" onclick="showLevelCustomers(\'B\')"><div class="level-num">'+stats.B+'</div><div class="level-label">B类</div></div>'+
+        '<div class="level-card" onclick="showLevelCustomers(\'C\')"><div class="level-num">'+stats.C+'</div><div class="level-label">C类</div></div>'+
+        '<div class="level-card" onclick="showLevelCustomers(\'D\')"><div class="level-num">'+stats.D+'</div><div class="level-label">D类</div></div>';
 }
 
-let currentLevelModal = { level:'', page:1, year:'' };
-async function showLevelCustomers(level) { const year = document.getElementById('level-year-select').value; currentLevelModal = {level, page:1, year}; await renderLevelModal(); document.getElementById('level-modal').classList.add('show'); }
-async function renderLevelModal() { const {level,page,year}=currentLevelModal; const resp=await fetch('/api/customers/by-level?level='+level+'&year='+year+'&page='+page+'&limit=20'); const result=await resp.json(); if(!result.success)return; document.getElementById('level-modal-title').innerHTML=level+'类客户（共'+result.total+'个）'; const tbody=document.getElementById('level-modal-tbody'); tbody.innerHTML=result.data.map((cust,idx)=>'<tr><td>'+((page-1)*20+idx+1)+'</td><td>'+escapeHtml(cust.name)+'</td><td>'+(cust.code||'<span style=\"color:#FF9800\">⚠️ 待补充</span>')+'</td><td class=\"td-amount\">¥'+cust.sales.toLocaleString()+'</td></tr>').join(''); const tp=Math.ceil(result.total/20); document.getElementById('level-modal-pagination').innerHTML='<button class=\"page-btn\" onclick=\"changeLevelPage('+(page-1)+')\" '+(page<=1?'disabled':'')+'>上一页</button><span class=\"page-info\">第'+page+'/'+tp+'页</span><button class=\"page-btn\" onclick=\"changeLevelPage('+(page+1)+')\" '+(page>=tp?'disabled':'')+'>下一页</button>'; }
+// Keep level modal functions
+var currentLevelModal = { level:'', page:1, year:'' };
+async function showLevelCustomers(level) { var year = document.getElementById('level-year-select').value; currentLevelModal = {level, page:1, year}; await renderLevelModal(); document.getElementById('level-modal').classList.add('show'); }
+async function renderLevelModal() { var l=currentLevelModal.level, p=currentLevelModal.page, y=currentLevelModal.year; var resp=await fetch('/api/customers/by-level?level='+l+'&year='+y+'&page='+p+'&limit=20'); var result=await resp.json(); if(!result.success)return; document.getElementById('level-modal-title').innerHTML=l+'类客户（共'+result.total+'个）'; document.getElementById('level-modal-tbody').innerHTML=result.data.map(function(c,i){return '<tr><td>'+((p-1)*20+i+1)+'</td><td>'+escapeHtml(c.name)+'</td><td>'+(c.code||'<span style="color:#FF9800">待补充</span>')+'</td><td class="td-amount">¥'+c.sales.toLocaleString()+'</td></tr>';}).join(''); var tp=Math.ceil(result.total/20); document.getElementById('level-modal-pagination').innerHTML='<button class="page-btn" onclick="changeLevelPage('+(p-1)+')" '+(p<=1?'disabled':'')+'>上一页</button><span class="page-info">第'+p+'/'+tp+'页</span><button class="page-btn" onclick="changeLevelPage('+(p+1)+')" '+(p>=tp?'disabled':'')+'>下一页</button>'; }
 function changeLevelPage(p) { currentLevelModal.page=p; renderLevelModal(); }
 function closeLevelModal() { document.getElementById('level-modal').classList.remove('show'); }
 
-// 编码导入导出（保持）
+// Keep import/export
 function importCodesFile() {
-    const input = document.createElement('input'); input.type='file'; input.accept='.xlsx,.xls,.csv';
-    input.onchange = async (e) => {
-        const file = e.target.files[0]; if(!file) return;
+    var input = document.createElement('input'); input.type='file'; input.accept='.xlsx,.xls,.csv';
+    input.onchange = async function(e){
+        var file = e.target.files[0]; if(!file) return;
         showToast('正在导入编码...', 'success');
-        const formData = new FormData(); formData.append('file', file);
+        var formData = new FormData(); formData.append('file', file);
         try {
-            const resp = await fetch('/api/customers/import-codes', {method:'POST', body:formData});
-            const result = await resp.json();
-            if (result.success) { showToast(result.message, 'success'); loadLevelStats(); loadCustCount(); }
+            var resp = await fetch('/api/customers/import-codes', {method:'POST', body:formData});
+            var result = await resp.json();
+            if (result.success) { showToast(result.message, 'success'); loadLevelStats(); }
             else { showToast(result.error, 'error'); }
-        } catch(e) { showToast('导入失败：'+e.message, 'error'); }
+        } catch(err) { showToast('导入失败：'+err.message, 'error'); }
     };
     input.click();
 }
 async function exportPendingCodesFile() { window.open('/api/customers/export-pending-codes', '_blank'); }
 
-// 客户管理抽屉（保持）
-let custMgmtPage = 1, custMgmtSearch = '';
-async function loadCustCount() { const resp=await fetch('/api/customers/all?limit=1'); const result=await resp.json(); if(result.success)document.getElementById('cust-mgmt-total').innerText=result.total; }
-function openCustMgmtDrawer() { custMgmtPage=1; custMgmtSearch=''; const ds=document.getElementById('cust-mgmt-drawer-search'); if(ds)ds.value=''; document.getElementById('cust-mgmt-drawer').classList.add('show'); loadCustMgmtDrawer(); }
+// Customer management drawer (keep)
+var custMgmtPage = 1, custMgmtSearch = '';
+async function loadCustCount() { var resp=await fetch('/api/customers/all?limit=1'); var result=await resp.json(); if(result.success)document.getElementById('stat-total').innerText=result.total; }
+function openCustMgmtDrawer() { custMgmtPage=1; custMgmtSearch=''; var ds=document.getElementById('cust-mgmt-drawer-search'); if(ds)ds.value=''; document.getElementById('cust-mgmt-drawer').classList.add('show'); loadCustMgmtDrawer(); }
 function closeCustMgmtDrawer(e) { if(e&&e.target!==document.getElementById('cust-mgmt-drawer'))return; document.getElementById('cust-mgmt-drawer').classList.remove('show'); }
 async function loadCustMgmtDrawer() {
-    let si = document.getElementById('cust-mgmt-drawer-search');
-    custMgmtSearch = si?si.value.trim():'';
-    const params = new URLSearchParams({page:custMgmtPage, limit:50}); if(custMgmtSearch)params.set('search',custMgmtSearch);
+    var si = document.getElementById('cust-mgmt-drawer-search'); custMgmtSearch = si?si.value.trim():'';
+    var params = new URLSearchParams({page:custMgmtPage, limit:50}); if(custMgmtSearch)params.set('search',custMgmtSearch);
     try {
-        const resp = await fetch('/api/customers/all?'+params.toString()); const result = await resp.json();
+        var resp = await fetch('/api/customers/all?'+params.toString()); var result = await resp.json();
         if(!result.success){showToast(result.error||'加载失败','error');return;}
-        const body=document.getElementById('cust-mgmt-drawer-body');
-        if(result.data.length===0){body.innerHTML='<div class=\"drawer-empty\">暂无客户数据</div>';}
-        else{body.innerHTML=result.data.map((cust,i)=>'<div class=\"drawer-item\"><span class=\"drawer-item-name\" style=\"font-weight:500;min-width:120px\">'+(cust.code?escapeHtml(cust.code):'<span style=\"color:#CCC\">—</span>')+'</span><span style=\"flex:1;font-size:13px\">'+escapeHtml(cust.name)+'</span><span class=\"cust-level cust-level-'+cust.level.toLowerCase()+'\">'+cust.level+'类</span></div>').join('');}
-        const tp=Math.ceil(result.total/50); const pg=document.getElementById('cust-mgmt-pagination');
-        pg.innerHTML=tp>1?'<button class=\"page-btn\" onclick=\"custMgmtGoPage('+(custMgmtPage-1)+')\" '+(custMgmtPage<=1?'disabled':'')+'>上一页</button><span class=\"page-info\">第'+custMgmtPage+'/'+tp+'页（共'+result.total+'个）</span><button class=\"page-btn\" onclick=\"custMgmtGoPage('+(custMgmtPage+1)+')\" '+(custMgmtPage>=tp?'disabled':'')+'>下一页</button>':'<span class=\"page-info\" style=\"font-size:12px;color:#999\">共 '+result.total+' 个客户</span>';
-    } catch(e) { showToast('网络错误，请重试', 'error'); }
+        var body=document.getElementById('cust-mgmt-drawer-body');
+        if(result.data.length===0){body.innerHTML='<div class="drawer-empty">暂无客户数据</div>';}
+        else{body.innerHTML=result.data.map(function(c){return '<div class="drawer-item"><span class="drawer-item-name" style="font-weight:500;min-width:120px">'+(c.code?escapeHtml(c.code):'<span style="color:#CCC">—</span>')+'</span><span style="flex:1;font-size:13px">'+escapeHtml(c.name)+'</span><span class="cust-level cust-level-'+c.level.toLowerCase()+'">'+c.level+'类</span></div>';}).join('');}
+        var tp=Math.ceil(result.total/50); var pg=document.getElementById('cust-mgmt-pagination');
+        pg.innerHTML=tp>1?'<button class="page-btn" onclick="custMgmtGoPage('+(custMgmtPage-1)+')" '+(custMgmtPage<=1?'disabled':'')+'>上一页</button><span class="page-info">第'+custMgmtPage+'/'+tp+'页（共'+result.total+'个）</span><button class="page-btn" onclick="custMgmtGoPage('+(custMgmtPage+1)+')" '+(custMgmtPage>=tp?'disabled':'')+'>下一页</button>':'<span class="page-info" style="font-size:12px;color:#999">共 '+result.total+' 个客户</span>';
+    } catch(e) { showToast('网络错误', 'error'); }
 }
 function custMgmtGoPage(p) { custMgmtPage=p; loadCustMgmtDrawer(); }
 
@@ -2888,10 +2790,8 @@ function initCustomerTab() {
     }
     yearSelect.value = currentYear - 1;
     loadTodayTasks();
-    loadWeekTasks();
     loadLevelStats();
     loadCustCount();
-    loadKeyMetrics();
 }
 
 // ==================== 初始客户跟进模块结束 ====================

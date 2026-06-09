@@ -1157,6 +1157,74 @@ def get_today_tasks():
         conn.close()
 
 
+@app.route('/api/customers/followup/rule-detail')
+def get_rule_detail():
+    """返回某个客户的计算详情（用于前端浮层展示）"""
+    from datetime import date
+    cust_name = request.args.get('customer_name', '')
+    if not cust_name:
+        return jsonify({'error': '缺少客户名称'}), 400
+    conn = get_db()
+    cur = get_cursor(conn)
+    try:
+        cur.execute("SELECT name, level, last_followup, next_followup, purpose_rule, custom_suggestion FROM customers WHERE name = %s", (cust_name,))
+        cust = cur.fetchone()
+        if not cust:
+            return jsonify({'error': '客户不存在'}), 404
+        peak = get_customer_peak_level(cust_name)
+        today = date.today()
+        level = cust['level']
+        last_fu = cust['last_followup']
+        next_fu = cust['next_followup']
+        freq = FOLLOWUP_DAYS.get(level, 30)
+        is_recovery = peak in ('A', 'B') and level in ('C', 'D')
+        recovery_interval = RECOVERY_DAYS if is_recovery else None
+        effective_interval = recovery_interval or freq
+        is_overdue = bool(next_fu and next_fu < today)
+
+        detail = {
+            'customer_name': cust_name,
+            'current_level': level,
+            'peak_level': peak,
+            'followup_frequency': freq,
+            'is_recovery': is_recovery,
+            'recovery_interval': recovery_interval,
+            'last_followup_date': last_fu.isoformat() if last_fu else None,
+            'next_followup_date': next_fu.isoformat() if next_fu else None,
+            'today': today.isoformat(),
+            'is_overdue': is_overdue,
+            'effective_interval': effective_interval,
+            'judgment': '逾期跟进' if is_overdue else ('挽回任务' if is_recovery else '常规跟进')
+        }
+        return jsonify({'success': True, 'data': detail})
+    finally:
+        cur.close()
+        conn.close()
+
+
+@app.route('/api/customers/followup/today-stats')
+def get_today_stats():
+    """获取今日统计：已完成数、逾期总数"""
+    from datetime import date
+    today = date.today()
+    conn = get_db()
+    cur = get_cursor(conn)
+    try:
+        # 逾期总数
+        cur.execute("SELECT COUNT(*) as cnt FROM customers WHERE next_followup < %s", (today,))
+        overdue_total = cur.fetchone()['cnt']
+        # 今日待跟进总数
+        cur.execute("SELECT COUNT(*) as cnt FROM customers WHERE next_followup <= %s", (today,))
+        today_total = cur.fetchone()['cnt']
+        return jsonify({'success': True, 'data': {
+            'overdue_total': overdue_total,
+            'today_total': today_total
+        }})
+    finally:
+        cur.close()
+        conn.close()
+
+
 @app.route('/api/customers/followup/week')
 def get_week_tasks():
     """获取本周需跟进的客户"""
