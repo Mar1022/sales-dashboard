@@ -1082,7 +1082,7 @@ def batch_mark_followup():
 
 @app.route('/api/customers/import-codes', methods=['POST'])
 def import_codes():
-    """导入编码对照表（Excel）"""
+    """导入编码对照表（Excel）— 自动识别表头列名"""
     if 'file' not in request.files:
         return jsonify({'error': '未找到文件'}), 400
     file = request.files['file']
@@ -1094,21 +1094,53 @@ def import_codes():
     conn = get_db()
     cur = get_cursor(conn)
     try:
+        # 读取表头，自动识别"名称"和"编码"列位置
+        headers = [str(c.value).strip() if c.value else '' for c in next(ws.iter_rows(min_row=1, max_row=1))]
+        name_idx = None
+        code_idx = None
+        for i, h in enumerate(headers):
+            if '名称' in h or '客户' in h:
+                if name_idx is None or '名称' in h:
+                    name_idx = i
+            if '编码' in h or '代号' in h or 'code' in h.lower():
+                if code_idx is None or '编码' in h:
+                    code_idx = i
+
+        # 回退：如果没找到名称列，用最后一列；编码列用倒数第二列
+        if name_idx is None and code_idx is None and len(headers) >= 2:
+            # 最后一列是名称，倒数第二列是编码
+            name_idx = len(headers) - 1
+            code_idx = len(headers) - 2
+        elif name_idx is None and code_idx is not None:
+            name_idx = code_idx + 1 if code_idx + 1 < len(headers) else code_idx - 1
+        elif code_idx is None and name_idx is not None:
+            code_idx = name_idx - 1 if name_idx > 0 else name_idx + 1
+
+        if name_idx is None or code_idx is None:
+            return jsonify({'error': f'无法识别列名，当前表头：{headers[:10]}'}), 400
+
         updated = 0
+        skipped = 0
         for row in ws.iter_rows(min_row=2, values_only=True):
-            if not row or len(row) < 2:
+            if not row or len(row) <= max(name_idx, code_idx):
                 continue
-            name = str(row[0]).strip() if row[0] else ''
-            code = str(row[1]).strip() if row[1] else ''
+            name = str(row[name_idx]).strip() if row[name_idx] else ''
+            code = str(row[code_idx]).strip() if row[code_idx] else ''
+            # 跳过纯数字（可能是序号列被误识别为编码列）
+            if code.isdigit():
+                continue
             if name and code:
+                # 先确保客户存在于 customers 表
                 cur.execute(
-                    "UPDATE customers SET code = %s, updated_at = NOW() WHERE name = %s",
-                    (code, name)
+                    "INSERT INTO customers (name, code, level, last_followup, next_followup) VALUES (%s, %s, 'D', NULL, NULL) ON CONFLICT (name) DO UPDATE SET code = EXCLUDED.code, updated_at = NOW()",
+                    (name, code)
                 )
                 if cur.rowcount > 0:
                     updated += 1
+                else:
+                    skipped += 1
         conn.commit()
-        return jsonify({'success': True, 'message': f'已更新{updated}个客户的编码'})
+        return jsonify({'success': True, 'message': f'已更新{updated}个客户的编码' + (f'，跳过{skipped}个' if skipped else '')})
     finally:
         cur.close()
         conn.close()
