@@ -747,9 +747,7 @@
     <div class="chart-title" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
       <span>📅 今日待跟进 <b id="today-task-count">0</b> 个</span>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-        <label style="font-size:11px;color:#666;cursor:pointer;white-space:nowrap"><input type="radio" name="global-purpose-rule" value="auto" checked onchange="switchPurposeRule('auto')"> 自动</label>
-        <label style="font-size:11px;color:#666;cursor:pointer;white-space:nowrap"><input type="radio" name="global-purpose-rule" value="manual" onchange="switchPurposeRule('manual')"> 手动</label>
-        <button class="btn-outline" onclick="showRuleModal()" style="font-size:11px" title="查看判断规则">⚙️ 判断规则</button>
+        <button class="btn-outline" onclick="showRuleModal()" style="font-size:11px">⚙️ 判断规则</button>
         <button class="btn-outline" onclick="batchMarkAllToday()" style="font-size:11px">一键完成</button>
         <button class="btn-outline" onclick="loadTodayTasks()" style="font-size:11px">🔄 刷新</button>
       </div>
@@ -976,32 +974,17 @@
 
 <!-- ════ 判断规则弹窗 ════ -->
 <div class="modal-overlay" id="rule-modal" onclick="if(event.target===this)closeRuleModal()">
-  <div class="modal" style="width:520px;max-width:90vw;max-height:80vh;overflow-y:auto">
-    <h3>⚙️ 判断规则</h3>
-    <div style="margin-bottom:12px">
-      <label style="font-size:13px;color:#666;margin-right:20px;cursor:pointer"><input type="radio" name="modal-purpose-rule" value="auto" checked onchange="syncRuleFromModal('auto')"> 自动判断（系统生成）</label>
-      <label style="font-size:13px;color:#666;cursor:pointer"><input type="radio" name="modal-purpose-rule" value="manual" onchange="syncRuleFromModal('manual')"> 手动编辑</label>
-    </div>
-    <div id="rule-modal-manual" style="display:none;margin-bottom:12px">
-      <div style="font-size:12px;color:#333;margin-bottom:6px">编辑客户建议话术：</div>
-      <div style="display:flex;gap:8px;align-items:center">
-        <select id="edit-customer-select" style="padding:6px;border:1px solid #ddd;border-radius:3px;min-width:160px;font-size:12px"></select>
-        <input type="text" id="edit-suggestion-input" placeholder="输入自定义话术" style="flex:1;padding:6px;border:1px solid #ddd;border-radius:3px;font-size:12px">
-        <button class="btn-primary" onclick="saveCustomSuggestion()">保存</button>
+  <div class="modal" style="width:780px;max-width:95vw;max-height:85vh;overflow-y:auto">
+    <h3 style="display:flex;justify-content:space-between;align-items:center">
+      <span>⚙️ 判断规则</span>
+      <div style="display:flex;gap:8px">
+        <button class="btn-outline" onclick="addRuleRow()" style="font-size:11px">+ 新增</button>
+        <button class="btn-outline" onclick="resetRulesToDefault()" style="font-size:11px">恢复默认</button>
       </div>
-    </div>
-    <div style="background:#FAFAFA;padding:12px;border-radius:4px;font-size:12px;line-height:1.8">
-      <div style="font-weight:600;margin-bottom:6px">优先级规则：</div>
-      <div>🔴 P1 紧急跟进 — 逾期超7天 A/B类</div>
-      <div>🟠 P2 逾期提醒 — 逾期超3天</div>
-      <div>🟢 P3 客情维护 — A类 30天内有订单</div>
-      <div>🟣 P4 唤醒 — A类 超60天无订单</div>
-      <div>🟡 P5 挽回 — C/D类 历史曾A/B</div>
-      <div>🔶 P6 风险预警 — 连续2月销售下降</div>
-      <div>🔵 P7 回访 — 新客户 14天内</div>
-      <div>⚪ P8 常规跟进 — 默认</div>
-    </div>
+    </h3>
+    <div id="rule-table-container" style="max-height:55vh;overflow-y:auto"></div>
     <div class="modal-btns"><button class="btn-outline" onclick="closeRuleModal()">关闭</button></div>
+    <div style="font-size:10px;color:#CCC;margin-top:8px">💡 点击单元格可编辑，修改后自动保存。删除后需「恢复默认」才能找回。</div>
   </div>
 </div>
 
@@ -2511,7 +2494,7 @@ function resetCustomerFilter() {
 
 // ==================== 优化后的跟进模块 ====================
 
-let currentPurposeRule = 'auto';
+var currentPurposeRule = 'auto';
 
 function getWeekEnd() {
     const today = new Date();
@@ -2562,7 +2545,14 @@ function renderTaskCard(task) {
     var isOverdue = task.next_followup < new Date().toISOString().slice(0,10);
     var cardClass = isOverdue ? 'overdue' : (task.next_followup === new Date().toISOString().slice(0,10) ? 'today' : 'normal');
     var levelClass = 'task-level-' + task.level;
-    var suggestion = task.custom_suggestion || task.suggestion;
+    // 优先自定义话术，其次查规则表，最后用后端返回的
+    var ruleSugg = task.suggestion;
+    try {
+        var rules = JSON.parse(localStorage.getItem('followup_rules')||'[]');
+        var match = rules.find(function(r){return r.p===task.purpose;});
+        if (match) ruleSugg = match.s;
+    } catch(e) {}
+    var suggestion = task.custom_suggestion || ruleSugg;
     var tagCls = getPurposeTagClass(task.purpose);
     var peakBadge = (task.peak_level && task.peak_level !== task.level)
         ? '<span class="task-badge" style="font-size:10px;padding:2px 6px;border-radius:10px;background:#FFF8E1;color:#F9A825;margin-left:6px">曾'+task.peak_level+'类</span>' : '';
@@ -2662,24 +2652,34 @@ async function loadKeyMetrics() {
     if (allResult.success) document.getElementById('cust-mgmt-total').innerText = allResult.total;
 }
 
-function switchPurposeRule(rule) {
-    currentPurposeRule = rule;
-    // 同步 radio：标题行和弹窗
-    var radios = document.querySelectorAll('input[name="global-purpose-rule"], input[name="modal-purpose-rule"]');
-    radios.forEach(function(r){ if(r.value===rule) r.checked = true; });
-    var panel = document.getElementById('rule-modal-manual');
-    if (panel) panel.style.display = rule === 'manual' ? 'block' : 'none';
-    if (rule === 'manual') populateEditCustomerSelect();
+// ==================== 规则编辑器（localStorage） ====================
+var DEFAULT_RULES = [
+    {p:'紧急跟进', c:'逾期超7天 且 A/B类', s:'客户已逾期一周，建议立即电话联系，了解是否存在问题'},
+    {p:'逾期提醒', c:'逾期超3天', s:'已逾期，建议尽快联系客户'},
+    {p:'客情维护', c:'A类 30天内有订单', s:'了解使用情况，推送新品信息，保持良好的客户关系'},
+    {p:'唤醒', c:'A类 超60天无订单', s:'客户长时间未下单，了解是否被竞争对手抢占，邀请参加新品发布会'},
+    {p:'挽回', c:'C/D类 历史曾为A/B', s:'历史大客户已流失，发送优惠券或新品资料，了解流失原因'},
+    {p:'风险预警', c:'连续2月销售额下降', s:'销售额连续下降，了解客户经营状况，是否需要支持'},
+    {p:'回访', c:'新客户 首次成交14天内', s:'新客户首次购买后回访，询问使用体验，收集反馈'},
+    {p:'常规跟进', c:'默认', s:'了解近期需求，推送产品资料，保持联系'}
+];
+var currentRules = [];
+
+function loadRules() {
+    try {
+        var saved = localStorage.getItem('followup_rules');
+        currentRules = saved ? JSON.parse(saved) : JSON.parse(JSON.stringify(DEFAULT_RULES));
+    } catch(e) { currentRules = JSON.parse(JSON.stringify(DEFAULT_RULES)); }
+}
+
+function saveRules() {
+    localStorage.setItem('followup_rules', JSON.stringify(currentRules));
     loadTodayTasks();
 }
 
 function showRuleModal() {
-    // 打开前同步当前规则状态
-    var radios = document.querySelectorAll('input[name="modal-purpose-rule"]');
-    radios.forEach(function(r){ r.checked = (r.value === currentPurposeRule); });
-    var panel = document.getElementById('rule-modal-manual');
-    if (panel) panel.style.display = currentPurposeRule === 'manual' ? 'block' : 'none';
-    if (currentPurposeRule === 'manual') populateEditCustomerSelect();
+    loadRules();
+    renderRuleTable();
     document.getElementById('rule-modal').classList.add('show');
 }
 
@@ -2687,10 +2687,57 @@ function closeRuleModal() {
     document.getElementById('rule-modal').classList.remove('show');
 }
 
-function syncRuleFromModal(rule) {
-    switchPurposeRule(rule);
+function renderRuleTable() {
+    var container = document.getElementById('rule-table-container');
+    var colors = ['#E53935','#EF6C00','#43A047','#7B1FA2','#F9A825','#D84315','#1565C0','#888'];
+    var html = '<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:#FAFAFA">'+
+        '<th style="padding:8px;text-align:center;width:40px">#</th>'+
+        '<th style="padding:8px;width:80px">目的</th>'+
+        '<th style="padding:8px;width:160px">判断条件</th>'+
+        '<th style="padding:8px">建议话术/行动</th>'+
+        '<th style="padding:8px;width:60px"></th></tr></thead><tbody>';
+    for (var i=0; i<currentRules.length; i++) {
+        var r = currentRules[i]; var c = colors[i] || '#888';
+        html += '<tr style="border-bottom:1px solid #F0F0F0">'+
+            '<td style="padding:6px 8px;text-align:center;color:'+c+';font-weight:600">P'+(i+1)+'</td>'+
+            '<td style="padding:6px 8px;font-weight:600;color:#333" contenteditable="true" onblur="updateRule('+i+',\'p\',this.textContent)">'+escapeHtml(r.p)+'</td>'+
+            '<td style="padding:6px 8px;color:#555" contenteditable="true" onblur="updateRule('+i+',\'c\',this.textContent)">'+escapeHtml(r.c)+'</td>'+
+            '<td style="padding:6px 8px;color:#555;background:#FFFEF5" contenteditable="true" onblur="updateRule('+i+',\'s\',this.textContent)">'+escapeHtml(r.s)+'</td>'+
+            '<td style="padding:6px 8px;text-align:center"><button class="btn-delete-sm" onclick="deleteRule('+i+')" style="padding:2px 8px;font-size:10px">删除</button></td>'+
+            '</tr>';
+    }
+    html += '</tbody></table>';
+    container.innerHTML = html;
 }
 
+function updateRule(idx, field, value) {
+    loadRules();
+    currentRules[idx][field] = value.trim();
+    saveRules();
+}
+
+function deleteRule(idx) {
+    loadRules();
+    currentRules.splice(idx, 1);
+    saveRules();
+    renderRuleTable();
+}
+
+function addRuleRow() {
+    loadRules();
+    currentRules.push({p:'新规则', c:'点击编辑条件', s:'点击编辑话术'});
+    saveRules();
+    renderRuleTable();
+}
+
+function resetRulesToDefault() {
+    if (!confirm('确定恢复为默认规则？自定义内容将丢失。')) return;
+    currentRules = JSON.parse(JSON.stringify(DEFAULT_RULES));
+    saveRules();
+    renderRuleTable();
+}
+
+// populateEditCustomerSelect kept for compatibility
 async function populateEditCustomerSelect() {
     const resp = await fetch('/api/customers/all?limit=500');
     const result = await resp.json();
