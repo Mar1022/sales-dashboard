@@ -516,9 +516,9 @@
   .clickable-num:hover { text-decoration:underline;color:#2D477A; }
   .cust-rank-bar { display:inline-block;height:6px;background:#3B5998;border-radius:3px;vertical-align:middle;margin-right:6px; }
 
-  .task-card { display:flex; justify-content:space-between; align-items:center; padding:10px 12px; margin-bottom:8px; background:#FAFAFA; border-left:3px solid #3B5998; border-radius:4px; }
-  .task-card.overdue { border-left-color:#E53935; background:#FFF8F8; }
-  .task-card.today { border-left-color:#FF9800; background:#FFFBF5; }
+  .task-card { display:flex; justify-content:space-between; align-items:center; padding:10px 12px; margin-bottom:8px; background:#FAFAFA; border-radius:4px; }
+  .task-card.overdue { background:#FFF8F8; }
+  .task-card.today { background:#FFFBF5; }
   .task-cust { font-weight:600; }
   .task-btn { padding:4px 12px; background:#3B5998; color:#fff; border:none; border-radius:3px; cursor:pointer; font-size:11px; }
   .level-card { text-align:center; padding:12px 24px; background:#fff; border-radius:8px; cursor:pointer; border:1px solid #EDEDED; min-width:80px; }
@@ -727,17 +727,20 @@
     </div>
   </div>
 
-  <!-- 2. 今日跟进任务 -->
-  <div class="chart-card" style="margin:8px 20px">
-    <div class="chart-title">📅 今日待跟进客户</div>
-    <div id="today-tasks-container"></div>
-    <div id="batch-buttons" style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap"></div>
-  </div>
-
-  <!-- 3. 本周待办 -->
-  <div class="chart-card" style="margin:8px 20px">
-    <div class="chart-title">📆 本周待跟进客户</div>
-    <div id="week-tasks-container"></div>
+  <!-- 2+3. 今日 + 本周并排 -->
+  <div style="display:flex;gap:12px;margin:8px 20px">
+    <!-- 今日 -->
+    <div class="chart-card" style="flex:1;margin:0">
+      <div class="chart-title" style="cursor:pointer" onclick="toggleTodayDetail()">📅 今日待跟进 <span id="today-summary-inline"></span></div>
+      <div id="today-tasks-detail" style="display:none;max-height:260px;overflow-y:auto"></div>
+      <div id="today-tasks-empty" style="display:none;padding:20px;text-align:center;color:#999">🎉 今日无待跟进客户</div>
+      <div id="batch-buttons" style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap"></div>
+    </div>
+    <!-- 本周 -->
+    <div class="chart-card" style="flex:1;margin:0">
+      <div class="chart-title">📆 本周待跟进 <span id="week-summary-inline"></span></div>
+      <div id="week-tasks-container" style="max-height:300px;overflow-y:auto"></div>
+    </div>
   </div>
 
   <!-- 4. 客户等级分布 -->
@@ -2468,56 +2471,80 @@ async function loadTodayTasks() {
     const resp = await fetch('/api/customers/followup/today');
     const result = await resp.json();
     if (!result.success) return;
-    const container = document.getElementById('today-tasks-container');
+    const data = result.data;
     const today = new Date().toISOString().slice(0,10);
-    if (result.data.length === 0) {
-        container.innerHTML = '<div style="padding:20px;text-align:center;color:#999">🎉 今日无待跟进客户</div>';
+
+    // 统计各等级数量
+    const lvl = {A:0, B:0, C:0, D:0};
+    data.forEach(t => lvl[t.level] = (lvl[t.level]||0) + 1);
+    document.getElementById('today-summary-inline').innerHTML =
+        `A<b>${lvl.A}</b> B<b>${lvl.B}</b> C<b>${lvl.C}</b> D<b>${lvl.D}</b> 共<b>${data.length}</b>个`;
+
+    // 空状态
+    const emptyEl = document.getElementById('today-tasks-empty');
+    const detailEl = document.getElementById('today-tasks-detail');
+    if (data.length === 0) {
+        emptyEl.style.display = ''; detailEl.style.display = 'none';
     } else {
-        container.innerHTML = result.data.map(task => {
-            let cardClass = '';
-            if (task.next_followup < today) cardClass = 'overdue';
-            else if (task.next_followup === today) cardClass = 'today';
+        emptyEl.style.display = 'none';
+        detailEl.innerHTML = data.map(task => {
+            const overdue = task.next_followup < today;
+            const bg = overdue ? 'background:#FFF5F5' : '';
             const recoveryBadge = (task.peak_level === 'A' || task.peak_level === 'B') && (task.level === 'C' || task.level === 'D')
                 ? '<span style="font-size:10px;background:#FFF3E0;color:#E65100;padding:2px 6px;border-radius:8px;margin-left:6px">挽回</span>' : '';
             return `
-                <div class="task-card ${cardClass}">
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #F5F5F5;font-size:12px;${bg}">
                     <div>
-                        <span class="task-cust">${escapeHtml(task.name)}</span>
-                        <span class="cust-level cust-level-${task.level.toLowerCase()}">${task.level}类</span>
+                        <span style="font-weight:500">${escapeHtml(task.name)}</span>
+                        <span class="cust-level cust-level-${task.level.toLowerCase()}">${task.level}</span>
                         ${recoveryBadge}
-                        <div style="font-size:11px;color:#999">应跟进：${task.next_followup}</div>
+                        ${overdue ? '<span style="font-size:10px;color:#E53935;margin-left:4px">逾期</span>' : ''}
                     </div>
-                    <button class="task-btn" onclick="markFollowup('${escapeHtml(task.name).replace(/'/g, "\\'")}')">✓ 已完成</button>
+                    <button class="task-btn" onclick="markFollowup('${escapeHtml(task.name).replace(/'/g, "\\'")}')" style="font-size:10px;padding:3px 8px">✓</button>
                 </div>
             `;
         }).join('');
     }
+
+    // 批量按钮
     const batchDiv = document.getElementById('batch-buttons');
     batchDiv.innerHTML = `
-        <button class="btn-outline" onclick="batchMarkFollowup('A')">标记A类已跟进</button>
-        <button class="btn-outline" onclick="batchMarkFollowup('B')">标记B类已跟进</button>
-        <button class="btn-outline" onclick="batchMarkFollowup('C')">标记C类已跟进</button>
-        <button class="btn-outline" onclick="batchMarkFollowup('D')">标记D类已跟进</button>
-        <button class="btn-outline" onclick="batchMarkFollowup('all')">标记全部已跟进</button>
+        <button class="btn-outline" onclick="batchMarkFollowup('A')" style="font-size:11px;padding:3px 10px">A类</button>
+        <button class="btn-outline" onclick="batchMarkFollowup('B')" style="font-size:11px;padding:3px 10px">B类</button>
+        <button class="btn-outline" onclick="batchMarkFollowup('C')" style="font-size:11px;padding:3px 10px">C类</button>
+        <button class="btn-outline" onclick="batchMarkFollowup('D')" style="font-size:11px;padding:3px 10px">D类</button>
+        <button class="btn-outline" onclick="batchMarkFollowup('all')" style="font-size:11px;padding:3px 10px">全部</button>
     `;
+}
+
+function toggleTodayDetail() {
+    const el = document.getElementById('today-tasks-detail');
+    el.style.display = el.style.display === 'none' ? '' : 'none';
 }
 
 async function loadWeekTasks() {
     const resp = await fetch('/api/customers/followup/week');
     const result = await resp.json();
     if (!result.success) return;
+    const data = result.data;
+    // 各等级统计
+    const lvl = {A:0, B:0, C:0, D:0};
+    data.forEach(t => lvl[t.level] = (lvl[t.level]||0) + 1);
+    document.getElementById('week-summary-inline').innerHTML =
+        `A<b>${lvl.A}</b> B<b>${lvl.B}</b> C<b>${lvl.C}</b> D<b>${lvl.D}</b> 共<b>${data.length}</b>个`;
+
     const container = document.getElementById('week-tasks-container');
-    if (result.data.length === 0) {
+    if (data.length === 0) {
         container.innerHTML = '<div style="padding:12px;color:#999;text-align:center">本周无其他待跟进客户</div>';
     } else {
-        container.innerHTML = result.data.map(task => `
-            <div class="task-card" style="margin-bottom:6px">
+        container.innerHTML = data.map(task => `
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #F5F5F5;font-size:12px">
                 <div>
-                    <span class="task-cust">${escapeHtml(task.name)}</span>
-                    <span class="cust-level cust-level-${task.level.toLowerCase()}">${task.level}类</span>
-                    <div style="font-size:11px;color:#999">应跟进：${task.next_followup}</div>
+                    <span style="font-weight:500">${escapeHtml(task.name)}</span>
+                    <span class="cust-level cust-level-${task.level.toLowerCase()}">${task.level}</span>
+                    <span style="font-size:10px;color:#999;margin-left:4px">${task.next_followup}</span>
                 </div>
-                <button class="task-btn" onclick="markFollowup('${escapeHtml(task.name).replace(/'/g, "\\'")}')">✓ 已完成</button>
+                <button class="task-btn" onclick="markFollowup('${escapeHtml(task.name).replace(/'/g, "\\'")}')" style="font-size:10px;padding:3px 8px">✓</button>
             </div>
         `).join('');
     }

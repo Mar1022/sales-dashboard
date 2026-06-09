@@ -935,7 +935,7 @@ def sync_customers_from_sales():
 
 @app.route('/api/customers/stats')
 def get_customer_stats():
-    """获取各等级客户数量（单次 SQL JOIN）"""
+    """获取各等级客户数量（先按客户聚合再按等级计数）"""
     year = request.args.get('year', '')
     if not year:
         year = str(datetime.now().year - 1)
@@ -945,17 +945,19 @@ def get_customer_stats():
     cur = get_cursor(conn)
     try:
         cur.execute("""
-            SELECT
-                CASE
-                    WHEN COALESCE(SUM(s.amount), 0) >= 500000 THEN 'A'
-                    WHEN COALESCE(SUM(s.amount), 0) >= 100000 THEN 'B'
-                    WHEN COALESCE(SUM(s.amount), 0) > 0 THEN 'C'
-                    ELSE 'D'
-                END as level,
-                COUNT(*) as cnt
-            FROM customers c
-            LEFT JOIN sales_records s ON c.name = s.cust
-                AND s.date >= %s AND s.date <= %s
+            SELECT level, COUNT(*) as cnt FROM (
+                SELECT c.name,
+                    CASE
+                        WHEN COALESCE(SUM(s.amount), 0) >= 500000 THEN 'A'
+                        WHEN COALESCE(SUM(s.amount), 0) >= 100000 THEN 'B'
+                        WHEN COALESCE(SUM(s.amount), 0) > 0 THEN 'C'
+                        ELSE 'D'
+                    END as level
+                FROM customers c
+                LEFT JOIN sales_records s ON c.name = s.cust
+                    AND s.date >= %s AND s.date <= %s
+                GROUP BY c.name
+            ) sub
             GROUP BY level
             ORDER BY CASE level WHEN 'A' THEN 1 WHEN 'B' THEN 2 WHEN 'C' THEN 3 ELSE 4 END
         """, (f"{year}-01-01", f"{year}-12-31 23:59:59"))
