@@ -2696,8 +2696,11 @@ async function loadCustMgmtDrawer() {
         pg.innerHTML = totalPages > 1 ? `
             <button class="page-btn" onclick="custMgmtGoPage(${custMgmtPage-1})" ${custMgmtPage<=1?'disabled':''}>上一页</button>
             <span class="page-info">第${custMgmtPage}/${totalPages}页（共${result.total}个）</span>
-        <button class="page-btn" onclick="custMgmtGoPage(${custMgmtPage+1})" ${custMgmtPage>=totalPages?'disabled':''}>下一页</button>
-    ` : `<span class="page-info" style="font-size:12px;color:#999">共 ${result.total} 个客户</span>`;
+            <button class="page-btn" onclick="custMgmtGoPage(${custMgmtPage+1})" ${custMgmtPage>=totalPages?'disabled':''}>下一页</button>
+        ` : `<span class="page-info" style="font-size:12px;color:#999">共 ${result.total} 个客户</span>`;
+    } catch(e) {
+        showToast('网络错误，请重试', 'error');
+    }
 }
 
 function custMgmtGoPage(p) {
