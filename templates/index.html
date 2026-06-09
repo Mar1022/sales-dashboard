@@ -533,34 +533,32 @@
   details summary { padding: 8px 12px; margin: 0 -12px; border-radius: 4px; }
   details summary:hover { background: #F5F5F5; }
   /* 任务卡片 */
-  .task-card { background:#fff; border-radius:8px; margin-bottom:12px; border:1px solid #EDEDED; overflow:hidden; }
-  .task-card.overdue { border-left:4px solid #E53935; }
-  .task-card.today { border-left:4px solid #FF9800; }
-  .task-card.normal { border-left:4px solid #3B5998; }
-  .task-card.priority-high { border-left-color:#E53935; }
-  .task-card.priority-medium { border-left-color:#FF9800; }
-  .task-card.priority-low { border-left-color:#3B5998; }
-  .task-header { padding:12px 16px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; background:#FAFAFA; border-bottom:1px solid #F0F0F0; }
-  .task-cust { font-weight:600; font-size:14px; }
-  .task-purpose-tag { display:inline-block; padding:2px 8px; border-radius:12px; font-size:11px; margin-left:8px; }
+  .task-card { background:#fff; border-radius:4px; margin-bottom:8px; border:1px solid #EDEDED; overflow:hidden; }
+  .task-card.overdue { border-color:#FFCDD2; }
+  .task-card.today { border-color:#FFE0B2; }
+  .task-header { padding:8px 12px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px; border-bottom:1px solid #F5F5F5; }
+  .task-cust { font-weight:500; font-size:13px; }
+  .task-purpose-tag { display:inline-block; padding:1px 7px; border-radius:10px; font-size:10px; margin-left:6px; }
   .task-purpose-tag.emerge { background:#FFEBEE; color:#C62828; }
-  .task-purpose-tag.overdue { background:#FFF3E0; color:#E65100; }
+  .task-purpose-tag.overdue-tag { background:#FFF3E0; color:#E65100; }
   .task-purpose-tag.maintain { background:#E8F5E9; color:#2E7D32; }
   .task-purpose-tag.wake { background:#F3E5F5; color:#6A1B9A; }
   .task-purpose-tag.recover { background:#FFF8E1; color:#F57F17; }
   .task-purpose-tag.warn { background:#FFEBEE; color:#BF360C; }
   .task-purpose-tag.revisit { background:#E3F2FD; color:#1565C0; }
   .task-purpose-tag.routine { background:#F5F5F5; color:#888; }
-  .task-body { padding:12px 16px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; }
-  .task-suggestion { font-size:12px; background:#F5F5F5; padding:6px 10px; border-radius:4px; color:#555; flex:1; min-width:200px; }
-  .task-suggestion.editable { background:#FFF8E1; cursor:pointer; }
-  .task-suggestion.editable:hover { background:#FFE0A3; }
+  .task-body { padding:8px 12px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; }
+  .task-suggestion { font-size:12px; color:#666; flex:1; min-width:180px; }
+  .task-suggestion .editable-icon { color:#CCC; cursor:pointer; font-size:11px; margin-left:4px; }
+  .task-suggestion .editable-icon:hover { color:#3B5998; }
   .task-buttons { display:flex; gap:6px; }
-  .task-btn { padding:5px 12px; border:none; border-radius:4px; cursor:pointer; font-size:11px; }
-  .task-btn-done { background:#3B5998; color:#fff; }
-  .task-btn-done:hover { background:#345189; }
-  .task-btn-postpone { background:#fff; border:1px solid #DDD; color:#666; }
-  .task-btn-postpone:hover { border-color:#3B5998; color:#3B5998; }
+  .task-btn { padding:4px 10px; border-radius:3px; cursor:pointer; font-size:11px; font-family:inherit; }
+  .task-btn-done { background:#fff; border:1px solid #C8E6C9; color:#388E3C; }
+  .task-btn-done:hover { background:#E8F5E9; }
+  .task-btn-postpone { background:#fff; border:1px solid #DDD; color:#999; }
+  .task-btn-postpone:hover { border-color:#999; color:#666; }
+  .task-expand { text-align:center; padding:6px; cursor:pointer; color:#3B5998; font-size:12px; }
+  .task-expand:hover { text-decoration:underline; }
 </style>
 </head>
 <body>
@@ -2521,23 +2519,31 @@ async function loadTodayTasks() {
         document.getElementById('overdue-count').innerText = '0';
         return;
     }
-    const overdue = data.filter(t => t.next_followup < today);
-    const todayDue = data.filter(t => t.next_followup === today);
-    const weekDue = data.filter(t => t.next_followup > today && t.next_followup <= getWeekEnd());
+    const overdue = data.filter(function(t){return t.next_followup < today;});
+    const todayDue = data.filter(function(t){return t.next_followup === today;});
+    const weekDue = data.filter(function(t){return t.next_followup > today && t.next_followup <= getWeekEnd();});
     document.getElementById('overdue-count').innerText = overdue.length;
-    let html = '';
-    if (overdue.length > 0) {
-        html += '<div style="margin-bottom:16px"><div style="font-size:13px;font-weight:600;color:#E53935;margin-bottom:8px">🔴 逾期（'+overdue.length+'个）</div>';
-        html += overdue.map(t => renderTaskCard(t, true)).join('') + '</div>';
+    var MAX_SHOW = 3;
+    var html = '';
+
+    function renderSection(list, label, color, icon) {
+        if (list.length === 0) return '';
+        var show = list.slice(0, MAX_SHOW);
+        var hidden = list.slice(MAX_SHOW);
+        var id = 'sec_' + icon;
+        var out = '<div style="margin-bottom:12px">';
+        out += '<div style="font-size:13px;font-weight:600;color:'+color+';margin-bottom:8px">'+icon+' '+label+'（'+list.length+'个）</div>';
+        out += show.map(function(t){return renderTaskCard(t);}).join('');
+        if (hidden.length > 0) {
+            out += '<div class="task-expand" onclick="var e=document.getElementById(\''+id+'\');var s=e.style.display;e.style.display=s===\'none\'?\'\':\'none\';this.textContent=s===\'none\'?\'收起\':\'展开全部('+hidden.length+'个)\'">展开全部（'+hidden.length+'个）</div>';
+            out += '<div id="'+id+'" style="display:none">'+hidden.map(function(t){return renderTaskCard(t);}).join('')+'</div>';
+        }
+        out += '</div>';
+        return out;
     }
-    if (todayDue.length > 0) {
-        html += '<div style="margin-bottom:16px"><div style="font-size:13px;font-weight:600;color:#FF9800;margin-bottom:8px">🟡 今日应跟进（'+todayDue.length+'个）</div>';
-        html += todayDue.map(t => renderTaskCard(t, false)).join('') + '</div>';
-    }
-    if (weekDue.length > 0) {
-        html += '<details style="margin-top:8px"><summary style="cursor:pointer;font-size:12px;color:#666">📆 本周内（'+weekDue.length+'个）</summary>';
-        html += weekDue.map(t => renderTaskCard(t, false)).join('') + '</details>';
-    }
+    html += renderSection(overdue, '逾期', '#E53935', '🔴');
+    html += renderSection(todayDue, '今日应跟进', '#FF9800', '🟡');
+    html += renderSection(weekDue, '本周内', '#666', '📆');
     container.innerHTML = html;
 }
 
@@ -2560,25 +2566,33 @@ function renderTaskCard(task) {
     var escName = safeName.replace(/'/g, "\\'");
     var escSugg = escapeHtml(suggestion).replace(/'/g, "\\'");
     var escDate = (task.next_followup||'').replace(/'/g, "\\'");
-    return '<div class="task-card '+cardClass+'" data-cust="'+safeName+'">'+
-        '<div class="task-header">'+
-            '<div>'+
-                '<span class="task-cust">'+safeName+'</span>'+
-                '<span class="task-level '+levelClass+'" style="display:inline-block;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:500">'+task.level+'类</span>'+
-                peakBadge+
-                '<span class="task-purpose-tag '+tagCls+'">'+task.purpose+'</span>'+
-            '</div>'+
-            '<div style="font-size:11px;color:#999">应跟进：'+task.next_followup+'</div>'+
-        '</div>'+
-        '<div class="task-body">'+
-            '<span style="font-size:12px;color:#666;flex-shrink:0"><strong>目的：</strong>'+task.purpose+'</span>'+
-            '<span class="task-suggestion editable" onclick="editSuggestionInline(\''+escName+'\',\''+escSugg+'\')">💡 '+(suggestion||'暂无建议')+'<span style="font-size:10px;color:#999;margin-left:6px">✏️</span></span>'+
-            '<div class="task-buttons">'+
-                '<button class="task-btn task-btn-done" onclick="markFollowupAndRefresh(\''+escName+'\')">✓ 已完成</button>'+
-                '<button class="task-btn task-btn-postpone" onclick="postponeTask(\''+escName+'\',\''+escDate+'\')">⏰ 改期</button>'+
-            '</div>'+
-        '</div>'+
-    '</div>';
+    var overdueHtml = '';
+    if (isOverdue) {
+        var d1 = new Date(task.next_followup);
+        var d2 = new Date();
+        overdueHtml = ' <span style="color:#E53935">逾期'+Math.floor((d2-d1)/86400000)+'天</span>';
+    }
+    return [
+        '<div class="task-card '+cardClass+'">',
+        '<div class="task-header">',
+            '<div>',
+                '<span class="task-cust">'+safeName+'</span>',
+                '<span class="task-level '+levelClass+'" style="display:inline-block;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:500">'+task.level+'类</span>',
+                peakBadge,
+                '<span class="task-purpose-tag '+tagCls+'">'+task.purpose+'</span>',
+            '</div>',
+            '<div style="font-size:11px;color:#999">'+task.next_followup+overdueHtml+'</div>',
+        '</div>',
+        '<div class="task-body">',
+            '<span style="font-size:12px;color:#666;flex-shrink:0">'+task.purpose+'</span>',
+            '<span class="task-suggestion">'+(suggestion||'暂无建议')+'<span class="editable-icon" onclick="editSuggestionInline(\''+escName+'\',\''+escSugg+'\')">✎</span></span>',
+            '<div class="task-buttons">',
+                '<button class="task-btn task-btn-done" onclick="markFollowupAndRefresh(\''+escName+'\')">完成</button>',
+                '<button class="task-btn task-btn-postpone" onclick="postponeTask(\''+escName+'\',\''+escDate+'\')">改期</button>',
+            '</div>',
+        '</div>',
+        '</div>'
+    ].join('');
 }
 
 async function markFollowupAndRefresh(custName) {
