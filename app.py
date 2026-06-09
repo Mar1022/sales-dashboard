@@ -935,7 +935,7 @@ def sync_customers_from_sales():
 
 @app.route('/api/customers/stats')
 def get_customer_stats():
-    """获取各等级客户数量"""
+    """获取各等级客户数量（单次 SQL JOIN）"""
     year = request.args.get('year', '')
     if not year:
         year = str(datetime.now().year - 1)
@@ -944,13 +944,24 @@ def get_customer_stats():
     conn = get_db()
     cur = get_cursor(conn)
     try:
-        cur.execute("SELECT name FROM customers")
-        customers = cur.fetchall()
+        cur.execute("""
+            SELECT
+                CASE
+                    WHEN COALESCE(SUM(s.amount), 0) >= 500000 THEN 'A'
+                    WHEN COALESCE(SUM(s.amount), 0) >= 100000 THEN 'B'
+                    WHEN COALESCE(SUM(s.amount), 0) > 0 THEN 'C'
+                    ELSE 'D'
+                END as level,
+                COUNT(*) as cnt
+            FROM customers c
+            LEFT JOIN sales_records s ON c.name = s.cust
+                AND s.date >= %s AND s.date <= %s
+            GROUP BY level
+            ORDER BY CASE level WHEN 'A' THEN 1 WHEN 'B' THEN 2 WHEN 'C' THEN 3 ELSE 4 END
+        """, (f"{year}-01-01", f"{year}-12-31 23:59:59"))
         stats = {'A': 0, 'B': 0, 'C': 0, 'D': 0}
-        for row in customers:
-            sales = get_customer_year_sales(row['name'], year)
-            level = get_customer_level_by_sales(sales)
-            stats[level] = stats.get(level, 0) + 1
+        for row in cur.fetchall():
+            stats[row['level']] = row['cnt']
         return jsonify({'success': True, 'data': stats, 'year': year})
     finally:
         cur.close()
@@ -959,7 +970,7 @@ def get_customer_stats():
 
 @app.route('/api/customers/by-level')
 def get_customers_by_level():
-    """获取某等级客户列表（分页）"""
+    """获取某等级客户列表（分页，SQL JOIN）"""
     level = request.args.get('level', '')
     year = request.args.get('year', '')
     page = int(request.args.get('page', 1))
@@ -971,30 +982,44 @@ def get_customers_by_level():
     conn = get_db()
     cur = get_cursor(conn)
     try:
-        cur.execute("SELECT name, code FROM customers")
-        customers = cur.fetchall()
-        result = []
-        for row in customers:
-            sales = get_customer_year_sales(row['name'], year)
-            cust_level = get_customer_level_by_sales(sales)
-            if cust_level == level:
-                result.append({
-                    'name': row['name'],
-                    'code': row['code'],
-                    'sales': sales
-                })
-        result.sort(key=lambda x: x['sales'], reverse=True)
-        total = len(result)
-        offset = (page - 1) * limit
-        paginated = result[offset:offset + limit]
-        return jsonify({
-            'success': True,
-            'data': paginated,
-            'total': total,
-            'page': page,
-            'limit': limit,
-            'year': year
-        })
+        cur.execute("""
+            WITH cust_sales AS (
+                SELECT c.name, c.code, COALESCE(SUM(s.amount), 0) as total
+                FROM customers c
+                LEFT JOIN sales_records s ON c.name = s.cust
+                    AND s.date >= %s AND s.date <= %s
+                GROUP BY c.name, c.code
+            )
+            SELECT name, code, total FROM cust_sales
+            WHERE
+                CASE
+                    WHEN total >= 500000 THEN 'A'
+                    WHEN total >= 100000 THEN 'B'
+                    WHEN total > 0 THEN 'C'
+                    ELSE 'D'
+                END = %s
+            ORDER BY total DESC
+            LIMIT %s OFFSET %s
+        """, (f"{year}-01-01", f"{year}-12-31 23:59:59", level, limit, (page - 1) * limit))
+        rows = cur.fetchall()
+        data = [{'name': r['name'], 'code': r['code'] or '', 'sales': float(r['total'])} for r in rows]
+        cur.execute("""
+            SELECT COUNT(*) as cnt FROM (
+                SELECT
+                    CASE
+                        WHEN COALESCE(SUM(s.amount), 0) >= 500000 THEN 'A'
+                        WHEN COALESCE(SUM(s.amount), 0) >= 100000 THEN 'B'
+                        WHEN COALESCE(SUM(s.amount), 0) > 0 THEN 'C'
+                        ELSE 'D'
+                    END as lv
+                FROM customers c
+                LEFT JOIN sales_records s ON c.name = s.cust
+                    AND s.date >= %s AND s.date <= %s
+                GROUP BY c.name
+            ) sub WHERE lv = %s
+        """, (f"{year}-01-01", f"{year}-12-31 23:59:59", level))
+        total = cur.fetchone()['cnt']
+        return jsonify({'success': True, 'data': data, 'total': total, 'page': page, 'limit': limit, 'year': year})
     finally:
         cur.close()
         conn.close()
@@ -1005,25 +1030,47 @@ def get_today_tasks():
     """获取今日需跟进的客户"""
     from datetime import date
     today = date.today()
+    y0, y1, y2 = today.year, today.year - 1, today.year - 2
     conn = get_db()
     cur = get_cursor(conn)
     try:
-        cur.execute(
-            "SELECT name, level, last_followup, next_followup FROM customers WHERE next_followup <= %s ORDER BY next_followup ASC, FIELD(level, 'A', 'B', 'C', 'D')",
-            (today,)
-        )
+        # 一次性 JOIN 计算每客户 3 年最高等级
+        cur.execute("""
+            WITH yearly AS (
+                SELECT c.name,
+                    COALESCE(SUM(CASE WHEN s.date >= %s THEN s.amount ELSE 0 END), 0) as s0,
+                    COALESCE(SUM(CASE WHEN s.date >= %s AND s.date < %s THEN s.amount ELSE 0 END), 0) as s1,
+                    COALESCE(SUM(CASE WHEN s.date >= %s AND s.date < %s THEN s.amount ELSE 0 END), 0) as s2
+                FROM customers c
+                LEFT JOIN sales_records s ON c.name = s.cust
+                GROUP BY c.name
+            ),
+            peak AS (
+                SELECT name,
+                    CASE
+                        WHEN s0 >= 500000 OR s1 >= 500000 OR s2 >= 500000 THEN 'A'
+                        WHEN s0 >= 100000 OR s1 >= 100000 OR s2 >= 100000 THEN 'B'
+                        WHEN s0 > 0 OR s1 > 0 OR s2 > 0 THEN 'C'
+                        ELSE 'D'
+                    END as peak_level
+                FROM yearly
+            )
+            SELECT cu.name, cu.level, cu.last_followup, cu.next_followup, p.peak_level
+            FROM customers cu
+            LEFT JOIN peak p ON cu.name = p.name
+            WHERE cu.next_followup <= %s
+            ORDER BY cu.next_followup ASC,
+                CASE cu.level WHEN 'A' THEN 1 WHEN 'B' THEN 2 WHEN 'C' THEN 3 ELSE 4 END
+        """, (f"{y0}-01-01", f"{y1}-01-01", f"{y0}-01-01", f"{y2}-01-01", f"{y1}-01-01", today))
         tasks = cur.fetchall()
-        result = []
-        for row in tasks:
-            peak_level = get_customer_peak_level(row['name'])
-            result.append({
-                'name': row['name'],
-                'level': row['level'],
-                'peak_level': peak_level,
-                'last_followup': row['last_followup'].isoformat() if row['last_followup'] else None,
-                'next_followup': row['next_followup'].isoformat() if row['next_followup'] else None,
-                'is_overdue': row['next_followup'] < today if row['next_followup'] else False
-            })
+        result = [{
+            'name': r['name'],
+            'level': r['level'],
+            'peak_level': r['peak_level'] or 'D',
+            'last_followup': r['last_followup'].isoformat() if r['last_followup'] else None,
+            'next_followup': r['next_followup'].isoformat() if r['next_followup'] else None,
+            'is_overdue': r['next_followup'] < today if r['next_followup'] else False
+        } for r in tasks]
         return jsonify({'success': True, 'data': result})
     finally:
         cur.close()
@@ -1194,28 +1241,32 @@ def import_codes():
         if name_idx is None or code_idx is None:
             return jsonify({'error': f'无法识别列名，当前表头：{headers[:10]}'}), 400
 
-        updated = 0
-        skipped = 0
+        # 收集有效数据，跳过无效行
+        batch = []
         for row in ws.iter_rows(min_row=2, values_only=True):
             if not row or len(row) <= max(name_idx, code_idx):
                 continue
             name = str(row[name_idx]).strip() if row[name_idx] else ''
             code = str(row[code_idx]).strip() if row[code_idx] else ''
-            # 跳过纯数字（可能是序号列被误识别为编码列）
             if code.isdigit():
                 continue
             if name and code:
-                # 先确保客户存在于 customers 表
-                cur.execute(
-                    "INSERT INTO customers (name, code, level, last_followup, next_followup) VALUES (%s, %s, 'D', NULL, NULL) ON CONFLICT (name) DO UPDATE SET code = EXCLUDED.code, updated_at = NOW()",
-                    (name, code)
-                )
-                if cur.rowcount > 0:
-                    updated += 1
-                else:
-                    skipped += 1
-        conn.commit()
-        return jsonify({'success': True, 'message': f'已更新{updated}个客户的编码' + (f'，跳过{skipped}个' if skipped else '')})
+                batch.append((name, code))
+
+        # 批量写入（500条/批），避免逐行网络往返
+        BATCH_SIZE = 500
+        total = 0
+        for i in range(0, len(batch), BATCH_SIZE):
+            chunk = batch[i:i + BATCH_SIZE]
+            execute_values(cur,
+                "INSERT INTO customers (name, code, level, last_followup, next_followup) VALUES %s ON CONFLICT (name) DO UPDATE SET code = EXCLUDED.code, updated_at = NOW()",
+                [(n, c, 'D', None, None) for n, c in chunk],
+                page_size=BATCH_SIZE
+            )
+            conn.commit()
+            total += len(chunk)
+
+        return jsonify({'success': True, 'message': f'已更新{total}个客户的编码'})
     finally:
         cur.close()
         conn.close()

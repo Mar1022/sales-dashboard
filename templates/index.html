@@ -530,6 +530,8 @@
   .cust-level-b { background:#E8F5E9;color:#2E7D32; }
   .cust-level-c { background:#E3F2FD;color:#1565C0; }
   .cust-level-d { background:#F5F5F5;color:#888; }
+  details summary { padding: 8px 12px; margin: 0 -12px; border-radius: 4px; }
+  details summary:hover { background: #F5F5F5; }
 </style>
 </head>
 <body>
@@ -712,7 +714,7 @@
 <div id="tab-customer" class="tab-content" style="overflow-y:auto">
 
   <!-- 1. 客户管理 -->
-  <div style="background:#fff;border-radius:4px;padding:10px 16px;margin:16px 20px 12px;border:1px solid #EDEDED">
+  <div style="background:#fff;border-radius:4px;padding:10px 16px;margin:0 20px 8px;border:1px solid #EDEDED">
     <div style="display:flex;gap:8px;align-items:center">
       <span style="font-size:13px;font-weight:600;color:#222;white-space:nowrap">客户管理</span>
       <input id="cust-mgmt-search" placeholder="搜索客户名称或编码" style="flex:1;padding:6px 10px;border:1px solid #DDD;border-radius:3px;font-size:13px;font-family:inherit;max-width:260px"
@@ -726,20 +728,20 @@
   </div>
 
   <!-- 2. 今日跟进任务 -->
-  <div class="chart-card" style="margin-bottom:16px">
+  <div class="chart-card" style="margin:8px 20px">
     <div class="chart-title">📅 今日待跟进客户</div>
     <div id="today-tasks-container"></div>
     <div id="batch-buttons" style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap"></div>
   </div>
 
   <!-- 3. 本周待办 -->
-  <details style="margin-bottom:16px">
-    <summary style="cursor:pointer;font-weight:500">📆 本周待跟进客户</summary>
-    <div id="week-tasks-container" style="margin-top:12px"></div>
-  </details>
+  <div class="chart-card" style="margin:8px 20px">
+    <div class="chart-title">📆 本周待跟进客户</div>
+    <div id="week-tasks-container"></div>
+  </div>
 
   <!-- 4. 客户等级分布 -->
-  <div class="chart-card" style="margin-bottom:16px">
+  <div class="chart-card" style="margin:8px 20px">
     <div class="chart-title" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
       <span>📊 客户等级分布</span>
       <select id="level-year-select" style="padding:4px 8px;border-radius:4px;border:1px solid #ddd"></select>
@@ -2618,15 +2620,22 @@ function importCodesFile() {
     input.accept = '.xlsx,.xls,.csv';
     input.onchange = async (e) => {
         const file = e.target.files[0];
+        if (!file) return;
+        showToast('正在导入编码...', 'success');
         const formData = new FormData();
         formData.append('file', file);
-        const resp = await fetch('/api/customers/import-codes', { method: 'POST', body: formData });
-        const result = await resp.json();
-        if (result.success) {
-            showToast(result.message, 'success');
-            loadLevelStats();
-        } else {
-            showToast(result.error, 'error');
+        try {
+            const resp = await fetch('/api/customers/import-codes', { method: 'POST', body: formData });
+            const result = await resp.json();
+            if (result.success) {
+                showToast(result.message, 'success');
+                loadLevelStats();
+                loadCustCount();
+            } else {
+                showToast(result.error, 'error');
+            }
+        } catch(e) {
+            showToast('导入失败：' + e.message, 'error');
         }
     };
     input.click();
@@ -2666,26 +2675,27 @@ async function loadCustMgmtDrawer() {
     if (searchInput) custMgmtSearch = searchInput.value.trim();
     const params = new URLSearchParams({page: custMgmtPage, limit: 50});
     if (custMgmtSearch) params.set('search', custMgmtSearch);
-    const resp = await fetch('/api/customers/all?' + params.toString());
-    const result = await resp.json();
-    if (!result.success) return;
-    const body = document.getElementById('cust-mgmt-drawer-body');
-    if (result.data.length === 0) {
-        body.innerHTML = '<div class="drawer-empty">暂无客户数据</div>';
-    } else {
-        body.innerHTML = result.data.map((cust, i) => `
-            <div class="drawer-item">
-                <span class="drawer-item-name" style="font-weight:500;min-width:120px">${escapeHtml(cust.code) || '<span style=\"color:#CCC\">—</span>'}</span>
-                <span style="flex:1;font-size:13px">${escapeHtml(cust.name)}</span>
-                <span class="cust-level cust-level-${cust.level.toLowerCase()}">${cust.level}类</span>
-            </div>
-        `).join('');
-    }
-    const totalPages = Math.ceil(result.total / 50);
-    const pg = document.getElementById('cust-mgmt-pagination');
-    pg.innerHTML = totalPages > 1 ? `
-        <button class="page-btn" onclick="custMgmtGoPage(${custMgmtPage-1})" ${custMgmtPage<=1?'disabled':''}>上一页</button>
-        <span class="page-info">第${custMgmtPage}/${totalPages}页（共${result.total}个）</span>
+    try {
+        const resp = await fetch('/api/customers/all?' + params.toString());
+        const result = await resp.json();
+        if (!result.success) { showToast(result.error || '加载失败', 'error'); return; }
+        const body = document.getElementById('cust-mgmt-drawer-body');
+        if (result.data.length === 0) {
+            body.innerHTML = '<div class="drawer-empty">暂无客户数据</div>';
+        } else {
+            body.innerHTML = result.data.map((cust, i) => `
+                <div class="drawer-item">
+                    <span class="drawer-item-name" style="font-weight:500;min-width:120px">${escapeHtml(cust.code) || '<span style=\"color:#CCC\">—</span>'}</span>
+                    <span style="flex:1;font-size:13px">${escapeHtml(cust.name)}</span>
+                    <span class="cust-level cust-level-${cust.level.toLowerCase()}">${cust.level}类</span>
+                </div>
+            `).join('');
+        }
+        const totalPages = Math.ceil(result.total / 50);
+        const pg = document.getElementById('cust-mgmt-pagination');
+        pg.innerHTML = totalPages > 1 ? `
+            <button class="page-btn" onclick="custMgmtGoPage(${custMgmtPage-1})" ${custMgmtPage<=1?'disabled':''}>上一页</button>
+            <span class="page-info">第${custMgmtPage}/${totalPages}页（共${result.total}个）</span>
         <button class="page-btn" onclick="custMgmtGoPage(${custMgmtPage+1})" ${custMgmtPage>=totalPages?'disabled':''}>下一页</button>
     ` : `<span class="page-info" style="font-size:12px;color:#999">共 ${result.total} 个客户</span>`;
 }
