@@ -176,7 +176,8 @@ def get_data():
             params.append(end if ' ' in end else end + ' 23:59:59')
         if conditions:
             sql += " WHERE " + " AND ".join(conditions)
-        sql += " ORDER BY date DESC"
+        sql += " ORDER BY date DESC LIMIT %s"
+        params.append(int(request.args.get('limit', 5000)))
         cur.execute(sql, params)
         rows = cur.fetchall()
         return jsonify([{
@@ -206,54 +207,91 @@ def get_summary():
     cur = get_cursor(conn)
     try:
         def _agg(s, e):
-            # 结束日期若无时间则补 23:59:59，确保当天数据不遗漏
+            """用SQL聚合计算总额和客户数"""
             e_fixed = (e if (' ' in e) else (e + ' 23:59:59')) if e else None
             if s and e_fixed:
                 cur.execute(
-                    "SELECT amount, cust, date FROM sales_records WHERE date >= %s AND date <= %s",
+                    "SELECT COALESCE(SUM(amount),0) as total, COUNT(DISTINCT cust) as cust_cnt FROM sales_records WHERE date >= %s AND date <= %s",
                     (s, e_fixed)
                 )
             elif s:
                 cur.execute(
-                    "SELECT amount, cust, date FROM sales_records WHERE date >= %s",
+                    "SELECT COALESCE(SUM(amount),0) as total, COUNT(DISTINCT cust) as cust_cnt FROM sales_records WHERE date >= %s",
                     (s,)
                 )
             elif e_fixed:
                 cur.execute(
-                    "SELECT amount, cust, date FROM sales_records WHERE date <= %s",
+                    "SELECT COALESCE(SUM(amount),0) as total, COUNT(DISTINCT cust) as cust_cnt FROM sales_records WHERE date <= %s",
                     (e_fixed,)
                 )
             else:
-                cur.execute("SELECT amount, cust, date FROM sales_records")
-            rows = cur.fetchall()
-            total = sum(float(r["amount"]) for r in rows)
-            custs = list(set(r["cust"] for r in rows))
-            return total, custs, rows
+                cur.execute("SELECT COALESCE(SUM(amount),0) as total, COUNT(DISTINCT cust) as cust_cnt FROM sales_records")
+            r = cur.fetchone()
+            return float(r["total"]), r["cust_cnt"]
 
-        cur_total, cur_custs, cur_rows = _agg(start, end)
+        cur_total, cur_cust_cnt = _agg(start, end)
 
-        # 所有历史数据用于判断新老客户
-        cur.execute("SELECT cust, MIN(date) as first_date FROM sales_records GROUP BY cust")
-        all_rows = cur.fetchall()
-        first_order = {r["cust"]: str(r["first_date"]) for r in all_rows}
-
+        # 新客户金额：首次购买在当前时间段内的客户
         s_val = start
-        new_custs = [c for c in cur_custs if first_order.get(c, '9999') >= s_val] if s_val else cur_custs
-        old_custs = [c for c in cur_custs if c not in new_custs]
+        e_fixed = (end if (' ' in end) else (end + ' 23:59:59')) if end else None
+        new_amt = 0
+        old_amt = 0
+        new_cust_cnt = 0
+        if s_val:
+            if s_val and e_fixed:
+                cur.execute("""
+                    SELECT COALESCE(SUM(sr.amount),0) as new_total FROM sales_records sr
+                    INNER JOIN (SELECT cust, MIN(date) as first_date FROM sales_records GROUP BY cust) fo
+                    ON sr.cust = fo.cust
+                    WHERE fo.first_date >= %s AND fo.first_date <= %s AND sr.date >= %s AND sr.date <= %s
+                """, (s_val, e_fixed, s_val, e_fixed))
+            elif s_val:
+                cur.execute("""
+                    SELECT COALESCE(SUM(sr.amount),0) as new_total FROM sales_records sr
+                    INNER JOIN (SELECT cust, MIN(date) as first_date FROM sales_records GROUP BY cust) fo
+                    ON sr.cust = fo.cust
+                    WHERE fo.first_date >= %s AND sr.date >= %s
+                """, (s_val, s_val))
+            new_amt = float(cur.fetchone()["new_total"])
+            old_amt = cur_total - new_amt
+            # 新客户数量
+            if s_val and e_fixed:
+                cur.execute("SELECT COUNT(*) as cnt FROM (SELECT cust, MIN(date) as first_date FROM sales_records GROUP BY cust) fo WHERE first_date >= %s AND first_date <= %s", (s_val, e_fixed))
+            else:
+                cur.execute("SELECT COUNT(*) as cnt FROM (SELECT cust, MIN(date) as first_date FROM sales_records GROUP BY cust) fo WHERE first_date >= %s", (s_val,))
+            new_cust_cnt = cur.fetchone()["cnt"]
+        old_cust_cnt = cur_cust_cnt - new_cust_cnt if s_val else 0
 
-        new_amt = sum(float(r["amount"]) for r in cur_rows if r["cust"] in new_custs)
-        old_amt = sum(float(r["amount"]) for r in cur_rows if r["cust"] in old_custs)
-
-        # 新品销售额
+        # 新品销售额（SQL聚合）
+        np_amt = 0
         cur.execute("SELECT spec FROM new_products")
-        np_rows = cur.fetchall()
-        np_specs = set(r["spec"] for r in np_rows)
-        np_amt = sum(float(r["amount"]) for r in cur_rows if r["spec"] in np_specs)
+        np_specs = [r["spec"] for r in cur.fetchall()]
+        if np_specs and s_val and e_fixed:
+            placeholders = ','.join(['%s'] * len(np_specs))
+            cur.execute(
+                f"SELECT COALESCE(SUM(amount),0) as total FROM sales_records WHERE spec IN ({placeholders}) AND date >= %s AND date <= %s",
+                np_specs + [s_val, e_fixed]
+            )
+            np_amt = float(cur.fetchone()["total"])
+        elif np_specs and s_val:
+            placeholders = ','.join(['%s'] * len(np_specs))
+            cur.execute(
+                f"SELECT COALESCE(SUM(amount),0) as total FROM sales_records WHERE spec IN ({placeholders}) AND date >= %s",
+                np_specs + [s_val]
+            )
+            np_amt = float(cur.fetchone()["total"])
+        elif np_specs:
+            placeholders = ','.join(['%s'] * len(np_specs))
+            cur.execute(
+                f"SELECT COALESCE(SUM(amount),0) as total FROM sales_records WHERE spec IN ({placeholders})",
+                np_specs
+            )
+            np_amt = float(cur.fetchone()["total"])
 
         # 环比数据
         prev_total = 0
         if prev_start or prev_end:
-            prev_total, _, _ = _agg(prev_start, prev_end)
+            prev_total, _ = _agg(prev_start, prev_end)
 
         # 目标完成率
         target_val = 0
@@ -265,9 +303,9 @@ def get_summary():
 
         return jsonify({
             "total_amount": cur_total,
-            "customer_count": len(cur_custs),
-            "new_customer_count": len(new_custs),
-            "old_customer_count": len(old_custs),
+            "customer_count": cur_cust_cnt,
+            "new_customer_count": new_cust_cnt,
+            "old_customer_count": old_cust_cnt,
             "new_customer_amount": new_amt,
             "old_customer_amount": old_amt,
             "new_product_amount": np_amt,
