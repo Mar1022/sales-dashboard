@@ -532,6 +532,35 @@
   .cust-level-d { background:#F5F5F5;color:#888; }
   details summary { padding: 8px 12px; margin: 0 -12px; border-radius: 4px; }
   details summary:hover { background: #F5F5F5; }
+  /* 任务卡片 */
+  .task-card { background:#fff; border-radius:8px; margin-bottom:12px; border:1px solid #EDEDED; overflow:hidden; }
+  .task-card.overdue { border-left:4px solid #E53935; }
+  .task-card.today { border-left:4px solid #FF9800; }
+  .task-card.normal { border-left:4px solid #3B5998; }
+  .task-card.priority-high { border-left-color:#E53935; }
+  .task-card.priority-medium { border-left-color:#FF9800; }
+  .task-card.priority-low { border-left-color:#3B5998; }
+  .task-header { padding:12px 16px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; background:#FAFAFA; border-bottom:1px solid #F0F0F0; }
+  .task-cust { font-weight:600; font-size:14px; }
+  .task-purpose-tag { display:inline-block; padding:2px 8px; border-radius:12px; font-size:11px; margin-left:8px; }
+  .task-purpose-tag.emerge { background:#FFEBEE; color:#C62828; }
+  .task-purpose-tag.overdue { background:#FFF3E0; color:#E65100; }
+  .task-purpose-tag.maintain { background:#E8F5E9; color:#2E7D32; }
+  .task-purpose-tag.wake { background:#F3E5F5; color:#6A1B9A; }
+  .task-purpose-tag.recover { background:#FFF8E1; color:#F57F17; }
+  .task-purpose-tag.warn { background:#FFEBEE; color:#BF360C; }
+  .task-purpose-tag.revisit { background:#E3F2FD; color:#1565C0; }
+  .task-purpose-tag.routine { background:#F5F5F5; color:#888; }
+  .task-body { padding:12px 16px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; }
+  .task-suggestion { font-size:12px; background:#F5F5F5; padding:6px 10px; border-radius:4px; color:#555; flex:1; min-width:200px; }
+  .task-suggestion.editable { background:#FFF8E1; cursor:pointer; }
+  .task-suggestion.editable:hover { background:#FFE0A3; }
+  .task-buttons { display:flex; gap:6px; }
+  .task-btn { padding:5px 12px; border:none; border-radius:4px; cursor:pointer; font-size:11px; }
+  .task-btn-done { background:#3B5998; color:#fff; }
+  .task-btn-done:hover { background:#345189; }
+  .task-btn-postpone { background:#fff; border:1px solid #DDD; color:#666; }
+  .task-btn-postpone:hover { border-color:#3B5998; color:#3B5998; }
 </style>
 </head>
 <body>
@@ -713,50 +742,76 @@
 <!-- ═══════════════ Tab4: 客户管理与跟进 ═══════════════ -->
 <div id="tab-customer" class="tab-content" style="overflow-y:auto">
 
-  <!-- 1. 客户管理 -->
-  <div style="background:#fff;border-radius:4px;padding:10px 16px;margin:0 20px 8px;border:1px solid #EDEDED">
-    <div style="display:flex;gap:8px;align-items:center">
-      <span style="font-size:13px;font-weight:600;color:#222;white-space:nowrap">客户管理</span>
-      <input id="cust-mgmt-search" placeholder="搜索客户名称或编码" style="flex:1;padding:6px 10px;border:1px solid #DDD;border-radius:3px;font-size:13px;font-family:inherit;max-width:260px"
-             onkeydown="if(event.key==='Enter')openCustMgmtDrawer()">
-      <button class="btn-primary" onclick="openCustMgmtDrawer()" style="font-size:12px">搜索</button>
-      <button class="btn-outline" onclick="openCustMgmtDrawer()" style="font-size:12px">管理</button>
-      <span style="font-size:12px;color:#999;white-space:nowrap;margin-left:auto">共 <b id="cust-mgmt-total">—</b> 个客户</span>
-      <button class="btn-outline" onclick="importCodesFile()" style="font-size:12px">导入编码</button>
-      <button class="btn-outline" onclick="exportPendingCodesFile()" style="font-size:12px">导出待编码</button>
-    </div>
-  </div>
-
-  <!-- 2+3. 今日 + 本周并排 -->
-  <div style="display:flex;gap:12px;margin:8px 20px">
-    <!-- 今日 -->
-    <div class="chart-card" style="flex:1;margin:0">
-      <div class="chart-title" style="cursor:pointer" onclick="toggleTodayDetail()">📅 今日待跟进 <span id="today-summary-inline"></span></div>
-      <div id="today-tasks-detail" style="display:none;max-height:260px;overflow-y:auto"></div>
-      <div id="today-tasks-empty" style="display:none;padding:20px;text-align:center;color:#999">🎉 今日无待跟进客户</div>
-      <div id="batch-buttons" style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap"></div>
-    </div>
-    <!-- 本周 -->
-    <div class="chart-card" style="flex:1;margin:0">
-      <div class="chart-title">📆 本周待跟进 <span id="week-summary-inline"></span></div>
-      <div id="week-tasks-container" style="max-height:300px;overflow-y:auto"></div>
-    </div>
-  </div>
-
-  <!-- 4. 客户等级分布 -->
-  <div class="chart-card" style="margin:8px 20px">
+  <!-- 1. 今日待跟进（核心区） -->
+  <div class="chart-card" style="margin:8px 20px 16px">
     <div class="chart-title" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
-      <span>📊 客户等级分布</span>
-      <select id="level-year-select" style="padding:4px 8px;border-radius:4px;border:1px solid #ddd"></select>
+      <span>📅 今日待跟进 <b id="today-task-count">0</b> 个</span>
+      <div style="display:flex;gap:8px">
+        <button class="btn-outline" onclick="batchMarkAllToday()" style="font-size:11px">一键标记全部已完成</button>
+        <button class="btn-outline" onclick="loadTodayTasks()" style="font-size:11px">🔄 刷新</button>
+      </div>
     </div>
-    <div id="level-stats-container" style="display:flex;gap:20px;flex-wrap:wrap;margin-top:12px"></div>
+    <div id="today-tasks-container"></div>
   </div>
 
-  <!-- 5. 原有分析报表 -->
-  <details>
+  <!-- 2. 关键指标卡片 -->
+  <div class="cards-grid" style="grid-template-columns:repeat(4,1fr);margin:0 20px 16px">
+    <div class="card"><div class="card-label">今日完成</div><div class="card-value" id="today-completed">0</div><div class="card-sub" id="today-compare"></div></div>
+    <div class="card"><div class="card-label">逾期客户</div><div class="card-value" id="overdue-count">0</div><div class="card-sub">⚠️ 需优先处理</div></div>
+    <div class="card" style="cursor:pointer" onclick="loadLevelStats();document.querySelector('#tab-customer details:last-of-type').open=true"><div class="card-label">待编码客户</div><div class="card-value" id="pending-code-count">0</div><div class="card-sub">点击导出补充</div></div>
+    <div class="card" onclick="openCustMgmtDrawer()" style="cursor:pointer"><div class="card-label">客户总数</div><div class="card-value" id="cust-mgmt-total">—</div><div class="card-sub">点击管理</div></div>
+  </div>
+
+  <!-- 3. 本周预览 -->
+  <details style="margin:0 20px 16px">
+    <summary style="cursor:pointer;font-weight:500">📆 本周待跟进预览 <span id="week-task-badge" style="background:#3B5998;color:#fff;padding:0 6px;border-radius:10px;margin-left:6px">0</span></summary>
+    <div id="week-tasks-container" style="margin-top:12px"></div>
+  </details>
+
+  <!-- 4. 任务目的规则设置 -->
+  <details style="margin:0 20px 16px">
+    <summary style="cursor:pointer;font-weight:500">⚙️ 任务目的规则设置</summary>
+    <div style="padding:12px;background:#FAFAFA;border-radius:4px;margin-top:8px">
+      <div style="margin-bottom:12px">
+        <label style="font-size:12px;color:#666;margin-right:16px">
+          <input type="radio" name="global-purpose-rule" value="auto" checked onchange="switchPurposeRule('auto')"> 自动判断（系统根据规则生成）
+        </label>
+        <label style="font-size:12px;color:#666">
+          <input type="radio" name="global-purpose-rule" value="manual" onchange="switchPurposeRule('manual')"> 手动编辑（可自定义话术）
+        </label>
+      </div>
+      <div id="manual-edit-area" style="display:none;margin-top:12px">
+        <div style="font-size:12px;color:#333;margin-bottom:8px">编辑客户建议话术：</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          <select id="edit-customer-select" style="padding:6px;border:1px solid #ddd;border-radius:3px;min-width:180px"></select>
+          <input type="text" id="edit-suggestion-input" placeholder="输入自定义话术" style="flex:1;padding:6px;border:1px solid #ddd;border-radius:3px">
+          <button class="btn-primary" onclick="saveCustomSuggestion()">保存</button>
+        </div>
+      </div>
+      <div style="margin-top:12px;font-size:11px;color:#999">💡 自动判断规则：紧急跟进 > 逾期提醒 > 客情维护 > 唤醒 > 挽回 > 风险预警 > 回访 > 常规跟进</div>
+    </div>
+  </details>
+
+  <!-- 5. 客户等级分布 + 编码管理 -->
+  <details style="margin:0 20px 16px">
+    <summary style="cursor:pointer;font-weight:500">📊 客户等级分布 & 编码管理</summary>
+    <div style="margin-top:16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:12px">
+        <span class="chart-title" style="margin:0">客户等级分布</span>
+        <select id="level-year-select" style="padding:4px 8px;border-radius:4px;border:1px solid #ddd" onchange="loadLevelStats()"></select>
+      </div>
+      <div id="level-stats-container" style="display:flex;gap:20px;flex-wrap:wrap;margin-bottom:20px"></div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap">
+        <button class="btn-outline" onclick="importCodesFile()">导入编码对照表</button>
+        <button class="btn-outline" onclick="exportPendingCodesFile()">导出待编码客户</button>
+      </div>
+    </div>
+  </details>
+
+  <!-- 6. 原有分析报表 -->
+  <details style="margin:0 20px 16px">
     <summary style="cursor:pointer;font-weight:500">📈 分析报表（偶尔查看）</summary>
     <div style="margin-top:16px">
-
       <div class="tab-filter-sticky">
         <div class="filter-bar">
           <span class="filter-label">日期范围</span>
@@ -768,10 +823,7 @@
           <span style="font-size:11px;color:#999;margin-left:8px">* 当年至今数据列标题标注*号</span>
         </div>
       </div>
-
       <div class="tab-inner">
-
-        <!-- ════ Section 1: 客户年度销售对比及排行 ════ -->
         <div class="chart-card" style="margin-bottom:20px">
           <div class="chart-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
             <span>一、客户年度销售对比及排行</span>
@@ -783,42 +835,24 @@
             </div>
           </div>
           <div class="table-scroll" style="max-height:520px;overflow:auto">
-            <table id="cust-year-table" style="min-width:100%">
-              <thead id="cust-year-thead"></thead>
-              <tbody id="cust-year-tbody"></tbody>
-            </table>
+            <table id="cust-year-table" style="min-width:100%"><thead id="cust-year-thead"></thead><tbody id="cust-year-tbody"></tbody></table>
           </div>
           <div id="cust-year-empty" class="target-empty" style="display:none">暂无数据</div>
         </div>
-
-        <!-- ════ Section 2: 老客户流失分析 ════ -->
         <div class="chart-card" style="margin-bottom:20px">
-          <div class="chart-title" style="display:flex;align-items:center;justify-content:space-between">
-            <span>二、老客户流失分析</span>
-            <button class="btn-outline" onclick="exportChurnCSV()" style="font-size:12px">导出CSV</button>
-          </div>
+          <div class="chart-title" style="display:flex;align-items:center;justify-content:space-between"><span>二、老客户流失分析</span><button class="btn-outline" onclick="exportChurnCSV()" style="font-size:12px">导出CSV</button></div>
           <div class="table-scroll" style="max-height:400px;overflow:auto">
-            <table id="churn-table" style="min-width:100%">
-              <thead><tr><th>年份</th><th style="text-align:center">年初客户数</th><th style="text-align:center">当年活跃客户数</th><th style="text-align:center">留存客户数</th><th style="text-align:center">流失客户数</th><th style="text-align:center">流失率</th></tr></thead>
-              <tbody id="churn-tbody"></tbody>
-            </table>
+            <table id="churn-table" style="min-width:100%"><thead><tr><th>年份</th><th style="text-align:center">年初客户数</th><th style="text-align:center">当年活跃客户数</th><th style="text-align:center">留存客户数</th><th style="text-align:center">流失客户数</th><th style="text-align:center">流失率</th></tr></thead><tbody id="churn-tbody"></tbody></table>
           </div>
           <div id="churn-empty" class="target-empty" style="display:none">暂无数据</div>
         </div>
-
-        <!-- ════ Section 3: 活跃客户数趋势 ════ -->
         <div class="chart-card" style="margin-bottom:20px">
           <div class="chart-title">三、活跃客户数趋势 — 按年汇总</div>
           <div class="table-scroll" style="max-height:360px;overflow:auto">
-            <table id="activity-year-table" style="min-width:100%">
-              <thead><tr><th>年份</th><th style="text-align:center">活跃客户数</th><th style="text-align:center">同比增长率</th><th style="text-align:center">新客户数</th><th style="text-align:center">老客户留存数</th></tr></thead>
-              <tbody id="activity-year-tbody"></tbody>
-            </table>
+            <table id="activity-year-table" style="min-width:100%"><thead><tr><th>年份</th><th style="text-align:center">活跃客户数</th><th style="text-align:center">同比增长率</th><th style="text-align:center">新客户数</th><th style="text-align:center">老客户留存数</th></tr></thead><tbody id="activity-year-tbody"></tbody></table>
           </div>
         </div>
-
       </div>
-
     </div>
   </details>
 
@@ -2465,7 +2499,21 @@ function resetCustomerFilter() {
   refreshCustomerTab();
 }
 
-// ==================== 客户跟进模块 ====================
+// ==================== 优化后的跟进模块 ====================
+
+let currentPurposeRule = 'auto';
+
+function getWeekEnd() {
+    const today = new Date();
+    const end = new Date(today);
+    end.setDate(today.getDate() + 7);
+    return end.toISOString().slice(0,10);
+}
+
+function getPurposeTagClass(purpose) {
+    const map = {'紧急跟进':'emerge','逾期提醒':'overdue','客情维护':'maintain','唤醒':'wake','挽回':'recover','风险预警':'warn','回访':'revisit'};
+    return map[purpose] || 'routine';
+}
 
 async function loadTodayTasks() {
     const resp = await fetch('/api/customers/followup/today');
@@ -2473,120 +2521,176 @@ async function loadTodayTasks() {
     if (!result.success) return;
     const data = result.data;
     const today = new Date().toISOString().slice(0,10);
-
-    // 统计各等级数量
-    const lvl = {A:0, B:0, C:0, D:0};
-    data.forEach(t => lvl[t.level] = (lvl[t.level]||0) + 1);
-    document.getElementById('today-summary-inline').innerHTML =
-        `A<b>${lvl.A}</b> B<b>${lvl.B}</b> C<b>${lvl.C}</b> D<b>${lvl.D}</b> 共<b>${data.length}</b>个`;
-
-    // 空状态
-    const emptyEl = document.getElementById('today-tasks-empty');
-    const detailEl = document.getElementById('today-tasks-detail');
+    document.getElementById('today-task-count').innerText = data.length;
+    const container = document.getElementById('today-tasks-container');
     if (data.length === 0) {
-        emptyEl.style.display = ''; detailEl.style.display = 'none';
-    } else {
-        emptyEl.style.display = 'none';
-        detailEl.innerHTML = data.map(task => {
-            const overdue = task.next_followup < today;
-            const bg = overdue ? 'background:#FFF5F5' : '';
-            const recoveryBadge = (task.peak_level === 'A' || task.peak_level === 'B') && (task.level === 'C' || task.level === 'D')
-                ? '<span style="font-size:10px;background:#FFF3E0;color:#E65100;padding:2px 6px;border-radius:8px;margin-left:6px">挽回</span>' : '';
-            return `
-                <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #F5F5F5;font-size:12px;${bg}">
-                    <div>
-                        <span style="font-weight:500">${escapeHtml(task.name)}</span>
-                        <span class="cust-level cust-level-${task.level.toLowerCase()}">${task.level}</span>
-                        ${recoveryBadge}
-                        ${overdue ? '<span style="font-size:10px;color:#E53935;margin-left:4px">逾期</span>' : ''}
-                    </div>
-                    <button class="task-btn" onclick="markFollowup('${escapeHtml(task.name).replace(/'/g, "\\'")}')" style="font-size:10px;padding:3px 8px">✓</button>
-                </div>
-            `;
-        }).join('');
+        container.innerHTML = '<div style="padding:20px;text-align:center;color:#999">🎉 今日无待跟进客户</div>';
+        document.getElementById('overdue-count').innerText = '0';
+        return;
     }
-
-    // 批量按钮
-    const batchDiv = document.getElementById('batch-buttons');
-    batchDiv.innerHTML = `
-        <button class="btn-outline" onclick="batchMarkFollowup('A')" style="font-size:11px;padding:3px 10px">A类</button>
-        <button class="btn-outline" onclick="batchMarkFollowup('B')" style="font-size:11px;padding:3px 10px">B类</button>
-        <button class="btn-outline" onclick="batchMarkFollowup('C')" style="font-size:11px;padding:3px 10px">C类</button>
-        <button class="btn-outline" onclick="batchMarkFollowup('D')" style="font-size:11px;padding:3px 10px">D类</button>
-        <button class="btn-outline" onclick="batchMarkFollowup('all')" style="font-size:11px;padding:3px 10px">全部</button>
-    `;
+    const overdue = data.filter(t => t.next_followup < today);
+    const todayDue = data.filter(t => t.next_followup === today);
+    const weekDue = data.filter(t => t.next_followup > today && t.next_followup <= getWeekEnd());
+    document.getElementById('overdue-count').innerText = overdue.length;
+    let html = '';
+    if (overdue.length > 0) {
+        html += '<div style="margin-bottom:16px"><div style="font-size:13px;font-weight:600;color:#E53935;margin-bottom:8px">🔴 逾期（'+overdue.length+'个）</div>';
+        html += overdue.map(t => renderTaskCard(t, true)).join('') + '</div>';
+    }
+    if (todayDue.length > 0) {
+        html += '<div style="margin-bottom:16px"><div style="font-size:13px;font-weight:600;color:#FF9800;margin-bottom:8px">🟡 今日应跟进（'+todayDue.length+'个）</div>';
+        html += todayDue.map(t => renderTaskCard(t, false)).join('') + '</div>';
+    }
+    if (weekDue.length > 0) {
+        html += '<details style="margin-top:8px"><summary style="cursor:pointer;font-size:12px;color:#666">📆 本周内（'+weekDue.length+'个）</summary>';
+        html += weekDue.map(t => renderTaskCard(t, false)).join('') + '</details>';
+    }
+    container.innerHTML = html;
 }
 
-function toggleTodayDetail() {
-    const el = document.getElementById('today-tasks-detail');
-    el.style.display = el.style.display === 'none' ? '' : 'none';
+function renderTaskCard(task) {
+    const isOverdue = task.next_followup < new Date().toISOString().slice(0,10);
+    const cardClass = isOverdue ? 'overdue' : (task.next_followup === new Date().toISOString().slice(0,10) ? 'today' : 'normal');
+    const levelClass = 'task-level-' + task.level;
+    const suggestion = task.custom_suggestion || task.suggestion;
+    const isManual = currentPurposeRule === 'manual';
+    const tagCls = getPurposeTagClass(task.purpose);
+    const peakBadge = (task.peak_level && task.peak_level !== task.level)
+        ? '<span class="task-badge" style="font-size:10px;padding:2px 6px;border-radius:10px;background:#FFF8E1;color:#F9A825;margin-left:6px">曾'+task.peak_level+'类</span>' : '';
+    return `<div class="task-card ${cardClass}" data-cust="${escapeHtml(task.name)}">
+        <div class="task-header">
+            <div>
+                <span class="task-cust">${escapeHtml(task.name)}</span>
+                <span class="task-level ${levelClass}" style="display:inline-block;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:500">${task.level}类</span>
+                ${peakBadge}
+                <span class="task-purpose-tag ${tagCls}">${task.purpose}</span>
+            </div>
+            <div style="font-size:11px;color:#999">应跟进：${task.next_followup}</div>
+        </div>
+        <div class="task-body">
+            <span style="font-size:12px;color:#666;flex-shrink:0"><strong>目的：</strong>${task.purpose}</span>
+            <span class="task-suggestion ${isManual?'editable':''}" onclick="${isManual?`editSuggestionInline('${escapeHtml(task.name).replace(/'/g,\"\\\\'\")}','${escapeHtml(suggestion).replace(/'/g,\"\\\\'\")}')`:''}">💡 ${suggestion||'暂无建议'}${isManual?'<span style=\"font-size:10px;color:#999;margin-left:6px\">✏️</span>':''}</span>
+            <div class="task-buttons">
+                <button class="task-btn task-btn-done" onclick="markFollowupAndRefresh('${escapeHtml(task.name).replace(/'/g,\"\\\\'\")}')">✓ 已完成</button>
+                <button class="task-btn task-btn-postpone" onclick="postponeTask('${escapeHtml(task.name).replace(/'/g,\"\\\\'\")}','${task.next_followup||''}')">⏰ 改期</button>
+            </div>
+        </div>
+    </div>`;
+}
+
+async function markFollowupAndRefresh(custName) {
+    const resp = await fetch('/api/customers/followup/mark', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({customer_name:custName})
+    });
+    const result = await resp.json();
+    if (result.success) { showToast('已标记跟进完成', 'success'); loadTodayTasks(); loadWeekTasks(); loadKeyMetrics(); }
+    else { showToast(result.error, 'error'); }
+}
+
+async function batchMarkAllToday() {
+    if (!confirm('确定标记今日所有待跟进客户为已完成吗？')) return;
+    const resp = await fetch('/api/customers/followup/batch', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({level:''})
+    });
+    const result = await resp.json();
+    if (result.success) { showToast(result.message, 'success'); loadTodayTasks(); loadWeekTasks(); loadKeyMetrics(); }
+}
+
+async function postponeTask(custName, currentDate) {
+    const newDate = prompt('请输入新的跟进日期（YYYY-MM-DD）：', currentDate);
+    if (!newDate || !/^\d{4}-\d{2}-\d{2}$/.test(newDate)) { showToast('日期格式错误', 'error'); return; }
+    const resp = await fetch('/api/customers/followup/postpone', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({customer_name:custName, new_followup_date:newDate})
+    });
+    const result = await resp.json();
+    if (result.success) { showToast('已改期至 '+newDate, 'success'); loadTodayTasks(); loadWeekTasks(); }
+    else { showToast(result.error, 'error'); }
 }
 
 async function loadWeekTasks() {
     const resp = await fetch('/api/customers/followup/week');
     const result = await resp.json();
     if (!result.success) return;
-    const data = result.data;
-    // 各等级统计
-    const lvl = {A:0, B:0, C:0, D:0};
-    data.forEach(t => lvl[t.level] = (lvl[t.level]||0) + 1);
-    document.getElementById('week-summary-inline').innerHTML =
-        `A<b>${lvl.A}</b> B<b>${lvl.B}</b> C<b>${lvl.C}</b> D<b>${lvl.D}</b> 共<b>${data.length}</b>个`;
-
+    const today = new Date().toISOString().slice(0,10);
+    const data = result.data.filter(t => t.next_followup > today);
+    document.getElementById('week-task-badge').innerText = data.length;
     const container = document.getElementById('week-tasks-container');
     if (data.length === 0) {
-        container.innerHTML = '<div style="padding:12px;color:#999;text-align:center">本周无其他待跟进客户</div>';
-    } else {
-        container.innerHTML = data.map(task => `
-            <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #F5F5F5;font-size:12px">
-                <div>
-                    <span style="font-weight:500">${escapeHtml(task.name)}</span>
-                    <span class="cust-level cust-level-${task.level.toLowerCase()}">${task.level}</span>
-                    <span style="font-size:10px;color:#999;margin-left:4px">${task.next_followup}</span>
-                </div>
-                <button class="task-btn" onclick="markFollowup('${escapeHtml(task.name).replace(/'/g, "\\'")}')" style="font-size:10px;padding:3px 8px">✓</button>
-            </div>
-        `).join('');
+        container.innerHTML = '<div style="padding:12px;color:#999;text-align:center">本周无其他待跟进客户</div>'; return;
     }
+    const grouped = {};
+    data.forEach(t => { const d = t.next_followup; if (!grouped[d]) grouped[d] = []; grouped[d].push(t); });
+    let html = '';
+    for (const [date, tasks] of Object.entries(grouped).sort()) {
+        html += '<div style="margin-bottom:10px"><div style="font-size:12px;font-weight:600;color:#666;margin-bottom:4px">📅 '+date+'</div>';
+        html += tasks.map(t =>
+            '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #F0F0F0;font-size:12px">'+
+            '<div><span style="font-weight:500">'+escapeHtml(t.name)+'</span> <span class="task-level task-level-'+t.level+'" style="display:inline-block;padding:2px 8px;border-radius:12px;font-size:11px">'+t.level+'类</span></div>'+
+            '<button class="task-btn task-btn-done" style="padding:3px 8px" onclick="markFollowupAndRefresh(\''+escapeHtml(t.name).replace(/'/g,"\\'")+'\')">✓</button></div>'
+        ).join('');
+        html += '</div>';
+    }
+    container.innerHTML = html;
 }
 
-async function markFollowup(custName) {
-    const resp = await fetch('/api/customers/followup/mark', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({customer_name: custName})
+async function loadKeyMetrics() {
+    const resp = await fetch('/api/customers/followup/today');
+    const result = await resp.json();
+    if (!result.success) return;
+    const today = new Date().toISOString().slice(0,10);
+    const overdue = result.data.filter(t => t.next_followup < today).length;
+    document.getElementById('overdue-count').innerText = overdue;
+    const pendingResp = await fetch('/api/customers/all?limit=1&search=code:null');
+    // Use the count from the all API to get total
+    const allResp = await fetch('/api/customers/all?limit=1');
+    const allResult = await allResp.json();
+    if (allResult.success) document.getElementById('cust-mgmt-total').innerText = allResult.total;
+}
+
+function switchPurposeRule(rule) {
+    currentPurposeRule = rule;
+    document.getElementById('manual-edit-area').style.display = rule === 'manual' ? 'block' : 'none';
+    if (rule === 'manual') populateEditCustomerSelect();
+    loadTodayTasks();
+}
+
+async function populateEditCustomerSelect() {
+    const resp = await fetch('/api/customers/all?limit=500');
+    const result = await resp.json();
+    if (!result.success) return;
+    const sel = document.getElementById('edit-customer-select');
+    sel.innerHTML = '<option value="">选择客户</option>' + result.data.map(c =>
+        '<option value="'+escapeHtml(c.name)+'">'+escapeHtml(c.name)+' ('+(c.code||'无编码')+')</option>'
+    ).join('');
+}
+
+async function saveCustomSuggestion(custName, suggestion) {
+    if (!custName) {
+        custName = document.getElementById('edit-customer-select').value;
+        suggestion = document.getElementById('edit-suggestion-input').value;
+    }
+    if (!custName) { showToast('请选择客户', 'error'); return; }
+    const resp = await fetch('/api/customers/followup/update-suggestion', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({customer_name:custName, custom_suggestion:suggestion, purpose_rule:currentPurposeRule})
     });
     const result = await resp.json();
-    if (result.success) {
-        showToast(`已标记 ${custName} 跟进完成`, 'success');
-        loadTodayTasks();
-        loadWeekTasks();
-        loadLevelStats();
-    } else {
-        showToast(result.error, 'error');
-    }
+    if (result.success) { showToast('建议话术已保存', 'success'); loadTodayTasks(); }
+    else { showToast(result.error, 'error'); }
 }
 
-async function batchMarkFollowup(level) {
-    const resp = await fetch('/api/customers/followup/batch', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({level: level === 'all' ? '' : level})
-    });
-    const result = await resp.json();
-    if (result.success) {
-        showToast(result.message, 'success');
-        loadTodayTasks();
-        loadWeekTasks();
-        loadLevelStats();
-    } else {
-        showToast(result.error, 'error');
-    }
+function editSuggestionInline(custName, currentText) {
+    const newTxt = prompt('编辑建议话术：', currentText);
+    if (newTxt !== null && newTxt !== currentText) saveCustomSuggestion(custName, newTxt);
 }
 
+// 等级分布（保持）
 async function loadLevelStats() {
-    const year = document.getElementById('level-year-select').value;
-    const resp = await fetch(`/api/customers/stats?year=${year}`);
+    const year = document.getElementById('level-year-select').value || (new Date().getFullYear()-1);
+    const resp = await fetch('/api/customers/stats?year='+year);
     const result = await resp.json();
     if (!result.success) return;
     const stats = result.data;
@@ -2599,147 +2703,51 @@ async function loadLevelStats() {
     `;
 }
 
-let currentLevelModal = { level: '', page: 1, year: '' };
+let currentLevelModal = { level:'', page:1, year:'' };
+async function showLevelCustomers(level) { const year = document.getElementById('level-year-select').value; currentLevelModal = {level, page:1, year}; await renderLevelModal(); document.getElementById('level-modal').classList.add('show'); }
+async function renderLevelModal() { const {level,page,year}=currentLevelModal; const resp=await fetch('/api/customers/by-level?level='+level+'&year='+year+'&page='+page+'&limit=20'); const result=await resp.json(); if(!result.success)return; document.getElementById('level-modal-title').innerHTML=level+'类客户（共'+result.total+'个）'; const tbody=document.getElementById('level-modal-tbody'); tbody.innerHTML=result.data.map((cust,idx)=>'<tr><td>'+((page-1)*20+idx+1)+'</td><td>'+escapeHtml(cust.name)+'</td><td>'+(cust.code||'<span style=\"color:#FF9800\">⚠️ 待补充</span>')+'</td><td class=\"td-amount\">¥'+cust.sales.toLocaleString()+'</td></tr>').join(''); const tp=Math.ceil(result.total/20); document.getElementById('level-modal-pagination').innerHTML='<button class=\"page-btn\" onclick=\"changeLevelPage('+(page-1)+')\" '+(page<=1?'disabled':'')+'>上一页</button><span class=\"page-info\">第'+page+'/'+tp+'页</span><button class=\"page-btn\" onclick=\"changeLevelPage('+(page+1)+')\" '+(page>=tp?'disabled':'')+'>下一页</button>'; }
+function changeLevelPage(p) { currentLevelModal.page=p; renderLevelModal(); }
+function closeLevelModal() { document.getElementById('level-modal').classList.remove('show'); }
 
-async function showLevelCustomers(level) {
-    const year = document.getElementById('level-year-select').value;
-    currentLevelModal = { level, page: 1, year };
-    await renderLevelModal();
-    document.getElementById('level-modal').classList.add('show');
-}
-
-async function renderLevelModal() {
-    const { level, page, year } = currentLevelModal;
-    const resp = await fetch(`/api/customers/by-level?level=${level}&year=${year}&page=${page}&limit=20`);
-    const result = await resp.json();
-    if (!result.success) return;
-    document.getElementById('level-modal-title').innerHTML = `${level}类客户（共${result.total}个）`;
-    const tbody = document.getElementById('level-modal-tbody');
-    tbody.innerHTML = result.data.map((cust, idx) => `
-        <tr>
-            <td>${(page-1)*20 + idx + 1}</td>
-            <td>${escapeHtml(cust.name)}</td>
-            <td>${cust.code || '<span style="color:#FF9800">⚠️ 待补充</span>'}</td>
-            <td class="td-amount">¥${cust.sales.toLocaleString()}</td>
-        </tr>
-    `).join('');
-    const totalPages = Math.ceil(result.total / 20);
-    const pagination = document.getElementById('level-modal-pagination');
-    pagination.innerHTML = `
-        <button class="page-btn" onclick="changeLevelPage(${page-1})" ${page<=1?'disabled':''}>上一页</button>
-        <span class="page-info">第${page}/${totalPages}页</span>
-        <button class="page-btn" onclick="changeLevelPage(${page+1})" ${page>=totalPages?'disabled':''}>下一页</button>
-    `;
-}
-
-function changeLevelPage(newPage) {
-    currentLevelModal.page = newPage;
-    renderLevelModal();
-}
-
-function closeLevelModal() {
-    document.getElementById('level-modal').classList.remove('show');
-}
-
+// 编码导入导出（保持）
 function importCodesFile() {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.xlsx,.xls,.csv';
+    const input = document.createElement('input'); input.type='file'; input.accept='.xlsx,.xls,.csv';
     input.onchange = async (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
+        const file = e.target.files[0]; if(!file) return;
         showToast('正在导入编码...', 'success');
-        const formData = new FormData();
-        formData.append('file', file);
+        const formData = new FormData(); formData.append('file', file);
         try {
-            const resp = await fetch('/api/customers/import-codes', { method: 'POST', body: formData });
+            const resp = await fetch('/api/customers/import-codes', {method:'POST', body:formData});
             const result = await resp.json();
-            if (result.success) {
-                showToast(result.message, 'success');
-                loadLevelStats();
-                loadCustCount();
-            } else {
-                showToast(result.error, 'error');
-            }
-        } catch(e) {
-            showToast('导入失败：' + e.message, 'error');
-        }
+            if (result.success) { showToast(result.message, 'success'); loadLevelStats(); loadCustCount(); }
+            else { showToast(result.error, 'error'); }
+        } catch(e) { showToast('导入失败：'+e.message, 'error'); }
     };
     input.click();
 }
+async function exportPendingCodesFile() { window.open('/api/customers/export-pending-codes', '_blank'); }
 
-async function exportPendingCodesFile() {
-    window.open('/api/customers/export-pending-codes', '_blank');
-}
-
-// ==================== 客户管理抽屉 ====================
-let custMgmtPage = 1;
-let custMgmtSearch = '';
-
-async function loadCustCount() {
-    const resp = await fetch('/api/customers/all?limit=1');
-    const result = await resp.json();
-    if (result.success) {
-        document.getElementById('cust-mgmt-total').textContent = result.total;
-    }
-}
-
-function openCustMgmtDrawer() {
-    custMgmtPage = 1;
-    // 同步主栏搜索词到抽屉搜索框
-    const mainSearch = document.getElementById('cust-mgmt-search').value.trim();
-    custMgmtSearch = mainSearch;
-    document.getElementById('cust-mgmt-drawer-search').value = mainSearch;
-    document.getElementById('cust-mgmt-drawer').classList.add('show');
-    loadCustMgmtDrawer();
-}
-
-function closeCustMgmtDrawer(e) {
-    if (e && e.target !== document.getElementById('cust-mgmt-drawer')) return;
-    document.getElementById('cust-mgmt-drawer').classList.remove('show');
-}
-
+// 客户管理抽屉（保持）
+let custMgmtPage = 1, custMgmtSearch = '';
+async function loadCustCount() { const resp=await fetch('/api/customers/all?limit=1'); const result=await resp.json(); if(result.success)document.getElementById('cust-mgmt-total').innerText=result.total; }
+function openCustMgmtDrawer() { custMgmtPage=1; const mainSearch=document.getElementById('cust-mgmt-search'); custMgmtSearch=mainSearch?mainSearch.value.trim():''; const ds=document.getElementById('cust-mgmt-drawer-search'); if(ds)ds.value=custMgmtSearch; document.getElementById('cust-mgmt-drawer').classList.add('show'); loadCustMgmtDrawer(); }
+function closeCustMgmtDrawer(e) { if(e&&e.target!==document.getElementById('cust-mgmt-drawer'))return; document.getElementById('cust-mgmt-drawer').classList.remove('show'); }
 async function loadCustMgmtDrawer() {
-    // 优先读抽屉搜索框，回退读主栏搜索框
-    let searchInput = document.getElementById('cust-mgmt-drawer-search');
-    if (!searchInput || !searchInput.value.trim()) {
-        searchInput = document.getElementById('cust-mgmt-search');
-    }
-    custMgmtSearch = searchInput ? searchInput.value.trim() : '';
-    const params = new URLSearchParams({page: custMgmtPage, limit: 50});
-    if (custMgmtSearch) params.set('search', custMgmtSearch);
+    let si = document.getElementById('cust-mgmt-drawer-search');
+    if(!si||!si.value.trim()) si = document.getElementById('cust-mgmt-search');
+    custMgmtSearch = si?si.value.trim():'';
+    const params = new URLSearchParams({page:custMgmtPage, limit:50}); if(custMgmtSearch)params.set('search',custMgmtSearch);
     try {
-        const resp = await fetch('/api/customers/all?' + params.toString());
-        const result = await resp.json();
-        if (!result.success) { showToast(result.error || '加载失败', 'error'); return; }
-        const body = document.getElementById('cust-mgmt-drawer-body');
-        if (result.data.length === 0) {
-            body.innerHTML = '<div class="drawer-empty">暂无客户数据</div>';
-        } else {
-            body.innerHTML = result.data.map((cust, i) => `
-                <div class="drawer-item">
-                    <span class="drawer-item-name" style="font-weight:500;min-width:120px">${escapeHtml(cust.code) || '<span style=\"color:#CCC\">—</span>'}</span>
-                    <span style="flex:1;font-size:13px">${escapeHtml(cust.name)}</span>
-                    <span class="cust-level cust-level-${cust.level.toLowerCase()}">${cust.level}类</span>
-                </div>
-            `).join('');
-        }
-        const totalPages = Math.ceil(result.total / 50);
-        const pg = document.getElementById('cust-mgmt-pagination');
-        pg.innerHTML = totalPages > 1 ? `
-            <button class="page-btn" onclick="custMgmtGoPage(${custMgmtPage-1})" ${custMgmtPage<=1?'disabled':''}>上一页</button>
-            <span class="page-info">第${custMgmtPage}/${totalPages}页（共${result.total}个）</span>
-            <button class="page-btn" onclick="custMgmtGoPage(${custMgmtPage+1})" ${custMgmtPage>=totalPages?'disabled':''}>下一页</button>
-        ` : `<span class="page-info" style="font-size:12px;color:#999">共 ${result.total} 个客户</span>`;
-    } catch(e) {
-        showToast('网络错误，请重试', 'error');
-    }
+        const resp = await fetch('/api/customers/all?'+params.toString()); const result = await resp.json();
+        if(!result.success){showToast(result.error||'加载失败','error');return;}
+        const body=document.getElementById('cust-mgmt-drawer-body');
+        if(result.data.length===0){body.innerHTML='<div class=\"drawer-empty\">暂无客户数据</div>';}
+        else{body.innerHTML=result.data.map((cust,i)=>'<div class=\"drawer-item\"><span class=\"drawer-item-name\" style=\"font-weight:500;min-width:120px\">'+(cust.code?escapeHtml(cust.code):'<span style=\"color:#CCC\">—</span>')+'</span><span style=\"flex:1;font-size:13px\">'+escapeHtml(cust.name)+'</span><span class=\"cust-level cust-level-'+cust.level.toLowerCase()+'\">'+cust.level+'类</span></div>').join('');}
+        const tp=Math.ceil(result.total/50); const pg=document.getElementById('cust-mgmt-pagination');
+        pg.innerHTML=tp>1?'<button class=\"page-btn\" onclick=\"custMgmtGoPage('+(custMgmtPage-1)+')\" '+(custMgmtPage<=1?'disabled':'')+'>上一页</button><span class=\"page-info\">第'+custMgmtPage+'/'+tp+'页（共'+result.total+'个）</span><button class=\"page-btn\" onclick=\"custMgmtGoPage('+(custMgmtPage+1)+')\" '+(custMgmtPage>=tp?'disabled':'')+'>下一页</button>':'<span class=\"page-info\" style=\"font-size:12px;color:#999\">共 '+result.total+' 个客户</span>';
+    } catch(e) { showToast('网络错误，请重试', 'error'); }
 }
-
-function custMgmtGoPage(p) {
-    custMgmtPage = p;
-    loadCustMgmtDrawer();
-}
+function custMgmtGoPage(p) { custMgmtPage=p; loadCustMgmtDrawer(); }
 
 function initCustomerTab() {
     const yearSelect = document.getElementById('level-year-select');
@@ -2747,18 +2755,18 @@ function initCustomerTab() {
     yearSelect.innerHTML = '';
     for (let y = currentYear; y >= 2020; y--) {
         const option = document.createElement('option');
-        option.value = y;
-        option.textContent = `${y}年`;
+        option.value = y; option.textContent = y+'年';
         yearSelect.appendChild(option);
     }
     yearSelect.value = currentYear - 1;
-    yearSelect.onchange = () => { loadLevelStats(); };
-    loadLevelStats();
     loadTodayTasks();
     loadWeekTasks();
+    loadLevelStats();
     loadCustCount();
+    loadKeyMetrics();
 }
 
+// ==================== 初始客户跟进模块结束 ====================
 function escapeHtml(str) {
     if (!str) return '';
     return str.replace(/[&<>]/g, function(m) {

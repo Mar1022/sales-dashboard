@@ -124,6 +124,9 @@ def init_db():
         cur.execute('CREATE INDEX IF NOT EXISTS idx_customers_name ON customers(name)')
         cur.execute('CREATE INDEX IF NOT EXISTS idx_customers_level ON customers(level)')
 
+        cur.execute("ALTER TABLE customers ADD COLUMN IF NOT EXISTS purpose_rule TEXT DEFAULT 'auto'")
+        cur.execute("ALTER TABLE customers ADD COLUMN IF NOT EXISTS custom_suggestion TEXT")
+
         # 首次初始化时写入默认新品规格
         cur.execute("SELECT COUNT(*) AS cnt FROM new_products")
         if cur.fetchone()["cnt"] == 0:
@@ -931,6 +934,42 @@ def sync_customers_from_sales():
         conn.close()
 
 
+def get_task_purpose_and_suggestion(cust_name, level, peak_level, last_order_date, last_followup, year_sales, consecutive_decline=False):
+    """
+    根据客户数据判断任务目的和行动建议
+    返回: {'purpose': str, 'suggestion': str, 'priority': int}
+    """
+    from datetime import date, timedelta
+    today = date.today()
+    days_since_last_order = (today - last_order_date).days if last_order_date else 999
+    days_since_followup = (today - last_followup).days if last_followup else 999
+    days_overdue = (today - last_followup).days if last_followup and last_followup < today else 0
+
+    # 1. 逾期超过7天 且 A/B类
+    if days_overdue > 7 and level in ('A', 'B'):
+        return {'purpose': '紧急跟进', 'suggestion': '客户已逾期一周，建议立即电话联系，了解是否存在问题', 'priority': 1}
+    # 2. 逾期超过3天
+    if days_overdue > 3:
+        return {'purpose': '逾期提醒', 'suggestion': '已逾期，建议尽快联系客户', 'priority': 2}
+    # 3. A类 且 30天内有订单
+    if level == 'A' and days_since_last_order <= 30:
+        return {'purpose': '客情维护', 'suggestion': '了解使用情况，推送新品信息，保持良好的客户关系', 'priority': 3}
+    # 4. A类 且 超过60天无订单
+    if level == 'A' and days_since_last_order > 60:
+        return {'purpose': '唤醒', 'suggestion': '客户长时间未下单，了解是否被竞争对手抢占，邀请参加新品发布会', 'priority': 4}
+    # 5. C/D 且 历史为A/B
+    if level in ('C', 'D') and peak_level in ('A', 'B'):
+        return {'purpose': '挽回', 'suggestion': '历史大客户已流失，发送优惠券或新品资料，了解流失原因', 'priority': 5}
+    # 6. 连续销售额下降
+    if consecutive_decline:
+        return {'purpose': '风险预警', 'suggestion': '销售额连续下降，了解客户经营状况，是否需要支持', 'priority': 6}
+    # 7. 新客户（首次成交后14天内）
+    if days_since_last_order <= 14 and year_sales > 0:
+        return {'purpose': '回访', 'suggestion': '新客户首次购买后回访，询问使用体验，收集反馈', 'priority': 7}
+    # 8. 默认
+    return {'purpose': '常规跟进', 'suggestion': '了解近期需求，推送产品资料，保持联系', 'priority': 8}
+
+
 # ==================== 新增API接口 ====================
 
 @app.route('/api/customers/stats')
@@ -1029,14 +1068,13 @@ def get_customers_by_level():
 
 @app.route('/api/customers/followup/today')
 def get_today_tasks():
-    """获取今日需跟进的客户"""
+    """获取今日需跟进的客户（含任务目的和建议）"""
     from datetime import date
     today = date.today()
     y0, y1, y2 = today.year, today.year - 1, today.year - 2
     conn = get_db()
     cur = get_cursor(conn)
     try:
-        # 一次性 JOIN 计算每客户 3 年最高等级
         cur.execute("""
             WITH yearly AS (
                 SELECT c.name,
@@ -1054,25 +1092,62 @@ def get_today_tasks():
                         WHEN s0 >= 100000 OR s1 >= 100000 OR s2 >= 100000 THEN 'B'
                         WHEN s0 > 0 OR s1 > 0 OR s2 > 0 THEN 'C'
                         ELSE 'D'
-                    END as peak_level
+                    END as peak_level,
+                    (s1 < s2 AND s0 < s1 AND s1 > 0) as is_declining
                 FROM yearly
+            ),
+            last_order AS (
+                SELECT cust, MAX(date) as last_date
+                FROM sales_records
+                GROUP BY cust
             )
-            SELECT cu.name, cu.level, cu.last_followup, cu.next_followup, p.peak_level
+            SELECT cu.name, cu.level, cu.last_followup, cu.next_followup,
+                   p.peak_level, p.is_declining, cu.purpose_rule, cu.custom_suggestion,
+                   lo.last_date as last_order_date
             FROM customers cu
             LEFT JOIN peak p ON cu.name = p.name
+            LEFT JOIN last_order lo ON cu.name = lo.cust
             WHERE cu.next_followup <= %s
             ORDER BY cu.next_followup ASC,
                 CASE cu.level WHEN 'A' THEN 1 WHEN 'B' THEN 2 WHEN 'C' THEN 3 ELSE 4 END
         """, (f"{y0}-01-01", f"{y1}-01-01", f"{y0}-01-01", f"{y2}-01-01", f"{y1}-01-01", today))
         tasks = cur.fetchall()
-        result = [{
-            'name': r['name'],
-            'level': r['level'],
-            'peak_level': r['peak_level'] or 'D',
-            'last_followup': r['last_followup'].isoformat() if r['last_followup'] else None,
-            'next_followup': r['next_followup'].isoformat() if r['next_followup'] else None,
-            'is_overdue': r['next_followup'] < today if r['next_followup'] else False
-        } for r in tasks]
+        result = []
+        for r in tasks:
+            last_order_date = r['last_order_date'] if r['last_order_date'] else None
+            last_followup = r['last_followup']
+            level = r['level']
+            peak_level = r['peak_level'] or 'D'
+            # Use auto rule if set to auto, or if custom_suggestion is empty
+            use_auto = (r['purpose_rule'] != 'manual') or (not r['custom_suggestion'])
+            if use_auto:
+                ps = get_task_purpose_and_suggestion(
+                    r['name'], level, peak_level,
+                    last_order_date, last_followup,
+                    None, r['is_declining']
+                )
+                purpose = ps['purpose']
+                suggestion = ps['suggestion']
+                priority = ps['priority']
+            else:
+                purpose = '自定义'
+                suggestion = r['custom_suggestion'] or ''
+                priority = 5
+            result.append({
+                'name': r['name'],
+                'level': level,
+                'peak_level': peak_level,
+                'last_followup': last_followup.isoformat() if last_followup else None,
+                'next_followup': r['next_followup'].isoformat() if r['next_followup'] else None,
+                'is_overdue': r['next_followup'] < today if r['next_followup'] else False,
+                'purpose': purpose,
+                'suggestion': suggestion,
+                'priority': priority,
+                'purpose_rule': r['purpose_rule'] or 'auto',
+                'custom_suggestion': r['custom_suggestion'] or '',
+                'last_order_date': last_order_date.isoformat() if last_order_date else None,
+                'consecutive_decline': r['is_declining']
+            })
         return jsonify({'success': True, 'data': result})
     finally:
         cur.close()
@@ -1162,6 +1237,51 @@ def batch_mark_followup():
             count += 1
         conn.commit()
         return jsonify({'success': True, 'message': f'已批量标记{count}个客户'})
+    finally:
+        cur.close()
+        conn.close()
+
+
+@app.route('/api/customers/followup/postpone', methods=['POST'])
+def postpone_followup():
+    """改期：将客户的跟进日期改为指定日期"""
+    data = request.get_json()
+    cust_name = data.get('customer_name')
+    new_date = data.get('new_followup_date')
+    if not cust_name or not new_date:
+        return jsonify({'error': '缺少参数'}), 400
+    conn = get_db()
+    cur = get_cursor(conn)
+    try:
+        cur.execute(
+            "UPDATE customers SET next_followup = %s, updated_at = NOW() WHERE name = %s",
+            (new_date, cust_name)
+        )
+        conn.commit()
+        return jsonify({'success': True, 'message': f'已改期至 {new_date}'})
+    finally:
+        cur.close()
+        conn.close()
+
+
+@app.route('/api/customers/followup/update-suggestion', methods=['POST'])
+def update_customer_suggestion():
+    """更新客户的自定义建议话术"""
+    data = request.get_json()
+    cust_name = data.get('customer_name')
+    custom_suggestion = data.get('custom_suggestion', '')
+    purpose_rule = data.get('purpose_rule', 'manual')
+    if not cust_name:
+        return jsonify({'error': '缺少客户名称'}), 400
+    conn = get_db()
+    cur = get_cursor(conn)
+    try:
+        cur.execute(
+            "UPDATE customers SET custom_suggestion = %s, purpose_rule = %s, updated_at = NOW() WHERE name = %s",
+            (custom_suggestion, purpose_rule, cust_name)
+        )
+        conn.commit()
+        return jsonify({'success': True, 'message': '建议话术已保存'})
     finally:
         cur.close()
         conn.close()
