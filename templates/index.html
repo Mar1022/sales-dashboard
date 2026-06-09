@@ -2506,6 +2506,20 @@ function getPurposeTagClass(purpose) {
     return map[purpose] || 'routine';
 }
 
+function toggleGroup(gid) {
+
+// Delegated click: clicking .group-toggle expands its sibling div
+document.addEventListener("click", function(e){
+    var el = e.target.closest(".group-toggle");
+    if (!el) return;
+    var groupId = el.getAttribute("data-group-id");
+    var list = document.getElementById(groupId);
+    if (list) list.style.display = list.style.display === "none" ? "" : "none";
+});
+    var el = document.getElementById(gid);
+    if (el) el.style.display = el.style.display === 'none' ? '' : 'none';
+}
+
 async function loadTodayTasks() {
     var resp = await fetch('/api/customers/followup/today');
     var result = await resp.json();
@@ -2523,57 +2537,43 @@ async function loadTodayTasks() {
     var todayDue = data.filter(function(t){return t.next_followup === today;});
     var weekDue = data.filter(function(t){return t.next_followup > today && t.next_followup <= getWeekEnd();});
     document.getElementById('overdue-count').innerText = overdue.length;
-
-    var MAX_SHOW = 3;
     var html = '';
-
     function groupByPurpose(list) {
         var groups = {};
         list.forEach(function(t){
-            var p = t.purpose || '常规跟进';
+            var p = t.purpose || '';
             if (!groups[p]) groups[p] = {purpose:p, priority:t.priority||8, items:[]};
             groups[p].items.push(t);
         });
         return Object.values(groups).sort(function(a,b){return a.priority - b.priority;});
     }
-
     function renderSection(list, label, color, icon) {
         if (list.length === 0) return '';
         var groups = groupByPurpose(list);
-        var out = '<div style="margin-bottom:10px">';
-        out += '<div style="font-size:12px;font-weight:600;color:'+color+';margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid #F0F0F0">'+icon+' '+label+'（'+list.length+'个）</div>';
+        var h = '';
+        h += '<div style="margin-bottom:8px"><div style="font-size:12px;font-weight:600;color:'+color+';margin-bottom:4px;padding-bottom:4px;border-bottom:1px solid #F0F0F0">'+icon+' '+label+'\uff08'+list.length+'\u4e2a\uff09</div>';
         groups.forEach(function(g, gi){
-            var items = g.items;
-            var show = items.slice(0, MAX_SHOW);
-            var hidden = items.slice(MAX_SHOW);
             var gid = 'gp_'+icon+'_'+gi;
-            out += '<div style="margin-bottom:6px">';
-            out += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;font-size:11px;color:#555">';
-            out += '<span class="task-purpose-tag '+getPurposeTagClass(g.purpose)+'">'+g.purpose+'</span>';
-            out += '<span>'+items.length+'个</span>';
-            out += '<span style="flex:1"></span>';
-            out += '<button class="task-btn task-btn-done" onclick="batchMarkGroup(\''+icon+'\','+gi+')" style="font-size:10px;padding:2px 6px">批量完成</button>';
-            out += '</div>';
-            out += '<div id="'+gid+'_show">'+show.map(function(t){return renderTaskRow(t);}).join('')+'</div>';
-            if (hidden.length > 0) {
-                out += '<div class="task-expand" style="font-size:11px;padding:2px 0" onclick="var e=document.getElementById(\''+gid+'_hide\');var t=this;var s=e.style.display;e.style.display=s===\'none\'?\'\':\'none\';t.textContent=s===\'none\'?\'收起\':\'展开剩余'+hidden.length+'个\'">展开剩余'+hidden.length+'个</div>';
-                out += '<div id="'+gid+'_hide" style="display:none">'+hidden.map(function(t){return renderTaskRow(t);}).join('')+'</div>';
-            }
-            out += '</div>';
+            h += '<div style="margin-bottom:3px">';
+            h += '<div class="group-toggle" data-group-id="'+gid+'" style="display:flex;align-items:center;gap:8px;font-size:11px;color:#555;cursor:pointer;padding:2px 0">';
+            h += '<span class="task-purpose-tag '+getPurposeTagClass(g.purpose)+'">'+g.purpose+'</span>';
+            h += '<span style="font-weight:500">'+g.items.length+'\u4e2a</span>';
+            h += '<span style="flex:1"></span>';
+            h += '<button class="task-btn task-btn-done" onclick="event.stopPropagation();batchMarkGroup(\''+icon+'\','+gi+')" style="font-size:10px;padding:2px 6px">\u6279\u91cf\u5b8c\u6210</button>';
+            h += '</div>';
+            h += '<div id="'+gid+'" style="display:none">'+g.items.map(function(t){return renderTaskRow(t);}).join('')+'</div>';
+            h += '</div>';
         });
-        out += '</div>';
-        return out;
+        h += '</div>';
+        return h;
     }
-
-    html += renderSection(overdue, '逾期', '#E53935', 'od');
-    html += renderSection(todayDue, '今日应跟进', '#FF9800', 'td');
-    html += renderSection(weekDue, '本周内', '#666', 'wk');
+    html += renderSection(overdue, '\u903e\u671f', '#E53935', 'od');
+    html += renderSection(todayDue, '\u4eca\u65e5\u5e94\u8ddf\u8fdb', '#FF9800', 'td');
+    html += renderSection(weekDue, '\u672c\u5468\u5185', '#666', 'wk');
     container.innerHTML = html;
 }
 
-// Batch mark a purpose group
 function batchMarkGroup(section, gi) {
-    // Re-fetch data and mark the group
     var today = new Date().toISOString().slice(0,10);
     fetch('/api/customers/followup/today').then(function(r){return r.json();}).then(function(result){
         if (!result.success) return;
@@ -2585,7 +2585,7 @@ function batchMarkGroup(section, gi) {
         var groups = [];
         var gmap = {};
         list.forEach(function(t){
-            var p = t.purpose || '常规跟进';
+            var p = t.purpose || '';
             if (!gmap[p]) { gmap[p] = groups.length; groups.push([]); }
             groups[gmap[p]].push(t);
         });
@@ -2593,7 +2593,7 @@ function batchMarkGroup(section, gi) {
         var names = groups[gi].map(function(t){return t.name;});
         var done = 0;
         function markNext() {
-            if (done >= names.length) { showToast('批量完成 '+names.length+' 个', 'success'); loadTodayTasks(); loadWeekTasks(); loadKeyMetrics(); return; }
+            if (done >= names.length) { showToast('\u6279\u91cf\u5b8c\u6210 '+names.length+' \u4e2a', 'success'); loadTodayTasks(); loadWeekTasks(); loadKeyMetrics(); return; }
             fetch('/api/customers/followup/mark', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({customer_name:names[done]})})
                 .then(function(){done++; markNext();});
         }
@@ -2604,7 +2604,6 @@ function batchMarkGroup(section, gi) {
 function renderTaskRow(task) {
     var isOverdue = task.next_followup < new Date().toISOString().slice(0,10);
     var levelClass = 'task-level-' + task.level;
-    var tagCls = getPurposeTagClass(task.purpose);
     var safeName = escapeHtml(task.name);
     var escName = safeName.replace(/'/g, "\\'");
     var escDate = (task.next_followup||'').replace(/'/g, "\\'");
@@ -2612,21 +2611,30 @@ function renderTaskRow(task) {
     if (isOverdue) {
         var d1 = new Date(task.next_followup);
         var d2 = new Date();
-        overdueHtml = ' <span style="color:#E53935;font-size:10px">逾期'+Math.floor((d2-d1)/86400000)+'天</span>';
+        overdueHtml = ' <span style="color:#E53935;font-size:10px">\u903e\u671f'+Math.floor((d2-d1)/86400000)+'\u5929</span>';
     }
     var peakBadge = (task.peak_level && task.peak_level !== task.level)
-        ? '<span style="font-size:9px;padding:1px 4px;border-radius:8px;background:#FFF8E1;color:#F9A825;margin-left:4px">曾'+task.peak_level+'</span>' : '';
+        ? '<span style="font-size:9px;padding:1px 4px;border-radius:8px;background:#FFF8E1;color:#F9A825;margin-left:4px">\u66fe'+task.peak_level+'</span>' : '';
     var html = '<div style="display:flex;align-items:center;gap:6px;padding:3px 0;border-bottom:1px dotted #F0F0F0;font-size:12px">';
     html += '<span style="font-weight:500;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+safeName+'</span>';
     html += '<span class="task-level '+levelClass+'" style="display:inline-block;padding:1px 5px;border-radius:8px;font-size:10px;white-space:nowrap">'+task.level+'</span>';
     html += peakBadge;
     html += '<span style="color:#999;font-size:10px;white-space:nowrap;margin-left:auto">'+task.next_followup+overdueHtml+'</span>';
-    html += '<span class="editable-icon" style="font-size:10px" data-cust="'+safeName+'" title="编辑话术">✎</span>';
-    html += '<button class="task-btn task-btn-done" onclick="markFollowupAndRefresh(' + JSON.stringify(escName) + ')" style="font-size:10px;padding:2px 6px">完成</button>';
-    html += '<button class="task-btn task-btn-postpone" onclick="postponeTask(' + JSON.stringify(escName) + ',' + JSON.stringify(escDate) + ')" style="font-size:10px;padding:2px 6px">改期</button>';
+    html += '<span class="editable-icon" style="font-size:10px" data-cust="'+safeName+'" title="\u7f16\u8f91\u8bdd\u672f">\u270e</span>';
+    html += '<button class="task-btn task-btn-done" onclick="markFollowupAndRefresh(' + JSON.stringify(escName) + ')" style="font-size:10px;padding:2px 6px">\u5b8c\u6210</button>';
+    html += '<button class="task-btn task-btn-postpone" onclick="postponeTask(' + JSON.stringify(escName) + ',' + JSON.stringify(escDate) + ')" style="font-size:10px;padding:2px 6px">\u6539\u671f</button>';
     html += '</div>';
     return html;
 }
+
+// Delegated click: expand group when clicking its header
+document.addEventListener('click', function(e){
+    var el = e.target.closest('.group-toggle');
+    if (!el) return;
+    var gid = el.getAttribute('data-group-id');
+    var list = document.getElementById(gid);
+    if (list) list.style.display = list.style.display === 'none' ? '' : 'none';
+});
 
 async function markFollowupAndRefresh(custName) {
     const resp = await fetch('/api/customers/followup/mark', {
