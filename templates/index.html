@@ -2507,92 +2507,125 @@ function getPurposeTagClass(purpose) {
 }
 
 async function loadTodayTasks() {
-    const resp = await fetch('/api/customers/followup/today');
-    const result = await resp.json();
+    var resp = await fetch('/api/customers/followup/today');
+    var result = await resp.json();
     if (!result.success) return;
-    const data = result.data;
-    const today = new Date().toISOString().slice(0,10);
+    var data = result.data;
+    var today = new Date().toISOString().slice(0,10);
     document.getElementById('today-task-count').innerText = data.length;
-    const container = document.getElementById('today-tasks-container');
+    var container = document.getElementById('today-tasks-container');
     if (data.length === 0) {
-        container.innerHTML = '<div style="padding:20px;text-align:center;color:#999">🎉 今日无待跟进客户</div>';
+        container.innerHTML = '<div style="padding:20px;text-align:center;color:#999">今日无待跟进客户</div>';
         document.getElementById('overdue-count').innerText = '0';
         return;
     }
-    const overdue = data.filter(function(t){return t.next_followup < today;});
-    const todayDue = data.filter(function(t){return t.next_followup === today;});
-    const weekDue = data.filter(function(t){return t.next_followup > today && t.next_followup <= getWeekEnd();});
+    var overdue = data.filter(function(t){return t.next_followup < today;});
+    var todayDue = data.filter(function(t){return t.next_followup === today;});
+    var weekDue = data.filter(function(t){return t.next_followup > today && t.next_followup <= getWeekEnd();});
     document.getElementById('overdue-count').innerText = overdue.length;
+
     var MAX_SHOW = 3;
     var html = '';
 
+    function groupByPurpose(list) {
+        var groups = {};
+        list.forEach(function(t){
+            var p = t.purpose || '常规跟进';
+            if (!groups[p]) groups[p] = {purpose:p, priority:t.priority||8, items:[]};
+            groups[p].items.push(t);
+        });
+        return Object.values(groups).sort(function(a,b){return a.priority - b.priority;});
+    }
+
     function renderSection(list, label, color, icon) {
         if (list.length === 0) return '';
-        var show = list.slice(0, MAX_SHOW);
-        var hidden = list.slice(MAX_SHOW);
-        var id = 'sec_' + icon;
-        var out = '<div style="margin-bottom:12px">';
-        out += '<div style="font-size:13px;font-weight:600;color:'+color+';margin-bottom:8px">'+icon+' '+label+'（'+list.length+'个）</div>';
-        out += show.map(function(t){return renderTaskCard(t);}).join('');
-        if (hidden.length > 0) {
-            out += '<div class="task-expand" onclick="var e=document.getElementById(\''+id+'\');var s=e.style.display;e.style.display=s===\'none\'?\'\':\'none\';this.textContent=s===\'none\'?\'收起\':\'展开全部('+hidden.length+'个)\'">展开全部（'+hidden.length+'个）</div>';
-            out += '<div id="'+id+'" style="display:none">'+hidden.map(function(t){return renderTaskCard(t);}).join('')+'</div>';
-        }
+        var groups = groupByPurpose(list);
+        var out = '<div style="margin-bottom:10px">';
+        out += '<div style="font-size:12px;font-weight:600;color:'+color+';margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid #F0F0F0">'+icon+' '+label+'（'+list.length+'个）</div>';
+        groups.forEach(function(g, gi){
+            var items = g.items;
+            var show = items.slice(0, MAX_SHOW);
+            var hidden = items.slice(MAX_SHOW);
+            var gid = 'gp_'+icon+'_'+gi;
+            out += '<div style="margin-bottom:6px">';
+            out += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;font-size:11px;color:#555">';
+            out += '<span class="task-purpose-tag '+getPurposeTagClass(g.purpose)+'">'+g.purpose+'</span>';
+            out += '<span>'+items.length+'个</span>';
+            out += '<span style="flex:1"></span>';
+            out += '<button class="task-btn task-btn-done" onclick="batchMarkGroup(\''+icon+'\','+gi+')" style="font-size:10px;padding:2px 6px">批量完成</button>';
+            out += '</div>';
+            out += '<div id="'+gid+'_show">'+show.map(function(t){return renderTaskRow(t);}).join('')+'</div>';
+            if (hidden.length > 0) {
+                out += '<div class="task-expand" style="font-size:11px;padding:2px 0" onclick="var e=document.getElementById(\''+gid+'_hide\');var t=this;var s=e.style.display;e.style.display=s===\'none\'?\'\':\'none\';t.textContent=s===\'none\'?\'收起\':\'展开剩余'+hidden.length+'个\'">展开剩余'+hidden.length+'个</div>';
+                out += '<div id="'+gid+'_hide" style="display:none">'+hidden.map(function(t){return renderTaskRow(t);}).join('')+'</div>';
+            }
+            out += '</div>';
+        });
         out += '</div>';
         return out;
     }
-    html += renderSection(overdue, '逾期', '#E53935', '🔴');
-    html += renderSection(todayDue, '今日应跟进', '#FF9800', '🟡');
-    html += renderSection(weekDue, '本周内', '#666', '📆');
+
+    html += renderSection(overdue, '逾期', '#E53935', 'od');
+    html += renderSection(todayDue, '今日应跟进', '#FF9800', 'td');
+    html += renderSection(weekDue, '本周内', '#666', 'wk');
     container.innerHTML = html;
 }
 
-function renderTaskCard(task) {
+// Batch mark a purpose group
+function batchMarkGroup(section, gi) {
+    // Re-fetch data and mark the group
+    var today = new Date().toISOString().slice(0,10);
+    fetch('/api/customers/followup/today').then(function(r){return r.json();}).then(function(result){
+        if (!result.success) return;
+        var data = result.data;
+        var list;
+        if (section === 'od') list = data.filter(function(t){return t.next_followup < today;});
+        else if (section === 'td') list = data.filter(function(t){return t.next_followup === today;});
+        else list = data.filter(function(t){return t.next_followup > today && t.next_followup <= getWeekEnd();});
+        var groups = [];
+        var gmap = {};
+        list.forEach(function(t){
+            var p = t.purpose || '常规跟进';
+            if (!gmap[p]) { gmap[p] = groups.length; groups.push([]); }
+            groups[gmap[p]].push(t);
+        });
+        if (!groups[gi]) return;
+        var names = groups[gi].map(function(t){return t.name;});
+        var done = 0;
+        function markNext() {
+            if (done >= names.length) { showToast('批量完成 '+names.length+' 个', 'success'); loadTodayTasks(); loadWeekTasks(); loadKeyMetrics(); return; }
+            fetch('/api/customers/followup/mark', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({customer_name:names[done]})})
+                .then(function(){done++; markNext();});
+        }
+        markNext();
+    });
+}
+
+function renderTaskRow(task) {
     var isOverdue = task.next_followup < new Date().toISOString().slice(0,10);
-    var cardClass = isOverdue ? 'overdue' : (task.next_followup === new Date().toISOString().slice(0,10) ? 'today' : 'normal');
     var levelClass = 'task-level-' + task.level;
-    // 优先自定义话术，其次查规则表，最后用后端返回的
-    var ruleSugg = task.suggestion;
-    try {
-        var rules = JSON.parse(localStorage.getItem('followup_rules')||'[]');
-        var match = rules.find(function(r){return r.p===task.purpose;});
-        if (match) ruleSugg = match.s;
-    } catch(e) {}
-    var suggestion = task.custom_suggestion || ruleSugg;
     var tagCls = getPurposeTagClass(task.purpose);
-    var peakBadge = (task.peak_level && task.peak_level !== task.level)
-        ? '<span class="task-badge" style="font-size:10px;padding:2px 6px;border-radius:10px;background:#FFF8E1;color:#F9A825;margin-left:6px">曾'+task.peak_level+'类</span>' : '';
     var safeName = escapeHtml(task.name);
     var escName = safeName.replace(/'/g, "\\'");
-    var escSugg = escapeHtml(suggestion).replace(/'/g, "\\'");
     var escDate = (task.next_followup||'').replace(/'/g, "\\'");
     var overdueHtml = '';
     if (isOverdue) {
         var d1 = new Date(task.next_followup);
         var d2 = new Date();
-        overdueHtml = ' <span style="color:#E53935">逾期'+Math.floor((d2-d1)/86400000)+'天</span>';
+        overdueHtml = ' <span style="color:#E53935;font-size:10px">逾期'+Math.floor((d2-d1)/86400000)+'天</span>';
     }
-    return [
-        '<div class="task-card '+cardClass+'">',
-        '<div class="task-header">',
-            '<div>',
-                '<span class="task-cust">'+safeName+'</span>',
-                '<span class="task-level '+levelClass+'" style="display:inline-block;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:500">'+task.level+'类</span>',
-                peakBadge,
-                '<span class="task-purpose-tag '+tagCls+'">'+task.purpose+'</span>',
-            '</div>',
-            '<div style="font-size:11px;color:#999">'+task.next_followup+overdueHtml+'</div>',
-        '</div>',
-        '<div class="task-body">',
-            '<span style="font-size:12px;color:#666;flex-shrink:0">'+task.purpose+'</span>',
-            '<span class="task-suggestion">'+(suggestion||'暂无建议')+'<span class="editable-icon" onclick="editSuggestionInline(\''+escName+'\',\''+escSugg+'\')">✎</span></span>',
-            '<div class="task-buttons">',
-                '<button class="task-btn task-btn-done" onclick="markFollowupAndRefresh(\''+escName+'\')">完成</button>',
-                '<button class="task-btn task-btn-postpone" onclick="postponeTask(\''+escName+'\',\''+escDate+'\')">改期</button>',
-            '</div>',
-        '</div>',
-        '</div>'
-    ].join('');
+    var peakBadge = (task.peak_level && task.peak_level !== task.level)
+        ? '<span style="font-size:9px;padding:1px 4px;border-radius:8px;background:#FFF8E1;color:#F9A825;margin-left:4px">曾'+task.peak_level+'</span>' : '';
+    var html = '<div style="display:flex;align-items:center;gap:6px;padding:3px 0;border-bottom:1px dotted #F0F0F0;font-size:12px">';
+    html += '<span style="font-weight:500;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+safeName+'</span>';
+    html += '<span class="task-level '+levelClass+'" style="display:inline-block;padding:1px 5px;border-radius:8px;font-size:10px;white-space:nowrap">'+task.level+'</span>';
+    html += peakBadge;
+    html += '<span style="color:#999;font-size:10px;white-space:nowrap;margin-left:auto">'+task.next_followup+overdueHtml+'</span>';
+    html += '<span class="editable-icon" style="font-size:10px" data-cust="'+safeName+'" title="编辑话术">✎</span>';
+    html += '<button class="task-btn task-btn-done" onclick="markFollowupAndRefresh(' + JSON.stringify(escName) + ')" style="font-size:10px;padding:2px 6px">完成</button>';
+    html += '<button class="task-btn task-btn-postpone" onclick="postponeTask(' + JSON.stringify(escName) + ',' + JSON.stringify(escDate) + ')" style="font-size:10px;padding:2px 6px">改期</button>';
+    html += '</div>';
+    return html;
 }
 
 async function markFollowupAndRefresh(custName) {
