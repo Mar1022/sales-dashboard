@@ -128,14 +128,14 @@
   .tab-filter-sticky .filter-bar { margin-bottom: 0; }
 
   /* ── Tab1 内容内边距 ── */
-  .tab-inner { padding: 12px 28px 28px; }
+  .tab-inner { padding: 16px 28px 36px; }
 
   /* ── 概览卡片 ── */
   .cards-grid {
     display: grid;
     grid-template-columns: repeat(6, 1fr);
-    gap: 12px;
-    margin-bottom: 16px;
+    gap: 16px;
+    margin-bottom: 20px;
   }
   @media (max-width: 1400px) { .cards-grid { grid-template-columns: repeat(3, 1fr); } }
   @media (max-width: 900px) { .cards-grid { grid-template-columns: repeat(2, 1fr); } }
@@ -143,16 +143,16 @@
 
   .card {
     background: #fff;
-    padding: 18px 22px;
+    padding: 22px 24px;
     border-radius: 4px;
   }
-  .card-label { font-size: 12px; color: #999; margin-bottom: 8px; }
+  .card-label { font-size: 13px; color: #999; margin-bottom: 10px; }
   .card-value {
-    font-size: clamp(22px, 2.4vw, 32px);
+    font-size: clamp(26px, 2.8vw, 36px);
     font-weight: 600; color: #222;
     line-height: 1.2; word-break: break-all;
   }
-  .card-sub { font-size: 12px; color: #999; margin-top: 10px; }
+  .card-sub { font-size: 12px; color: #999; margin-top: 12px; }
   .card-sub .up { color: #43A047; }
   .card-sub .down { color: #E53935; }
   .rate-green { color: #43A047; }
@@ -216,25 +216,25 @@
   .charts-row {
     display: grid;
     grid-template-columns: 60% 40%;
-    gap: 12px;
-    margin-bottom: 16px;
+    gap: 16px;
+    margin-bottom: 20px;
   }
   @media (max-width: 900px) { .charts-row { grid-template-columns: 1fr; } }
 
   .chart-card {
     background: #fff;
-    padding: 16px 20px 12px;
+    padding: 20px 24px 16px;
     border-radius: 4px;
   }
   .chart-title {
     font-size: 13px; font-weight: 600; color: #333;
-    margin-bottom: 10px;
-    padding-bottom: 8px;
+    margin-bottom: 12px;
+    padding-bottom: 10px;
     border-bottom: 1px solid #F0F0F0;
   }
   .chart-box {
     width: 100%;
-    height: clamp(240px, 30vh, 400px);
+    height: clamp(300px, 42vh, 550px);
   }
 
   /* ── 明细Toolbar ── */
@@ -406,6 +406,7 @@
     display: flex; flex-direction: column;
     box-shadow: -2px 0 16px rgba(0,0,0,.08);
   }
+  .drawer-panel.wide { width: 520px; }
   .drawer-overlay.show .drawer-panel { transform: translateX(0); }
 
   .drawer-header {
@@ -435,6 +436,22 @@
 
   .drawer-empty { text-align: center; padding: 60px 20px; color: #CCC; font-size: 13px; }
 
+  /* 新客户明细抽屉 */
+  .nc-drawer-summary {
+    padding: 14px 20px; border-bottom: 1px solid #EDEDED;
+    font-size: 13px; color: #666; background: #FAFAFA; flex-shrink: 0;
+  }
+  .nc-drawer-summary b { color: #3B5998; }
+  .nc-drawer-body { flex: 1; overflow-y: auto; }
+  .nc-row {
+    display: flex; align-items: center; padding: 11px 20px;
+    border-bottom: 1px solid #F5F5F5; transition: background .1s;
+  }
+  .nc-row:hover { background: #F7FAFD; }
+  .nc-rank { width: 32px; font-size: 12px; color: #999; flex-shrink: 0; }
+  .nc-name { flex: 1; font-size: 13px; color: #333; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .nc-amount { font-size: 13px; font-weight: 500; color: #3B5998; flex-shrink: 0; margin-left: 16px; white-space: nowrap; }
+
   .btn-delete-sm {
     padding: 4px 12px; border: 1px solid #E74C3C; color: #E74C3C;
     background: #fff; font-size: 12px; cursor: pointer; border-radius: 3px;
@@ -458,6 +475,61 @@
   .confirm-box h3 { font-size: 15px; font-weight: 600; color: #222; margin: 0 0 10px; }
   .confirm-box p { font-size: 13px; color: #666; margin: 0 0 20px; line-height: 1.6; }
   .confirm-btns { display: flex; gap: 10px; justify-content: flex-end; }
+
+  /* ── 目标管理弹窗 ── */
+  .target-section-title {
+    font-size: 13px; font-weight: 600; color: #555;
+    padding-bottom: 8px; border-bottom: 1px solid #EEE;
+  }
+  .target-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .target-table th {
+    background: #FAFAFA; color: #888; font-weight: 500;
+    padding: 9px 12px; text-align: left; border-bottom: 1px solid #EDEDED;
+  }
+  .target-table td {
+    padding: 9px 12px; border-bottom: 1px solid #F5F5F5; color: #444;
+  }
+  .target-table .td-year { font-weight: 600; color: #3B5998; }
+  .target-table .td-yearly { font-weight: 500; color: #222; }
+  .target-table tbody tr:hover { background: #F7FAFD; }
+  .target-empty { text-align: center; padding: 24px; color: #CCC; font-size: 13px; }
+  .target-auto-yearly {
+    font-size: 12px; color: #3B5998; margin-left: 8px; white-space: nowrap;
+  }
+  .target-auto-yearly b { font-size: 14px; }
+
+  /* ── Tab4 客户分析 ── */
+  .cust-tag {
+    display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:500;white-space:nowrap;margin:1px;
+  }
+  .cust-tag-warn { background:#FFF3E0;color:#E65100; }
+  .cust-tag-good { background:#E8F5E9;color:#2E7D32; }
+  .cust-tag-new { background:#E3F2FD;color:#1565C0; }
+  .cust-tag-star { background:#FFF8E1;color:#F9A825; }
+  .cust-tag-down { background:#FFEBEE;color:#C62828; }
+  .cust-tag-up { background:#E0F2F1;color:#00695C; }
+  .cust-tag-drop { background:#FCE4EC;color:#AD1457; }
+  .year-star { color:#E65100;font-weight:600; }
+  .clickable-cust { color:#3B5998;cursor:pointer;text-decoration:none; }
+  .clickable-cust:hover { text-decoration:underline;color:#2D477A; }
+  .clickable-num { color:#3B5998;cursor:pointer;font-weight:500; }
+  .clickable-num:hover { text-decoration:underline;color:#2D477A; }
+  .cust-rank-bar { display:inline-block;height:6px;background:#3B5998;border-radius:3px;vertical-align:middle;margin-right:6px; }
+
+  .task-card { display:flex; justify-content:space-between; align-items:center; padding:10px 12px; margin-bottom:8px; background:#FAFAFA; border-left:3px solid #3B5998; border-radius:4px; }
+  .task-card.overdue { border-left-color:#E53935; background:#FFF8F8; }
+  .task-card.today { border-left-color:#FF9800; background:#FFFBF5; }
+  .task-cust { font-weight:600; }
+  .task-btn { padding:4px 12px; background:#3B5998; color:#fff; border:none; border-radius:3px; cursor:pointer; font-size:11px; }
+  .level-card { text-align:center; padding:12px 24px; background:#fff; border-radius:8px; cursor:pointer; border:1px solid #EDEDED; min-width:80px; }
+  .level-card:hover { border-color:#3B5998; }
+  .level-num { font-size:24px; font-weight:600; color:#3B5998; }
+  .level-label { font-size:12px; color:#666; margin-top:4px; }
+  .cust-level { display:inline-block;padding:1px 7px;border-radius:9px;font-size:10px;font-weight:600;margin-left:6px;vertical-align:middle; }
+  .cust-level-a { background:#FFF8E1;color:#F57F17; }
+  .cust-level-b { background:#E8F5E9;color:#2E7D32; }
+  .cust-level-c { background:#E3F2FD;color:#1565C0; }
+  .cust-level-d { background:#F5F5F5;color:#888; }
 </style>
 </head>
 <body>
@@ -469,7 +541,7 @@
       <h1>Sur's 销售业绩管理系统</h1>
     </div>
     <div style="display:flex;align-items:center;gap:12px">
-      <button class="settings-btn" onclick="openTargetModal()" title="业绩目标管理" style="font-size:12px;border:1px solid #DDD;background:#fff;color:#666;padding:5px 12px;border-radius:3px;cursor:pointer;font-family:inherit">业绩目标管理</button>
+      <button onclick="openTargetModal()" title="业绩目标管理" style="font-size:13px;font-weight:600;border:none;background:#3B5998;color:#fff;padding:7px 16px;border-radius:4px;cursor:pointer;font-family:inherit;letter-spacing:1px;box-shadow:0 2px 6px rgba(59,89,152,.25);transition:all .15s" onmouseover="this.style.background='#345189'" onmouseout="this.style.background='#3B5998'">📊 业绩目标管理</button>
       <div id="lastUpdate">数据更新：—</div>
     </div>
   </div>
@@ -478,6 +550,7 @@
       <button class="tab-btn active" onclick="switchTab('dashboard')">首页看板</button>
       <button class="tab-btn" onclick="switchTab('detail')">销售数据明细</button>
       <button class="tab-btn" onclick="switchTab('newprod')">新品数据</button>
+      <button class="tab-btn" onclick="switchTab('customer')">客户分析</button>
     </div>
   </div>
 </div>
@@ -490,6 +563,8 @@
       <span class="filter-label">时间</span>
       <button class="quick-btn active" id="qbtn-year" onclick="setQuick('year')">本年</button>
       <button class="quick-btn" id="qbtn-last-year" onclick="setQuick('lastYear')">去年</button>
+      <button class="quick-btn" id="qbtn-quarter" onclick="setQuick('quarter')">本季度</button>
+      <button class="quick-btn" id="qbtn-last-quarter" onclick="setQuick('lastQuarter')">上季度</button>
       <button class="quick-btn" id="qbtn-month" onclick="setQuick('month')">本月</button>
       <button class="quick-btn" id="qbtn-last-month" onclick="setQuick('lastMonth')">上月</button>
       <button class="quick-btn" id="qbtn-week" onclick="setQuick('week')">本周</button>
@@ -514,7 +589,7 @@
         <div class="card-label">总客户数</div>
         <div class="card-value" id="c-cust">—</div>
       </div>
-      <div class="card">
+      <div class="card" style="cursor:pointer" onclick="openNewCustDrawer()" title="点击查看新客户明细">
         <div class="card-label">新客户</div>
         <div class="card-value" id="c-new-cust">—</div>
       </div>
@@ -633,16 +708,158 @@
 
 </div>
 
+<!-- ═══════════════ Tab4: 客户管理与跟进 ═══════════════ -->
+<div id="tab-customer" class="tab-content" style="overflow-y:auto">
+
+  <!-- 1. 今日跟进任务 -->
+  <div class="chart-card" style="margin-bottom:16px">
+    <div class="chart-title">📅 今日待跟进客户</div>
+    <div id="today-tasks-container"></div>
+    <div id="batch-buttons" style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap"></div>
+  </div>
+
+  <!-- 2. 本周待办 -->
+  <details style="margin-bottom:16px">
+    <summary style="cursor:pointer;font-weight:500">📆 本周待跟进客户</summary>
+    <div id="week-tasks-container" style="margin-top:12px"></div>
+  </details>
+
+  <!-- 3. 客户等级分布 -->
+  <div class="chart-card" style="margin-bottom:16px">
+    <div class="chart-title" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+      <span>📊 客户等级分布</span>
+      <select id="level-year-select" style="padding:4px 8px;border-radius:4px;border:1px solid #ddd"></select>
+    </div>
+    <div id="level-stats-container" style="display:flex;gap:20px;flex-wrap:wrap;margin-top:12px"></div>
+  </div>
+
+  <!-- 4. 编码管理 -->
+  <details style="margin-bottom:16px">
+    <summary style="cursor:pointer;font-weight:500">📇 编码管理（仅核对，不影响业务）</summary>
+    <div style="padding:12px;display:flex;gap:12px;flex-wrap:wrap">
+      <button class="btn-outline" onclick="importCodesFile()">导入编码对照表</button>
+      <button class="btn-outline" onclick="exportPendingCodesFile()">导出待编码客户</button>
+    </div>
+    <div style="font-size:11px;color:#999;margin-top:8px">💡 导入Excel需包含「客户名称」「编码」两列</div>
+  </details>
+
+  <!-- 5. 原有分析报表 -->
+  <details>
+    <summary style="cursor:pointer;font-weight:500">📈 分析报表（偶尔查看）</summary>
+    <div style="margin-top:16px">
+
+      <div class="tab-filter-sticky">
+        <div class="filter-bar">
+          <span class="filter-label">日期范围</span>
+          <input type="date" id="c-dateStart">
+          <span class="date-sep">—</span>
+          <input type="date" id="c-dateEnd">
+          <button class="btn-apply" onclick="refreshCustomerTab()">刷新</button>
+          <button class="btn-outline" onclick="resetCustomerFilter()">重置</button>
+          <span style="font-size:11px;color:#999;margin-left:8px">* 当年至今数据列标题标注*号</span>
+        </div>
+      </div>
+
+      <div class="tab-inner">
+
+        <!-- ════ Section 1: 客户年度销售对比及排行 ════ -->
+        <div class="chart-card" style="margin-bottom:20px">
+          <div class="chart-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+            <span>一、客户年度销售对比及排行</span>
+            <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+              <label style="font-size:12px;color:#666;cursor:pointer;white-space:nowrap"><input type="radio" name="rankBy" value="recent12" checked onchange="refreshCustYearTable()"> 按近12个月</label>
+              <label style="font-size:12px;color:#666;cursor:pointer;white-space:nowrap"><input type="radio" name="rankBy" value="total" onchange="refreshCustYearTable()"> 按历史累计</label>
+              <button class="btn-outline" onclick="toggleCustLimit()" id="btn-cust-limit" style="font-size:12px">加载全部</button>
+              <button class="btn-outline" onclick="exportCustYearCSV()" style="font-size:12px">导出CSV</button>
+            </div>
+          </div>
+          <div class="table-scroll" style="max-height:520px;overflow:auto">
+            <table id="cust-year-table" style="min-width:100%">
+              <thead id="cust-year-thead"></thead>
+              <tbody id="cust-year-tbody"></tbody>
+            </table>
+          </div>
+          <div id="cust-year-empty" class="target-empty" style="display:none">暂无数据</div>
+        </div>
+
+        <!-- ════ Section 2: 老客户流失分析 ════ -->
+        <div class="chart-card" style="margin-bottom:20px">
+          <div class="chart-title" style="display:flex;align-items:center;justify-content:space-between">
+            <span>二、老客户流失分析</span>
+            <button class="btn-outline" onclick="exportChurnCSV()" style="font-size:12px">导出CSV</button>
+          </div>
+          <div class="table-scroll" style="max-height:400px;overflow:auto">
+            <table id="churn-table" style="min-width:100%">
+              <thead><tr><th>年份</th><th style="text-align:center">年初客户数</th><th style="text-align:center">当年活跃客户数</th><th style="text-align:center">留存客户数</th><th style="text-align:center">流失客户数</th><th style="text-align:center">流失率</th></tr></thead>
+              <tbody id="churn-tbody"></tbody>
+            </table>
+          </div>
+          <div id="churn-empty" class="target-empty" style="display:none">暂无数据</div>
+        </div>
+
+        <!-- ════ Section 3: 活跃客户数趋势 ════ -->
+        <div class="chart-card" style="margin-bottom:20px">
+          <div class="chart-title">三、活跃客户数趋势 — 按年汇总</div>
+          <div class="table-scroll" style="max-height:360px;overflow:auto">
+            <table id="activity-year-table" style="min-width:100%">
+              <thead><tr><th>年份</th><th style="text-align:center">活跃客户数</th><th style="text-align:center">同比增长率</th><th style="text-align:center">新客户数</th><th style="text-align:center">老客户留存数</th></tr></thead>
+              <tbody id="activity-year-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </details>
+
+</div>
+
+<!-- ════ 客户订单明细弹窗 ════ -->
+<div class="modal-overlay" id="cust-orders-modal" onclick="if(event.target===this)closeCustOrders()">
+  <div class="modal" style="width:900px;max-width:95vw;max-height:85vh;overflow-y:auto">
+    <h3 id="cust-orders-title">客户订单明细</h3>
+    <div class="table-scroll" style="max-height:55vh;overflow:auto">
+      <table style="min-width:500px">
+        <thead id="cust-orders-thead"><tr><th>终审日期</th><th>品名</th><th>货品规格</th><th>单位</th><th>受订数量</th><th>单价</th><th>本位币</th></tr></thead>
+        <tbody id="cust-orders-tbody"></tbody>
+      </table>
+    </div>
+    <div id="cust-orders-summary" style="font-size:12px;color:#666;margin-top:10px"></div>
+    <div class="modal-btns">
+      <button class="btn-outline" onclick="closeCustOrders()">关闭</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════ 活跃客户明细弹窗 ════ -->
+<div class="modal-overlay" id="active-cust-modal" onclick="if(event.target===this)closeActiveCust()">
+  <div class="modal" style="width:800px;max-width:95vw;max-height:85vh;overflow-y:auto">
+    <h3 id="active-cust-title">活跃客户明细</h3>
+    <div class="table-scroll" style="max-height:50vh;overflow:auto">
+      <table style="min-width:500px">
+        <thead><tr><th>客户名称</th><th>购买次数</th><th>总销售额</th></tr></thead>
+        <tbody id="active-cust-tbody"></tbody>
+      </table>
+    </div>
+    <div id="active-cust-summary" style="font-size:12px;color:#666;margin-top:10px"></div>
+    <div class="modal-btns">
+      <button class="btn-outline" onclick="closeActiveCust()">关闭</button>
+    </div>
+  </div>
+</div>
+
 <!-- ════ 导入 Modal ════ -->
 <div class="modal-overlay" id="import-modal">
   <div class="modal">
-    <h3>导入 Excel 数据</h3>
-    <p>请上传符合模板格式的 Excel 文件（.xlsx / .xls），上传后数据将存入服务器数据库。</p>
+    <h3>导入数据文件</h3>
+    <p>请上传 Excel 或 CSV 文件，上传后数据将存入服务器数据库。</p>
     <label class="upload-area" for="fileInput">
       <div class="upload-icon">+</div>
       <div>点击选择文件</div>
-      <div style="margin-top:4px;font-size:11px;color:#CCC">支持 .xlsx / .xls</div>
-      <input type="file" id="fileInput" accept=".xlsx,.xls" onchange="handleFileSelect(event)">
+      <div style="margin-top:4px;font-size:11px;color:#CCC">支持 .xlsx / .xls / .csv</div>
+      <div style="margin-top:2px;font-size:11px;color:#E67E22">💡 大数据文件建议另存为 CSV（UTF-8）格式上传</div>
+      <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" onchange="handleFileSelect(event)">
     </label>
     <div id="import-preview" style="font-size:12px;color:#777;margin-top:8px;"></div>
     <div class="modal-btns">
@@ -654,19 +871,29 @@
 
 <!-- ════ 目标设置 Modal ════ -->
 <div class="modal-overlay" id="target-modal">
-  <div class="modal" style="max-width:420px">
-    <h3>业绩目标管理</h3>
-    <div style="display:flex;gap:10px;align-items:center;margin-top:12px">
+  <div class="modal" style="max-width:560px">
+    <h3>📊 业绩目标管理</h3>
+    <!-- 新增区域 -->
+    <div class="target-section-title" style="margin-top:16px">设定目标</div>
+    <div style="display:flex;gap:12px;align-items:center;margin-top:12px;flex-wrap:wrap">
       <span style="font-size:13px;color:#555;white-space:nowrap">年份</span>
-      <select id="target-year" style="padding:6px 10px;border:1px solid #DDD;border-radius:3px;font-size:13px;font-family:inherit"></select>
-      <span style="font-size:13px;color:#555;white-space:nowrap">年目标(元)</span>
-      <input id="target-amount" type="number" placeholder="如 5000000" style="padding:6px 10px;border:1px solid #DDD;border-radius:3px;font-size:13px;font-family:inherit;width:140px">
+      <select id="target-year" style="padding:7px 10px;border:1px solid #DDD;border-radius:3px;font-size:13px;font-family:inherit"></select>
+      <span style="font-size:13px;color:#555;white-space:nowrap">月目标(元)</span>
+      <input id="target-monthly" type="number" placeholder="月销售额目标" oninput="calcYearly()" style="padding:7px 10px;border:1px solid #DDD;border-radius:3px;font-size:13px;font-family:inherit;width:150px">
+      <span class="target-auto-yearly">年目标：<b id="target-yearly-preview">—</b></span>
     </div>
-    <div id="target-saved" style="font-size:12px;color:#999;margin-top:8px"></div>
-    <div class="modal-btns">
-      <button class="btn-danger-outline" onclick="deleteTarget()">删除目标</button>
+    <div class="modal-btns" style="margin-top:14px">
       <button class="btn-outline" onclick="closeTarget()">取消</button>
       <button class="btn-primary" onclick="saveTarget()">保存</button>
+    </div>
+    <!-- 已设目标列表 -->
+    <div class="target-section-title" style="margin-top:24px">已设定的年度目标</div>
+    <div style="max-height:240px;overflow-y:auto;margin-top:10px" id="target-list-container">
+      <div class="target-empty" id="target-empty">暂无已设定的目标</div>
+      <table class="target-table" id="target-table" style="display:none">
+        <thead><tr><th>年份</th><th style="text-align:right">月目标</th><th style="text-align:right">年目标</th><th style="width:50px"></th></tr></thead>
+        <tbody id="target-tbody"></tbody>
+      </table>
     </div>
   </div>
 </div>
@@ -684,6 +911,18 @@
   </div>
 </div>
 
+<!-- ════ Drawer：新客户明细 ════ -->
+<div class="drawer-overlay" id="nc-drawer" onclick="closeNewCustDrawer(event)">
+  <div class="drawer-panel wide" onclick="event.stopPropagation()">
+    <div class="drawer-header">
+      <h3>新客户明细</h3>
+      <button class="drawer-close" onclick="closeNewCustDrawer()">×</button>
+    </div>
+    <div class="nc-drawer-summary" id="nc-summary"></div>
+    <div class="nc-drawer-body" id="nc-body"></div>
+  </div>
+</div>
+
 <!-- ════ 确认删除弹窗 ════ -->
 <div class="confirm-overlay" id="confirm-dialog" onclick="closeConfirm()">
   <div class="confirm-box" onclick="event.stopPropagation()">
@@ -693,6 +932,21 @@
       <button class="btn-outline" onclick="closeConfirm()">取消</button>
       <button class="btn-primary" id="confirm-delete-btn" style="background:#E74C3C;border-color:#E74C3C">删除</button>
     </div>
+  </div>
+</div>
+
+<!-- ════ 客户等级明细弹窗 ════ -->
+<div class="modal-overlay" id="level-modal" onclick="if(event.target===this)closeLevelModal()">
+  <div class="modal" style="width:750px;max-width:90vw;max-height:80vh;overflow-y:auto">
+    <h3 id="level-modal-title">A类客户</h3>
+    <div class="table-scroll" style="max-height:50vh;overflow:auto">
+      <table style="width:100%">
+        <thead><tr><th>#</th><th>客户名称</th><th>编码</th><th>销售额</th></tr></thead>
+        <tbody id="level-modal-tbody"></tbody>
+      </table>
+    </div>
+    <div id="level-modal-pagination" style="margin-top:12px;display:flex;justify-content:flex-end;gap:6px"></div>
+    <div class="modal-btns"><button class="btn-outline" onclick="closeLevelModal()">关闭</button></div>
   </div>
 </div>
 
@@ -729,6 +983,7 @@ let detailFiltered = [];
 let detailCustFilter = '';
 
 let chartTrend = null, chartTop10 = null;
+let newCustDetail = []; // {cust, amount} 新客户明细缓存
 
 // ════════════ API 调用 ════════════
 async function apiGet(path) {
@@ -773,7 +1028,8 @@ async function loadTargets() {
 async function loadNewProducts() {
   const data = await apiGet('/api/new-products');
   if (data !== null && Array.isArray(data)) {
-    window._newProducts = data;
+    // API 返回 [{id:1, spec:"xxx"}, ...]，提取为字符串数组
+    window._newProducts = data.map(function(item) { return item.spec; });
   }
   updateNewProdCount();
 }
@@ -826,45 +1082,65 @@ function openTargetModal() {
     sel.innerHTML += '<option value="'+y+'">'+y+'年</option>';
   }
   sel.value = cy;
-  onTargetYearChange();
+  document.getElementById('target-monthly').value = '';
+  document.getElementById('target-yearly-preview').textContent = '—';
+  renderTargetTable();
   document.getElementById('target-modal').classList.add('show');
 }
 
-function onTargetYearChange() {
-  const y = document.getElementById('target-year').value;
-  const t = getTarget(y);
-  document.getElementById('target-amount').value = t || '';
-  document.getElementById('target-saved').textContent = t ? '已设定：¥' + t.toLocaleString() : '尚未设定目标';
+function calcYearly() {
+  const mv = parseFloat(document.getElementById('target-monthly').value) || 0;
+  document.getElementById('target-yearly-preview').textContent =
+    mv > 0 ? '¥' + (mv * 12).toLocaleString() : '—';
 }
 
-document.addEventListener('DOMContentLoaded', function() {
-  const sel = document.getElementById('target-year');
-  if (sel) sel.addEventListener('change', onTargetYearChange);
-});
+function renderTargetTable() {
+  const tbody = document.getElementById('target-tbody');
+  const table = document.getElementById('target-table');
+  const empty = document.getElementById('target-empty');
+  const targets = getTargets();
+  const years = Object.keys(targets).sort().reverse();
+  if (!years.length) {
+    table.style.display = 'none'; empty.style.display = '';
+    return;
+  }
+  table.style.display = ''; empty.style.display = 'none';
+  tbody.innerHTML = years.map(y => {
+    const yearly = targets[y];
+    const monthly = Math.round(yearly / 12);
+    return '<tr>' +
+      '<td class="td-year">' + y + ' 年</td>' +
+      '<td style="text-align:right">¥' + monthly.toLocaleString() + '</td>' +
+      '<td class="td-yearly" style="text-align:right">¥' + yearly.toLocaleString() + '</td>' +
+      '<td><button class="btn-delete-sm" onclick="deleteTargetYear('+y+')">删除</button></td>' +
+    '</tr>';
+  }).join('');
+}
 
 async function saveTarget() {
   const y = document.getElementById('target-year').value;
-  const v = parseFloat(document.getElementById('target-amount').value);
-  if (!v || v <= 0) { showToast('请输入有效的目标金额', 'error'); return; }
-  window._targets[y] = v;
-  const result = await saveTargetsToServer(parseInt(y), v);
+  const mv = parseFloat(document.getElementById('target-monthly').value);
+  if (!mv || mv <= 0) { showToast('请输入有效的月目标金额', 'error'); return; }
+  const yearly = Math.round(mv * 12);
+  window._targets[y] = yearly;
+  const result = await saveTargetsToServer(parseInt(y), yearly);
   if (result && result.success) {
-    showToast(y + '年目标已保存', 'success');
+    showToast(y + '年目标已保存（月 ¥' + mv.toLocaleString() + ' / 年 ¥' + yearly.toLocaleString() + '）', 'success');
   } else {
     showToast('保存失败，请重试', 'error');
   }
-  closeTarget();
+  document.getElementById('target-monthly').value = '';
+  document.getElementById('target-yearly-preview').textContent = '—';
+  renderTargetTable();
   refreshDashboard();
 }
 
-async function deleteTarget() {
-  const y = document.getElementById('target-year').value;
+async function deleteTargetYear(y) {
+  if (!confirm('确定删除 ' + y + ' 年的目标吗？')) return;
   delete window._targets[y];
   await deleteTargetFromServer(parseInt(y));
-  document.getElementById('target-amount').value = '';
-  document.getElementById('target-saved').textContent = '尚未设定目标';
   showToast(y + '年目标已删除', 'success');
-  closeTarget();
+  renderTargetTable();
   refreshDashboard();
 }
 
@@ -908,6 +1184,30 @@ function openNewProdDrawer() {
   renderDrawerList();
   document.getElementById('newprod-drawer').classList.add('show');
 }
+// ── 新客户明细抽屉 ──
+function openNewCustDrawer() {
+  if (!newCustDetail.length) { showToast('当前时间范围内无新客户', 'error'); return; }
+  document.getElementById('nc-drawer').classList.add('show');
+  renderNewCustDrawer();
+}
+function closeNewCustDrawer(e) {
+  if (e && e.target !== document.getElementById('nc-drawer')) return;
+  document.getElementById('nc-drawer').classList.remove('show');
+}
+function renderNewCustDrawer() {
+  const totalAmt = newCustDetail.reduce((s,x)=>s+x.amount,0);
+  document.getElementById('nc-summary').innerHTML =
+    '共 <b>' + newCustDetail.length + '</b> 个新客户，合计销售额 <b>' + fmtMoneyFull(totalAmt) + '</b>';
+  const body = document.getElementById('nc-body');
+  body.innerHTML = newCustDetail.map((x,i) =>
+    '<div class="nc-row">' +
+      '<span class="nc-rank">' + (i+1) + '</span>' +
+      '<span class="nc-name" title="' + x.cust + '">' + x.cust + '</span>' +
+      '<span class="nc-amount">' + fmtMoneyFull(x.amount) + '</span>' +
+    '</div>'
+  ).join('');
+}
+
 function closeNewProdDrawer(e) {
   if (e && e.target !== document.getElementById('newprod-drawer')) return;
   document.getElementById('newprod-drawer').classList.remove('show');
@@ -999,6 +1299,34 @@ function getRange(mode) {
       prev_e: py3 + '-' + String(pm2).padStart(2,'0') + '-' + String(pLastDay).padStart(2,'0')
     };
   }
+  if (mode === 'quarter') {
+    const q = Math.floor((m - 1) / 3); // 0=Q1,1=Q2,2=Q3,3=Q4
+    const qs = q * 3 + 1;
+    const s = y + '-' + String(qs).padStart(2,'0') + '-01';
+    const e = fmt(t);
+    const pq = q === 0 ? 3 : q - 1, pqy = q === 0 ? y - 1 : y;
+    const pqs = pq * 3 + 1;
+    const pqLastDay = new Date(pqy, pqs + 2, 0).getDate();
+    return { s, e,
+      prev_s: pqy + '-' + String(pqs).padStart(2,'0') + '-01',
+      prev_e: pqy + '-' + String(pqs + 2).padStart(2,'0') + '-' + String(pqLastDay).padStart(2,'0')
+    };
+  }
+  if (mode === 'lastQuarter') {
+    const q = Math.floor((m - 1) / 3);
+    const pq = q === 0 ? 3 : q - 1, pqy = q === 0 ? y - 1 : y;
+    const pqs = pq * 3 + 1;
+    const pqLastDay = new Date(pqy, pqs + 2, 0).getDate();
+    const ppq = pq === 0 ? 3 : pq - 1, ppqy = pq === 0 ? pqy - 1 : pqy;
+    const ppqs = ppq * 3 + 1;
+    const ppqLastDay = new Date(ppqy, ppqs + 2, 0).getDate();
+    return {
+      s: pqy + '-' + String(pqs).padStart(2,'0') + '-01',
+      e: pqy + '-' + String(pqs + 2).padStart(2,'0') + '-' + String(pqLastDay).padStart(2,'0'),
+      prev_s: ppqy + '-' + String(ppqs).padStart(2,'0') + '-01',
+      prev_e: ppqy + '-' + String(ppqs + 2).padStart(2,'0') + '-' + String(ppqLastDay).padStart(2,'0')
+    };
+  }
   if (mode === 'week') {
     const dow = t.getDay();
     const lastSat = addDays(t, -((dow + 1) % 7));
@@ -1026,9 +1354,11 @@ function getRange(mode) {
 
 function filterData(data, s, e) {
   if (!s && !e) return data;
+  // 结束日期补 23:59:59，确保当天带时间戳的数据不被过滤
+  const eEnd = e && e.indexOf(' ') === -1 ? e + ' 23:59:59' : e;
   return data.filter(r => {
     if (s && r.date < s) return false;
-    if (e && r.date > e) return false;
+    if (eEnd && r.date > eEnd) return false;
     return true;
   });
 }
@@ -1051,9 +1381,27 @@ function pctStr(cur, prev) {
   return '<span class="'+(up?'up':'down')+'">'+(up?'↑':'↓')+Math.abs(pct)+'%</span> 环比'+label;
 }
 
+function yoyPctStr(cur, yoy) {
+  if (!yoy || yoy === 0) return '';
+  const pct = ((cur - yoy) / yoy * 100).toFixed(1);
+  const up = cur >= yoy;
+  const label = yoyLabel();
+  return '<span class="'+(up?'up':'down')+'">'+(up?'↑':'↓')+Math.abs(pct)+'%</span> 同比'+label;
+}
+
+function yoyRange(s, e) {
+  if (!s || !e) return { yoy_s: '', yoy_e: '' };
+  return {
+    yoy_s: fmt(addYears(new Date(s + 'T00:00:00'), -1)),
+    yoy_e: fmt(addYears(new Date(e + 'T00:00:00'), -1))
+  };
+}
+
 function mode2label() {
   if (currentMode === 'year') return '去年同期';
   if (currentMode === 'lastYear') return '前年同期';
+  if (currentMode === 'quarter') return '上季度';
+  if (currentMode === 'lastQuarter') return '再上季度';
   if (currentMode === 'month') return '上月';
   if (currentMode === 'lastMonth') return '再上月';
   if (currentMode === 'week') return '上周';
@@ -1061,10 +1409,22 @@ function mode2label() {
   return '对比期';
 }
 
+function yoyLabel() {
+  if (currentMode === 'year') return '去年';
+  if (currentMode === 'lastYear') return '前年';
+  if (currentMode === 'quarter') return '去年同季度';
+  if (currentMode === 'lastQuarter') return '去年同季度';
+  if (currentMode === 'month') return '去年同月';
+  if (currentMode === 'lastMonth') return '去年同月';
+  if (currentMode === 'week') return '去年同周';
+  if (currentMode === 'lastWeek') return '去年同周';
+  return '去年同期';
+}
+
 // ════════════ 快捷筛选 ════════════
 function setQuick(mode) {
   currentMode = mode;
-  ['year','lastYear','month','lastMonth','week','lastWeek','custom'].forEach(m => {
+  ['year','last-year','quarter','last-quarter','month','last-month','week','last-week','custom'].forEach(m => {
     const btn = document.getElementById('qbtn-'+m);
     if (btn) btn.classList.toggle('active', m === mode);
   });
@@ -1096,8 +1456,13 @@ function refreshDashboard() {
   // 总销售额
   const totalAmt = curData.reduce((s,x)=>s+x.amount,0);
   const prevAmt  = prevData.reduce((s,x)=>s+x.amount,0);
+  const yoyR = yoyRange(r.s, r.e);
+  const yoyData = yoyR.yoy_s ? filterData(allData, yoyR.yoy_s, yoyR.yoy_e) : [];
+  const yoyAmt = yoyData.reduce((s,x)=>s+x.amount,0);
   document.getElementById('c-total').innerHTML = fmtMoney(totalAmt);
-  document.getElementById('c-total-cmp').innerHTML = prevAmt ? pctStr(totalAmt, prevAmt) : '暂无对比数据';
+  var totalCmpHtml = prevAmt ? pctStr(totalAmt, prevAmt) : '';
+  if (yoyAmt) totalCmpHtml += (totalCmpHtml ? ' &nbsp;|&nbsp; ' : '') + yoyPctStr(totalAmt, yoyAmt);
+  document.getElementById('c-total-cmp').innerHTML = totalCmpHtml || '暂无对比数据';
 
   // 总客户数
   const custs = [...new Set(curData.map(x=>x.cust))];
@@ -1114,6 +1479,15 @@ function refreshDashboard() {
   const newAmt = curData.filter(x=>newCusts.includes(x.cust)).reduce((s,x)=>s+x.amount,0);
   const oldAmt = curData.filter(x=>oldCusts.includes(x.cust)).reduce((s,x)=>s+x.amount,0);
 
+  // 缓存新客户明细（按销售额降序）
+  const newCustAgg = {};
+  curData.filter(x=>newCusts.includes(x.cust)).forEach(x => {
+    newCustAgg[x.cust] = (newCustAgg[x.cust]||0) + x.amount;
+  });
+  newCustDetail = Object.entries(newCustAgg)
+    .map(([cust, amount]) => ({cust, amount}))
+    .sort((a,b) => b.amount - a.amount);
+
   document.getElementById('c-new-cust').innerHTML =
     newCusts.length + '<span class="unit-sm">个</span>' +
     '<span style="font-size:55%;color:#3B5998;font-weight:500;margin-left:6px">（' + fmtMoney(newAmt) + '）</span>';
@@ -1122,30 +1496,29 @@ function refreshDashboard() {
     '<span style="font-size:55%;color:#3B5998;font-weight:500;margin-left:6px">（' + fmtMoney(oldAmt) + '）</span>';
 
   // 业绩完成率
-  let targetYear = new Date().getFullYear();
+  let targetYear = r.s ? parseInt(r.s.slice(0,4)) : new Date().getFullYear();
   let targetVal = getTarget(targetYear);
-  if (currentMode === 'lastYear') { targetYear = targetYear - 1; targetVal = getTarget(targetYear); }
   const rateEl = document.getElementById('c-rate');
   const rateCmp = document.getElementById('c-rate-cmp');
-  if (['year','lastYear','month','lastMonth'].includes(currentMode) && targetVal) {
-    let rate;
-    if (currentMode === 'year')  rate = totalAmt / targetVal * 100;
-    else if (currentMode === 'lastYear') rate = totalAmt / targetVal * 100;
-    else if (currentMode === 'month')   rate = totalAmt / (targetVal / 12) * 100;
-    else if (currentMode === 'lastMonth') rate = totalAmt / (targetVal / 12) * 100;
+  if (['year','lastYear','quarter','lastQuarter','month','lastMonth'].includes(currentMode) && targetVal) {
+    let rate, divider = 1;
+    if (currentMode === 'year' || currentMode === 'lastYear') divider = 1;
+    else if (currentMode === 'quarter' || currentMode === 'lastQuarter') divider = 4;
+    else divider = 12; // month / lastMonth
+    rate = totalAmt / (targetVal / divider) * 100;
     const cls = rate >= 100 ? 'rate-green' : 'rate-orange';
     rateEl.innerHTML = '<span class="'+cls+'">'+rate.toFixed(1)+'%</span>';
     rateEl.style.fontSize = ''; rateEl.style.color = '';
+    var rateCmpHtml = '';
     if (prevAmt && targetVal) {
-      let prevRate;
-      if (currentMode === 'year')  prevRate = prevAmt / targetVal * 100;
-      else if (currentMode === 'lastYear') prevRate = prevAmt / targetVal * 100;
-      else if (currentMode === 'month')   prevRate = prevAmt / (targetVal / 12) * 100;
-      else if (currentMode === 'lastMonth') prevRate = prevAmt / (targetVal / 12) * 100;
-      rateCmp.innerHTML = pctStr(rate, prevRate);
-    } else {
-      rateCmp.innerHTML = '';
+      const prevRate = prevAmt / (targetVal / divider) * 100;
+      rateCmpHtml += pctStr(rate, prevRate);
     }
+    if (yoyAmt && targetVal) {
+      const yoyRate = yoyAmt / (targetVal / divider) * 100;
+      rateCmpHtml += (rateCmpHtml ? ' &nbsp;|&nbsp; ' : '') + yoyPctStr(rate, yoyRate);
+    }
+    rateCmp.innerHTML = rateCmpHtml;
   } else {
     rateEl.textContent = '—';
     rateEl.style.fontSize = 'clamp(22px, 2.4vw, 32px)';
@@ -1174,9 +1547,10 @@ function renderTrend(data, s, e) {
 
   const diffDays = (new Date(e) - new Date(s)) / 86400000;
   let granularity;
-  if (currentMode === 'year')       granularity = 'month';
-  else if (currentMode === 'month') granularity = 'week';
-  else if (currentMode === 'week')  granularity = 'day';
+  if (currentMode === 'year' || currentMode === 'lastYear')         granularity = 'month';
+  else if (currentMode === 'quarter' || currentMode === 'lastQuarter') granularity = 'week';
+  else if (currentMode === 'month' || currentMode === 'lastMonth')   granularity = 'day';
+  else if (currentMode === 'week' || currentMode === 'lastWeek')     granularity = 'day';
   else {
     if (diffDays > 90)      granularity = 'month';
     else if (diffDays > 30) granularity = 'week';
@@ -1189,10 +1563,10 @@ function renderTrend(data, s, e) {
     if (granularity === 'month') {
       key = r.date.slice(0, 7);
     } else if (granularity === 'week') {
-      const d = new Date(r.date), sw = startOfWeek(d);
+      const d = new Date(r.date.slice(0, 10)), sw = startOfWeek(d);
       key = fmt(sw);
     } else {
-      key = r.date;
+      key = r.date.slice(0, 10);  // 截取日期部分，忽略时间
     }
     buckets[key] = (buckets[key] || 0) + r.amount;
   });
@@ -1218,8 +1592,7 @@ function renderTrend(data, s, e) {
   var showTarget = (currentMode === 'year' || currentMode === 'lastYear');
   var targetLineData = [];
   if (showTarget) {
-    var targetYear2 = new Date().getFullYear();
-    if (currentMode === 'lastYear') targetYear2 = targetYear2 - 1;
+    var targetYear2 = s ? parseInt(s.slice(0,4)) : new Date().getFullYear();
     var targetVal2 = getTarget(targetYear2) || 0;
     var targetLineVal = targetVal2 ? +(targetVal2 / 12 / 10000).toFixed(2) : 0;
     targetLineData = targetLineVal ? keys.map(function(){ return targetLineVal; }) : [];
@@ -1448,9 +1821,9 @@ function renderDetailTable() {
       '<td>'+r.product+'</td>'+
       '<td>'+r.spec+'</td>'+
       '<td>'+r.unit+'</td>'+
-      '<td style="text-align:right">'+(r.qty||0).toLocaleString()+'</td>'+
-      '<td style="text-align:right">'+(r.price||0).toLocaleString()+'</td>'+
-      '<td class="td-amount" style="text-align:right">'+fmtMoneyFull(r.amount||0)+'</td>'+
+      '<td>'+(r.qty||0).toLocaleString()+'</td>'+
+      '<td>'+(r.price||0).toLocaleString()+'</td>'+
+      '<td class="td-amount">'+fmtMoneyFull(r.amount||0)+'</td>'+
     '</tr>'
   ).join('');
 
@@ -1488,33 +1861,85 @@ function handleFileSelect(e) {
   const file = e.target.files[0];
   if (!file) return;
   pendingImportFile = file;
+  const isCSV = file.name.toLowerCase().endsWith('.csv');
+  const fileTypeLabel = isCSV ? 'CSV（流式处理，适合大数据）' : 'Excel（适合日常小数据）';
   document.getElementById('import-preview').textContent =
-    '已选择文件：' + file.name + '（' + (file.size/1024).toFixed(1) + ' KB）';
+    '已选择文件：' + file.name + '（' + (file.size/1024).toFixed(1) + ' KB）— ' + fileTypeLabel;
   document.getElementById('btn-import-upload').disabled = false;
 }
 
 async function doImport() {
   if (!pendingImportFile) {
-    showToast('请先选择有效的 Excel 文件', 'error'); return;
+    showToast('请先选择文件', 'error'); return;
   }
+
+  // 根据文件扩展名选择端点
+  const fname = pendingImportFile.name.toLowerCase();
+  const isCSV = fname.endsWith('.csv');
+  const endpoint = isCSV ? '/api/upload-csv' : '/api/upload';
+  const fileType = isCSV ? 'CSV' : 'Excel';
+
+  const btn = document.getElementById('btn-import-upload');
+  const origText = btn.textContent;
+  btn.textContent = '正在上传并解析 ' + fileType + ' 文件...';
+  btn.disabled = true;
+  btn.style.opacity = '0.7';
 
   const formData = new FormData();
   formData.append('file', pendingImportFile);
 
-  showToast('正在上传并解析...', 'success');
+  console.log('[doImport] 开始上传:', pendingImportFile.name, '端点:', endpoint);
   try {
-    const resp = await fetch('/api/upload', {method: 'POST', body: formData});
-    const result = await resp.json();
+    const resp = await fetch(endpoint, {method: 'POST', body: formData});
+    console.log('[doImport] HTTP状态:', resp.status, resp.statusText);
+    const rawText = await resp.text();
+    console.log('[doImport] 原始响应:', rawText);
+    let result;
+    try {
+      result = JSON.parse(rawText);
+    } catch(e) {
+      btn.textContent = origText;
+      btn.disabled = false;
+      btn.style.opacity = '';
+      showToast('服务器返回异常：' + rawText.slice(0, 100), 'error');
+      return;
+    }
 
     if (result.error) {
+      btn.textContent = origText;
+      btn.disabled = false;
+      btn.style.opacity = '';
       showToast('上传失败：' + result.error, 'error');
       return;
     }
 
+    console.log('[doImport] 上传成功，count=', result.count, '重新加载数据...');
     // 重新加载数据
     await loadAllData();
     closeImport();
-    showToast('上传成功：共 ' + result.count + ' 条记录', 'success');
+    if (result.count === 0 && result.skipped) {
+      // 0条数据时显示调试信息
+      let diag = '上传成功：0 条（跳过 ' + result.skipped + ' 行）';
+      if (result.insert_errors && result.insert_errors.length > 0) {
+        diag += '\\n数据库错误：' + result.insert_errors.join(' | ');
+      }
+      if (result.sample_skipped && result.sample_skipped.length > 0) {
+        diag += '\\n示例跳过行：' + JSON.stringify(result.sample_skipped);
+      }
+      if (result.idx_map) {
+        diag += '\\n列映射：' + JSON.stringify(result.idx_map);
+      }
+      if (result.headers) {
+        diag += '\\n表头：' + result.headers.join(', ');
+      }
+      if (result.first_3_headers) {
+        diag += '\\n表头前10列：' + result.first_3_headers.join(', ');
+      }
+      showToast(diag, 'error');
+      console.log('[doImport] 诊断信息：', JSON.stringify(result, null, 2));
+    } else {
+      showToast('上传成功：共 ' + result.count + ' 条记录', 'success');
+    }
 
     populateCustFilter();
     detailFiltered = [...getAllData()].sort((a,b)=>b.date.localeCompare(a.date));
@@ -1522,6 +1947,10 @@ async function doImport() {
     renderDetailTable();
     refreshDashboard();
   } catch(err) {
+    console.error('[doImport] 异常:', err);
+    btn.textContent = origText;
+    btn.disabled = false;
+    btn.style.opacity = '';
     showToast('上传失败：' + err.message, 'error');
   }
 }
@@ -1549,11 +1978,12 @@ function exportData() {
 function switchTab(tab) {
   document.querySelectorAll('.tab-btn').forEach((b,i)=>{
     b.classList.toggle('active',
-      (i===0&&tab==='dashboard')||(i===1&&tab==='detail')||(i===2&&tab==='newprod'));
+      (i===0&&tab==='dashboard')||(i===1&&tab==='detail')||(i===2&&tab==='newprod')||(i===3&&tab==='customer'));
   });
   document.getElementById('tab-dashboard').classList.toggle('active', tab==='dashboard');
   document.getElementById('tab-detail').classList.toggle('active', tab==='detail');
   document.getElementById('tab-newprod').classList.toggle('active', tab==='newprod');
+  document.getElementById('tab-customer').classList.toggle('active', tab==='customer');
   if (tab === 'detail') {
     document.getElementById('d-cust').value = '';
     detailCustFilter = '';
@@ -1568,6 +1998,10 @@ function switchTab(tab) {
   if (tab === 'newprod') {
     updateNewProdCount();
     refreshNewProdTab();
+  }
+  if (tab === 'customer') {
+    initCustomerTab();
+    refreshCustomerTab();
   }
   updateTopbarHeight();
 }
@@ -1590,6 +2024,623 @@ window.addEventListener('resize', function() {
     chartTop10  && chartTop10.resize();
   }, 80);
 });
+
+// ════════════ Tab4 客户分析 ════════════
+let custAllYears = [];
+let custYearlyData = {};       // { cust: { '2024':amt, '2025':amt, ... } }
+let custFirstYear = {};        // { cust: first_year }
+let custLastOrderDate = {};    // { cust: last_date }
+let custYearActive = {};       // { '2024': Set(custs), '2025': Set(custs) }
+let custShowAll = false;
+let custFilterStart = '';
+let custFilterEnd = '';
+
+// ── 数据预处理 ──
+function buildCustomerData() {
+  const data = getAllData();
+  custYearlyData = {};
+  custFirstYear = {};
+  custLastOrderDate = {};
+  custYearActive = {};
+  const yearsSet = new Set();
+
+  data.forEach(r => {
+    const d = r.date.slice(0,10);
+    const y = r.date.slice(0,4);
+    const c = r.cust;
+    yearsSet.add(y);
+
+    if (!custYearlyData[c]) custYearlyData[c] = {};
+    custYearlyData[c][y] = (custYearlyData[c][y] || 0) + (r.amount || 0);
+
+    if (!custFirstYear[c] || y < custFirstYear[c]) custFirstYear[c] = y;
+    if (!custLastOrderDate[c] || d > custLastOrderDate[c]) custLastOrderDate[c] = d;
+
+    if (!custYearActive[y]) custYearActive[y] = new Set();
+    custYearActive[y].add(c);
+  });
+
+  custAllYears = Array.from(yearsSet).sort();
+}
+
+function getFilteredData() {
+  const data = getAllData();
+  if (!custFilterStart && !custFilterEnd) return data;
+  return filterData(data, custFilterStart, custFilterEnd);
+}
+
+function getRecent12Sales(cust) {
+  const data = getFilteredData();
+  const today = new Date();
+  const cutoff = fmt(addMonths(today, -12));
+  let total = 0;
+  data.forEach(r => {
+    if (r.cust === cust && r.date.slice(0,10) >= cutoff) total += (r.amount || 0);
+  });
+  return total;
+}
+
+function getCustomerRanked(rankBy) {
+  buildCustomerData();
+  const data = getFilteredData();
+  const custs = [...new Set(data.map(r => r.cust))];
+  if (rankBy === 'recent12') {
+    custs.sort((a,b) => getRecent12Sales(b) - getRecent12Sales(a));
+  } else {
+    const totalSales = {};
+    data.forEach(r => { totalSales[r.cust] = (totalSales[r.cust]||0) + (r.amount||0); });
+    custs.sort((a,b) => (totalSales[b]||0) - (totalSales[a]||0));
+  }
+  return custs;
+}
+
+// ── 客户标签计算 ──
+function calcCustTags(cust, years) {
+  const tags = [];
+  const byYear = custYearlyData[cust] || {};
+  const n = years.length;
+  if (n < 2) return tags;
+
+  const recent1 = byYear[years[n-1]] || 0;
+  const recent2 = byYear[years[n-2]] || 0;
+  const recent3 = n >= 3 ? (byYear[years[n-3]] || 0) : null;
+
+  // 连续两年下降
+  if (recent3 !== null && recent1 < recent2 && recent2 < recent3) {
+    tags.push({cls:'cust-tag-warn',text:'⚠️连续两年下降'});
+  }
+  // 最近一年下降超20%
+  if (recent2 > 0 && (recent1 - recent2) / recent2 < -0.2) {
+    tags.push({cls:'cust-tag-drop',text:'⚠️下降超20%'});
+  }
+  // 连续两年增长
+  if (recent3 !== null && recent1 > recent2 && recent2 > recent3) {
+    tags.push({cls:'cust-tag-good',text:'✅连续两年增长'});
+  }
+  // 趋势下滑：前一年增长但最近一年下降超15%
+  if (recent3 !== null && recent2 > recent3 && recent1 < recent2 && recent2 > 0 && (recent1 - recent2) / recent2 < -0.15) {
+    tags.push({cls:'cust-tag-down',text:'📉趋势下滑'});
+  }
+  // 趋势上升：前一年下降但最近一年增长超15%
+  if (recent3 !== null && recent2 < recent3 && recent1 > recent2 && recent2 > 0 && (recent1 - recent2) / recent2 > 0.15) {
+    tags.push({cls:'cust-tag-up',text:'📈趋势上升'});
+  }
+  // 新晋Top20 & 高价值稳定 (在渲染时判断)
+  return tags;
+}
+
+function isCustTopN(cust, year, n, rankBy) {
+  const data = getAllData();
+  const yearData = data.filter(r => r.date.slice(0,4) === year);
+  const agg = {};
+  yearData.forEach(r => { agg[r.cust] = (agg[r.cust]||0) + (r.amount||0); });
+  const sorted = Object.entries(agg).sort((a,b) => b[1]-a[1]);
+  const topN = new Set(sorted.slice(0, n).map(x=>x[0]));
+  return topN.has(cust);
+}
+
+// ── Section 1: 客户年度销售对比表格 ──
+function refreshCustYearTable() {
+  const rankBy = document.querySelector('input[name="rankBy"]:checked')?.value || 'recent12';
+  const ranked = getCustomerRanked(rankBy);
+  const years = custAllYears;
+  const nowYear = String(new Date().getFullYear());
+  const limit = custShowAll ? ranked.length : 20;
+  const slice = ranked.slice(0, limit);
+
+  document.getElementById('btn-cust-limit').textContent = custShowAll ? '显示前20' : '加载全部';
+
+  if (!slice.length) {
+    document.getElementById('cust-year-table').style.display = 'none';
+    document.getElementById('cust-year-empty').style.display = '';
+    return;
+  }
+  document.getElementById('cust-year-table').style.display = '';
+  document.getElementById('cust-year-empty').style.display = 'none';
+
+  // thead
+  var thead = '<tr><th style="position:sticky;left:0;background:#FAFAFA;z-index:2">#</th><th style="position:sticky;left:36px;background:#FAFAFA;z-index:2;min-width:140px">客户名称</th>';
+  years.forEach(y => {
+    thead += '<th style="text-align:center">' + y + (y === nowYear ? '<span class="year-star">*</span>' : '') + '</th>';
+  });
+  thead += '<th style="text-align:center">累计总销售额</th><th style="text-align:center">增长率</th><th style="text-align:center">标签</th></tr>';
+  document.getElementById('cust-year-thead').innerHTML = thead;
+
+  // 计算增长率
+  const growthMap = {};
+  const n = years.length;
+  slice.forEach(c => {
+    const byYear = custYearlyData[c] || {};
+    const r1 = n>=1 ? (byYear[years[n-1]]||0) : 0;
+    const r2 = n>=2 ? (byYear[years[n-2]]||0) : 0;
+    growthMap[c] = r2 > 0 ? ((r1 - r2) / r2 * 100).toFixed(1) : null;
+  });
+
+  // 前20
+  const recentYear = years[n-1] || '';
+  const prevYear = years[n-2] || '';
+  const top20Recent = new Set();
+  const top20Prev = new Set();
+  if (recentYear) {
+    const yrData = getAllData().filter(r => r.date.slice(0,4) === recentYear);
+    const agg = {};
+    yrData.forEach(r => { agg[r.cust] = (agg[r.cust]||0) + (r.amount||0); });
+    Object.entries(agg).sort((a,b)=>b[1]-a[1]).slice(0,20).forEach(x=>top20Recent.add(x[0]));
+  }
+  if (prevYear) {
+    const yrData = getAllData().filter(r => r.date.slice(0,4) === prevYear);
+    const agg = {};
+    yrData.forEach(r => { agg[r.cust] = (agg[r.cust]||0) + (r.amount||0); });
+    Object.entries(agg).sort((a,b)=>b[1]-a[1]).slice(0,20).forEach(x=>top20Prev.add(x[0]));
+  }
+
+  // 高价值稳定：每年都在Top20且波动<±10%
+  function isStableHighValue(c) {
+    const byYear = custYearlyData[c] || {};
+    const vals = years.map(y => byYear[y] || 0);
+    if (vals.some(v => v === 0)) return false;
+    // 检查每年是否都在top20
+    for (const y of years) {
+      if (!isCustTopN(c, y, 20, 'total')) return false;
+    }
+    // 波动<±10%：max/min < 1.1
+    const maxV = Math.max(...vals);
+    const minV = Math.min(...vals);
+    return minV > 0 && (maxV / minV - 1) < 0.10;
+  }
+
+  // tbody
+  var tbody = '';
+  slice.forEach((c,i) => {
+    const byYear = custYearlyData[c] || {};
+    var row = '<tr>';
+    row += '<td style="color:#999;position:sticky;left:0;background:#fff;text-align:center">' + (i+1) + '</td>';
+    row += '<td style="position:sticky;left:36px;background:#fff"><span class="clickable-cust" onclick="showCustOrders(\'' + c.replace(/'/g,"\\'") + '\')">' + c + '</span></td>';
+    var totalAll = 0;
+    years.forEach(y => {
+      const amt = byYear[y] || 0;
+      totalAll += amt;
+      row += '<td style="text-align:center">' + (amt > 0 ? '¥'+amt.toLocaleString() : '-') + '</td>';
+    });
+    row += '<td style="text-align:center;font-weight:500">¥' + totalAll.toLocaleString() + '</td>';
+    // 增长率
+    const g = growthMap[c];
+    if (g !== null) {
+      const cls = g >= 0 ? 'rate-green' : 'rate-orange';
+      const arrow = g >= 0 ? '↑' : '↓';
+      row += '<td style="text-align:center"><span class="'+cls+'">' + arrow + Math.abs(g) + '%</span></td>';
+    } else {
+      row += '<td style="text-align:center">-</td>';
+    }
+    // 标签
+    var tags = calcCustTags(c, years);
+    if (top20Recent.has(c) && !top20Prev.has(c)) tags.push({cls:'cust-tag-new',text:'🆕新晋Top20'});
+    if (isStableHighValue(c)) tags.push({cls:'cust-tag-star',text:'💎高价值稳定'});
+    row += '<td style="text-align:center">' + tags.map(t=>'<span class="cust-tag '+t.cls+'">'+t.text+'</span>').join('') + (tags.length?'':'<span style="color:#CCC">-</span>') + '</td>';
+    row += '</tr>';
+    tbody += row;
+  });
+  document.getElementById('cust-year-tbody').innerHTML = tbody;
+}
+
+function toggleCustLimit() {
+  custShowAll = !custShowAll;
+  refreshCustYearTable();
+}
+
+function exportCustYearCSV() {
+  const rankBy = document.querySelector('input[name="rankBy"]:checked')?.value || 'recent12';
+  const ranked = getCustomerRanked(rankBy);
+  const years = custAllYears;
+  const nowYear = String(new Date().getFullYear());
+  var csv = '排名,客户名称,' + years.map(y=>y+(y===nowYear?'*':'')+'销售额').join(',') + ',累计总销售额,增长率,标签\n';
+  ranked.forEach((c,i) => {
+    const byYear = custYearlyData[c] || {};
+    var row = [(i+1),'"'+c+'"'];
+    var total = 0;
+    years.forEach(y => { const a=byYear[y]||0; total+=a; row.push(a); });
+    row.push(total);
+    const n = years.length;
+    const r1 = n>=1 ? (byYear[years[n-1]]||0) : 0;
+    const r2 = n>=2 ? (byYear[years[n-2]]||0) : 0;
+    row.push(r2>0 ? ((r1-r2)/r2*100).toFixed(1)+'%' : '-');
+    csv += row.join(',') + '\n';
+  });
+  downloadCSV(csv, '客户年度销售对比.csv');
+}
+
+// ── Section 2: 老客户流失分析 ──
+function refreshChurnTable() {
+  buildCustomerData();
+  const years = custAllYears;
+  const nowYear = String(new Date().getFullYear());
+  var tbody = '';
+  years.forEach(y => {
+    const prevYear = String(parseInt(y) - 1);
+    const activeThis = custYearActive[y] || new Set();
+    const activeLast = custYearActive[prevYear] || new Set();
+    const beginCount = y === custAllYears[0] ? 0 : activeLast.size;
+    const retained = new Set([...activeThis].filter(c => activeLast.has(c)));
+    const lost = beginCount - retained.size;
+    const lostRate = beginCount > 0 ? (lost / beginCount * 100).toFixed(1) + '%' : '-';
+    const star = y === nowYear ? '<span class="year-star">*</span>' : '';
+    tbody += '<tr>' +
+      '<td>' + y + star + '</td>' +
+      '<td style="text-align:center">' + (beginCount || '-') + '</td>' +
+      '<td style="text-align:center">' + activeThis.size + '</td>' +
+      '<td style="text-align:center">' + retained.size + '</td>' +
+      '<td style="text-align:center"><span class="clickable-num" onclick="showLostCusts(\'' + y + '\')">' + lost + '</span></td>' +
+      '<td style="text-align:center">' + lostRate + '</td>' +
+      '</tr>';
+  });
+  document.getElementById('churn-tbody').innerHTML = tbody || '<tr><td colspan="6" class="target-empty">暂无数据</td>';
+}
+
+function showLostCusts(year) {
+  const prevYear = String(parseInt(year) - 1);
+  const activeThis = custYearActive[year] || new Set();
+  const activeLast = custYearActive[prevYear] || new Set();
+  const lostCusts = [...activeLast].filter(c => !activeThis.has(c));
+  if (!lostCusts.length) { showToast(year + '年无流失客户', 'error'); return; }
+  const byYearPrev = {};
+  getAllData().filter(r => r.date.slice(0,4) === prevYear).forEach(r => {
+    byYearPrev[r.cust] = (byYearPrev[r.cust]||0) + (r.amount||0);
+  });
+  var rows = lostCusts.map(c => {
+    return '<tr><td>' + c + '</td><td style="text-align:center">¥' + (byYearPrev[c]||0).toLocaleString() + '</td><td style="text-align:center">' + (custLastOrderDate[c]||'-') + '</td></tr>';
+  }).join('');
+  document.getElementById('cust-orders-title').textContent = year + '年流失客户明细（' + lostCusts.length + '个）';
+  document.getElementById('cust-orders-thead').innerHTML = '<tr><th>客户名称</th><th>' + prevYear + '年销售额</th><th>最后购买日期</th></tr>';
+  document.getElementById('cust-orders-tbody').innerHTML = rows;
+  document.getElementById('cust-orders-summary').textContent = '';
+  document.getElementById('cust-orders-modal').classList.add('show');
+}
+
+function exportChurnCSV() {
+  buildCustomerData();
+  const years = custAllYears;
+  const nowYear = String(new Date().getFullYear());
+  var csv = '年份,年初客户数,当年活跃客户数,留存客户数,流失客户数,流失率\n';
+  years.forEach(y => {
+    const prevYear = String(parseInt(y) - 1);
+    const activeThis = custYearActive[y] || new Set();
+    const activeLast = custYearActive[prevYear] || new Set();
+    const beginCount = y === custAllYears[0] ? 0 : activeLast.size;
+    const retained = new Set([...activeThis].filter(c => activeLast.has(c)));
+    const lost = beginCount - retained.size;
+    const lostRate = beginCount > 0 ? (lost / beginCount * 100).toFixed(1) + '%' : '-';
+    const star = y === nowYear ? '*' : '';
+    csv += y + star + ',' + beginCount + ',' + activeThis.size + ',' + retained.size + ',' + lost + ',' + lostRate + '\n';
+  });
+  downloadCSV(csv, '老客户流失分析.csv');
+}
+
+// ── Section 3: 活跃客户数趋势 ──
+function refreshActivityTables() {
+  buildCustomerData();
+  const years = custAllYears;
+  const nowYear = String(new Date().getFullYear());
+
+  // 按年汇总
+  var yearTbody = '';
+  years.forEach(y => {
+    const active = custYearActive[y] || new Set();
+    const prevY = String(parseInt(y) - 1);
+    const prevActive = custYearActive[prevY] || new Set();
+    const newCusts = new Set([...active].filter(c => !prevActive.has(c)));
+    const retained = new Set([...active].filter(c => prevActive.has(c)));
+    const growth = prevActive.size > 0 ? ((active.size - prevActive.size) / prevActive.size * 100).toFixed(1) + '%' : '-';
+    const star = y === nowYear ? '<span class="year-star">*</span>' : '';
+    yearTbody += '<tr>' +
+      '<td>' + y + star + '</td>' +
+      '<td style="text-align:center"><span class="clickable-num" onclick="showActiveCusts(\'' + y + '\',\'year\')">' + active.size + '</span></td>' +
+      '<td style="text-align:center">' + growth + '</td>' +
+      '<td style="text-align:center">' + newCusts.size + '</td>' +
+      '<td style="text-align:center">' + retained.size + '</td>' +
+      '</tr>';
+  });
+  document.getElementById('activity-year-tbody').innerHTML = yearTbody || '<tr><td colspan="5" class="target-empty">暂无数据</td>';
+
+}
+
+// ── 活跃客户明细弹窗 ──
+let activeCustMode = null, activeCustPeriod = '';
+
+function showActiveCusts(period, mode) {
+  activeCustPeriod = period;
+  activeCustMode = mode;
+  const data = getAllData();
+  const custAgg = {};
+  data.filter(r => {
+    if (mode === 'year') return r.date.slice(0,4) === period;
+    return r.date.slice(0,7) === period;
+  }).forEach(r => {
+    if (!custAgg[r.cust]) custAgg[r.cust] = { count:0, amount:0 };
+    custAgg[r.cust].count++;
+    custAgg[r.cust].amount += (r.amount || 0);
+  });
+  const sorted = Object.entries(custAgg).sort((a,b) => b[1].amount - a[1].amount);
+  document.getElementById('active-cust-title').textContent = period + ' 活跃客户明细（' + sorted.length + '个）';
+  document.getElementById('active-cust-tbody').innerHTML = sorted.map(([c,v]) =>
+    '<tr><td><span class="clickable-cust" onclick="showCustOrders(\'' + c.replace(/'/g,"\\'") + '\');closeActiveCust()">' + c + '</span></td><td style="text-align:center">' + v.count + '</td><td style="text-align:right">¥' + v.amount.toLocaleString() + '</td></tr>'
+  ).join('');
+  document.getElementById('active-cust-summary').textContent = '合计：' + sorted.length + '个客户，点击客户名称可查看订单明细';
+  document.getElementById('active-cust-modal').classList.add('show');
+}
+function closeActiveCust() { document.getElementById('active-cust-modal').classList.remove('show'); }
+
+// ── 客户订单明细弹窗（按日汇总）──
+function showCustOrders(custName) {
+  const data = getFilteredData();
+  const orders = data.filter(r => r.cust === custName);
+  if (!orders.length) { showToast('无订单数据', 'error'); return; }
+  const dailyAgg = {};
+  orders.forEach(r => {
+    const d = r.date.slice(0,10);
+    dailyAgg[d] = (dailyAgg[d] || 0) + (r.amount || 0);
+  });
+  const sorted = Object.entries(dailyAgg).sort((a,b) => b[0].localeCompare(a[0]));
+  document.getElementById('cust-orders-title').textContent = custName + ' — 订单明细';
+  document.getElementById('cust-orders-thead').innerHTML = '<tr><th>日期</th><th style="text-align:right">当日销售额</th></tr>';
+  document.getElementById('cust-orders-tbody').innerHTML = sorted.map(([d,amt]) =>
+    '<tr><td class="td-date">'+d+'</td><td class="td-amount" style="text-align:right">¥'+amt.toLocaleString()+'</td></tr>'
+  ).join('');
+  const total = sorted.reduce((s,x)=>s+x[1],0);
+  document.getElementById('cust-orders-summary').textContent = '共 ' + sorted.length + ' 天有交易，合计 ¥' + total.toLocaleString();
+  document.getElementById('cust-orders-modal').classList.add('show');
+}
+function closeCustOrders() { document.getElementById('cust-orders-modal').classList.remove('show'); }
+
+// ── CSV 下载工具 ──
+function downloadCSV(csv, filename) {
+  const BOM = '﻿';
+  const blob = new Blob([BOM + csv], {type:'text/csv;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a); URL.revokeObjectURL(url);
+}
+
+// ── Tab4 主刷新 ──
+function refreshCustomerTab() {
+  custFilterStart = document.getElementById('c-dateStart').value;
+  custFilterEnd   = document.getElementById('c-dateEnd').value;
+  buildCustomerData();
+  refreshCustYearTable();
+  refreshChurnTable();
+  refreshActivityTables();
+}
+function resetCustomerFilter() {
+  document.getElementById('c-dateStart').value = '';
+  document.getElementById('c-dateEnd').value = '';
+  custFilterStart = '';
+  custFilterEnd = '';
+  refreshCustomerTab();
+}
+
+// ==================== 客户跟进模块 ====================
+
+async function loadTodayTasks() {
+    const resp = await fetch('/api/customers/followup/today');
+    const result = await resp.json();
+    if (!result.success) return;
+    const container = document.getElementById('today-tasks-container');
+    const today = new Date().toISOString().slice(0,10);
+    if (result.data.length === 0) {
+        container.innerHTML = '<div style="padding:20px;text-align:center;color:#999">🎉 今日无待跟进客户</div>';
+    } else {
+        container.innerHTML = result.data.map(task => {
+            let cardClass = '';
+            if (task.next_followup < today) cardClass = 'overdue';
+            else if (task.next_followup === today) cardClass = 'today';
+            const recoveryBadge = (task.peak_level === 'A' || task.peak_level === 'B') && (task.level === 'C' || task.level === 'D')
+                ? '<span style="font-size:10px;background:#FFF3E0;color:#E65100;padding:2px 6px;border-radius:8px;margin-left:6px">挽回</span>' : '';
+            return `
+                <div class="task-card ${cardClass}">
+                    <div>
+                        <span class="task-cust">${escapeHtml(task.name)}</span>
+                        <span class="cust-level cust-level-${task.level.toLowerCase()}">${task.level}类</span>
+                        ${recoveryBadge}
+                        <div style="font-size:11px;color:#999">应跟进：${task.next_followup}</div>
+                    </div>
+                    <button class="task-btn" onclick="markFollowup('${escapeHtml(task.name).replace(/'/g, "\\'")}')">✓ 已完成</button>
+                </div>
+            `;
+        }).join('');
+    }
+    const batchDiv = document.getElementById('batch-buttons');
+    batchDiv.innerHTML = `
+        <button class="btn-outline" onclick="batchMarkFollowup('A')">标记A类已跟进</button>
+        <button class="btn-outline" onclick="batchMarkFollowup('B')">标记B类已跟进</button>
+        <button class="btn-outline" onclick="batchMarkFollowup('C')">标记C类已跟进</button>
+        <button class="btn-outline" onclick="batchMarkFollowup('D')">标记D类已跟进</button>
+        <button class="btn-outline" onclick="batchMarkFollowup('all')">标记全部已跟进</button>
+    `;
+}
+
+async function loadWeekTasks() {
+    const resp = await fetch('/api/customers/followup/week');
+    const result = await resp.json();
+    if (!result.success) return;
+    const container = document.getElementById('week-tasks-container');
+    if (result.data.length === 0) {
+        container.innerHTML = '<div style="padding:12px;color:#999;text-align:center">本周无其他待跟进客户</div>';
+    } else {
+        container.innerHTML = result.data.map(task => `
+            <div class="task-card" style="margin-bottom:6px">
+                <div>
+                    <span class="task-cust">${escapeHtml(task.name)}</span>
+                    <span class="cust-level cust-level-${task.level.toLowerCase()}">${task.level}类</span>
+                    <div style="font-size:11px;color:#999">应跟进：${task.next_followup}</div>
+                </div>
+                <button class="task-btn" onclick="markFollowup('${escapeHtml(task.name).replace(/'/g, "\\'")}')">✓ 已完成</button>
+            </div>
+        `).join('');
+    }
+}
+
+async function markFollowup(custName) {
+    const resp = await fetch('/api/customers/followup/mark', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({customer_name: custName})
+    });
+    const result = await resp.json();
+    if (result.success) {
+        showToast(`已标记 ${custName} 跟进完成`, 'success');
+        loadTodayTasks();
+        loadWeekTasks();
+        loadLevelStats();
+    } else {
+        showToast(result.error, 'error');
+    }
+}
+
+async function batchMarkFollowup(level) {
+    const resp = await fetch('/api/customers/followup/batch', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({level: level === 'all' ? '' : level})
+    });
+    const result = await resp.json();
+    if (result.success) {
+        showToast(result.message, 'success');
+        loadTodayTasks();
+        loadWeekTasks();
+        loadLevelStats();
+    } else {
+        showToast(result.error, 'error');
+    }
+}
+
+async function loadLevelStats() {
+    const year = document.getElementById('level-year-select').value;
+    const resp = await fetch(`/api/customers/stats?year=${year}`);
+    const result = await resp.json();
+    if (!result.success) return;
+    const stats = result.data;
+    const container = document.getElementById('level-stats-container');
+    container.innerHTML = `
+        <div class="level-card" onclick="showLevelCustomers('A')"><div class="level-num">${stats.A}</div><div class="level-label">A类</div></div>
+        <div class="level-card" onclick="showLevelCustomers('B')"><div class="level-num">${stats.B}</div><div class="level-label">B类</div></div>
+        <div class="level-card" onclick="showLevelCustomers('C')"><div class="level-num">${stats.C}</div><div class="level-label">C类</div></div>
+        <div class="level-card" onclick="showLevelCustomers('D')"><div class="level-num">${stats.D}</div><div class="level-label">D类</div></div>
+    `;
+}
+
+let currentLevelModal = { level: '', page: 1, year: '' };
+
+async function showLevelCustomers(level) {
+    const year = document.getElementById('level-year-select').value;
+    currentLevelModal = { level, page: 1, year };
+    await renderLevelModal();
+    document.getElementById('level-modal').classList.add('show');
+}
+
+async function renderLevelModal() {
+    const { level, page, year } = currentLevelModal;
+    const resp = await fetch(`/api/customers/by-level?level=${level}&year=${year}&page=${page}&limit=20`);
+    const result = await resp.json();
+    if (!result.success) return;
+    document.getElementById('level-modal-title').innerHTML = `${level}类客户（共${result.total}个）`;
+    const tbody = document.getElementById('level-modal-tbody');
+    tbody.innerHTML = result.data.map((cust, idx) => `
+        <tr>
+            <td>${(page-1)*20 + idx + 1}</td>
+            <td>${escapeHtml(cust.name)}</td>
+            <td>${cust.code || '<span style="color:#FF9800">⚠️ 待补充</span>'}</td>
+            <td class="td-amount">¥${cust.sales.toLocaleString()}</td>
+        </tr>
+    `).join('');
+    const totalPages = Math.ceil(result.total / 20);
+    const pagination = document.getElementById('level-modal-pagination');
+    pagination.innerHTML = `
+        <button class="page-btn" onclick="changeLevelPage(${page-1})" ${page<=1?'disabled':''}>上一页</button>
+        <span class="page-info">第${page}/${totalPages}页</span>
+        <button class="page-btn" onclick="changeLevelPage(${page+1})" ${page>=totalPages?'disabled':''}>下一页</button>
+    `;
+}
+
+function changeLevelPage(newPage) {
+    currentLevelModal.page = newPage;
+    renderLevelModal();
+}
+
+function closeLevelModal() {
+    document.getElementById('level-modal').classList.remove('show');
+}
+
+function importCodesFile() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.xlsx,.xls,.csv';
+    input.onchange = async (e) => {
+        const file = e.target.files[0];
+        const formData = new FormData();
+        formData.append('file', file);
+        const resp = await fetch('/api/customers/import-codes', { method: 'POST', body: formData });
+        const result = await resp.json();
+        if (result.success) {
+            showToast(result.message, 'success');
+            loadLevelStats();
+        } else {
+            showToast(result.error, 'error');
+        }
+    };
+    input.click();
+}
+
+async function exportPendingCodesFile() {
+    window.open('/api/customers/export-pending-codes', '_blank');
+}
+
+function initCustomerTab() {
+    const yearSelect = document.getElementById('level-year-select');
+    const currentYear = new Date().getFullYear();
+    yearSelect.innerHTML = '';
+    for (let y = currentYear; y >= 2020; y--) {
+        const option = document.createElement('option');
+        option.value = y;
+        option.textContent = `${y}年`;
+        yearSelect.appendChild(option);
+    }
+    yearSelect.value = currentYear - 1;
+    yearSelect.onchange = () => { loadLevelStats(); };
+    loadLevelStats();
+    loadTodayTasks();
+    loadWeekTasks();
+}
+
+function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/[&<>]/g, function(m) {
+        if (m === '&') return '&amp;';
+        if (m === '<') return '&lt;';
+        if (m === '>') return '&gt;';
+        return m;
+    });
+}
 
 // ════════════ 初始化 ════════════
 (async function init() {
