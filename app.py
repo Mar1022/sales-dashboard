@@ -939,11 +939,14 @@ def get_task_purpose_and_suggestion(cust_name, level, peak_level, last_order_dat
     根据客户数据判断任务目的和行动建议
     返回: {'purpose': str, 'suggestion': str, 'priority': int}
     """
-    from datetime import date, timedelta
+    from datetime import date, timedelta, datetime as dt
     today = date.today()
-    days_since_last_order = (today - last_order_date).days if last_order_date else 999
-    days_since_followup = (today - last_followup).days if last_followup else 999
-    days_overdue = (today - last_followup).days if last_followup and last_followup < today else 0
+    # Normalize to date
+    lod = last_order_date.date() if hasattr(last_order_date, 'date') else (last_order_date if isinstance(last_order_date, date) else None)
+    lfu = last_followup.date() if hasattr(last_followup, 'date') else (last_followup if isinstance(last_followup, date) else None)
+    days_since_last_order = (today - lod).days if lod else 999
+    days_since_followup = (today - lfu).days if lfu else 999
+    days_overdue = (today - lfu).days if lfu and lfu < today else 0
 
     # 1. 逾期超过7天 且 A/B类
     if days_overdue > 7 and level in ('A', 'B'):
@@ -964,7 +967,7 @@ def get_task_purpose_and_suggestion(cust_name, level, peak_level, last_order_dat
     if consecutive_decline:
         return {'purpose': '风险预警', 'suggestion': '销售额连续下降，了解客户经营状况，是否需要支持', 'priority': 6}
     # 7. 新客户（首次成交后14天内）
-    if days_since_last_order <= 14 and year_sales > 0:
+    if days_since_last_order <= 14 and (year_sales or 0) > 0:
         return {'purpose': '回访', 'suggestion': '新客户首次购买后回访，询问使用体验，收集反馈', 'priority': 7}
     # 8. 默认
     return {'purpose': '常规跟进', 'suggestion': '了解近期需求，推送产品资料，保持联系', 'priority': 8}
