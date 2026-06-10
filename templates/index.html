@@ -2578,6 +2578,15 @@ async function loadTodayTasks() {
     loadTaskStats();
 }
 
+function getLevelGroupKey(task) {
+    var lv = task.sub_level || task.level;
+    return lv;
+}
+function getLevelGroupLabel(key) {
+    var map = {A:'A类 7天/次',B:'B类 14天/次',C1:'C1 高频活跃 14天',C2:'C2 低频 30天',C3:'C3 沉睡 60天',C4:'C4 一次性 90天',
+               D1:'D1 新线索 30天',D2:'D2 流失老客户 90天',D3:'D3 无效线索',D4:'D4 从未互动',C:'C类',D:'D类'};
+    return map[key] || (key+'类');
+}
 function renderTaskList() {
     var container = document.getElementById('task-list-container');
     var list;
@@ -2609,15 +2618,32 @@ function renderTaskList() {
         return;
     }
     var isEditable = (activeTaskTab !== 'done' && activeTaskTab !== 'quotes');
+    // Group by level
+    var grouped = {};
+    list.forEach(function(t){
+        var key = getLevelGroupKey(t);
+        if (!grouped[key]) grouped[key] = [];
+        grouped[key].push(t);
+    });
+    var order = ['A','B','C1','C2','C3','C4','C','D1','D2','D3','D4','D'];
     var html = '';
-    list.forEach(function(task){
+    order.forEach(function(key){
+        if (!grouped[key] || !grouped[key].length) return;
+        var items = grouped[key];
+        var label = getLevelGroupLabel(key);
+        var gid = 'grp_'+key;
+        html += '<div style="margin-bottom:2px">';
+        html += '<div onclick="var e=document.getElementById(\''+gid+'\');e.style.display=e.style.display===\'none\'?\'\':\'none\'" style="display:flex;align-items:center;gap:6px;padding:4px 8px;background:#FAFAFA;border-radius:3px;cursor:pointer;font-size:12px;font-weight:500;color:#555">';
+        html += '<span>'+label+' ('+items.length+'个) &#9662;</span></div>';
+        html += '<div id="'+gid+'">';
+        items.forEach(function(task){
         var safeName = escapeHtml(task.name);
         var escName = safeName.replace(/'/g, "\\'");
         var lvlClass = 'level-badge level-badge-' + task.level;
         var isChecked = selectedRows[escName] ? 'checked' : '';
         html += '<div class="task-row" id="row_'+escName+'">';
         html += '<span style="width:3%">'+(isEditable?'<input type="checkbox" '+isChecked+' onchange="toggleRow(this,\''+escName+'\')">':'')+'</span>';
-        html += '<span style="width:18%;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+safeName+'<span class="rule-icon" onclick="event.stopPropagation();showRuleDetail(\''+escName+'\')" title="计算详情">?</span></span>';
+        html += '<span style="width:18%;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+safeName+'</span>';
         var subTag = (task.sub_level && task.sub_level !== task.level) ? ' <span style="font-size:9px;color:#999">'+task.sub_name+'</span>' : '';
         html += '<span style="width:10%"><span class="'+lvlClass+'">'+task.level+'类</span>'+subTag+'</span>';
         html += '<span style="width:9%;font-size:11px;color:#999">'+(task.last_followup||'—')+'</span>';
@@ -2626,7 +2652,7 @@ function renderTaskList() {
         html += '<span style="width:19%;font-size:11px;color:#666;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(task.suggestion||'')+'</span>';
         html += '<span style="width:21%;text-align:right;display:flex;gap:4px;justify-content:flex-end">';
         if (activeTaskTab === 'done') {
-            html += '<span style="font-size:11px;color:#2E7D32">已完成</span>';
+            html += '<button class="task-btn task-btn-postpone" onclick="undoComplete(\''+escName+'\')" style="font-size:10px;padding:3px 6px">撤回</button>';
         } else if (activeTaskTab === 'quotes') {
             html += '<span style="font-size:11px;color:#1565C0">近期报价</span>';
         } else {
@@ -2634,6 +2660,8 @@ function renderTaskList() {
             html += '<span class="note-dropdown"><button class="task-btn task-btn-postpone" onclick="toggleNoteDropdown(\''+escName+'\',event)" style="font-size:10px;padding:4px 8px">备注</button><div class="note-dropdown-menu" id="note_menu_'+escName+'"><div onclick="applyNote(\''+escName+'\',\'近期有报价\')">近期有报价</div></div></span>';
         }
         html += '</span></div>';
+    });
+        html += '</div></div>';
     });
     container.innerHTML = html;
     document.getElementById('selected-count').innerText = Object.keys(selectedRows).length;
@@ -2751,6 +2779,14 @@ async function loadTaskStats() {
     var allResp = await fetch('/api/customers/all?limit=1');
     var allResult = await allResp.json();
     if (allResult.success) document.getElementById('stat-total').innerText = allResult.total;
+}
+
+function undoComplete(custName) {
+    completedData = completedData.filter(function(t){return t.name !== custName;});
+    localStorage.setItem('completed_customers', JSON.stringify(completedData));
+    document.getElementById('tab-count-done').innerText = completedData.length;
+    loadTodayTasks();
+    showToast('已撤回', 'success');
 }
 
 // Level stats
