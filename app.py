@@ -844,58 +844,83 @@ def get_customer_level_by_sales(sales):
         return 'D'
 
 
+# 子等级缓存（请求级，避免重复查询）
+_sub_level_cache = {}
+
 def get_customer_sub_level(cust_name, level):
-    """获取C/D类客户的子标签（C1-C4, D1-D4）"""
+    """获取C/D类客户的子标签（C1-C4, D1-D4），优先用缓存"""
     if level not in ('C', 'D'):
         return level, level, FOLLOWUP_DAYS.get(level, 30)
+    # 缓存命中
+    cache_key = cust_name
+    if cache_key in _sub_level_cache:
+        return _sub_level_cache[cache_key]
+    # 未命中，返回默认（批量查询后再填充）
+    return level, level, FOLLOWUP_DAYS.get(level, 30)
+
+
+def preload_all_sub_levels():
+    """一次性载入所有 C/D 客户的子标签（1条SQL），存入缓存"""
+    global _sub_level_cache
+    _sub_level_cache = {}
     from datetime import date
     today = date.today()
     conn = get_db()
     cur = get_cursor(conn)
     try:
-        if level == 'C':
-            # 总订单次数
-            cur.execute("SELECT COUNT(*) as cnt FROM sales_records WHERE cust = %s", (cust_name,))
-            total_orders = cur.fetchone()['cnt']
-            # 第一笔订单金额
-            cur.execute("SELECT amount FROM sales_records WHERE cust = %s ORDER BY date ASC LIMIT 1", (cust_name,))
-            first = cur.fetchone()
-            first_amount = float(first['amount']) if first else 0
-            # 最后下单日期
-            cur.execute("SELECT MAX(date) as last_date FROM sales_records WHERE cust = %s", (cust_name,))
-            last_order = cur.fetchone()['last_date']
-            days_since = (today - last_order.date()).days if last_order and hasattr(last_order, 'date') else 999
+        cur.execute("""
+            WITH cust_stats AS (
+                SELECT c.name, c.level, c.status, c.note, c.created_at,
+                    COUNT(s.amount) as total_orders,
+                    COALESCE(MIN(s.date), NULL) as first_order_date,
+                    COALESCE(MAX(s.date), NULL) as last_order_date,
+                    COALESCE(MIN(s.amount), 0) as first_amount
+                FROM customers c
+                LEFT JOIN sales_records s ON c.name = s.cust
+                GROUP BY c.name, c.level, c.status, c.note, c.created_at
+            )
+            SELECT name, level, total_orders, first_amount, last_order_date, status, note, created_at
+            FROM cust_stats
+        """)
+        rows = cur.fetchall()
+        for r in rows:
+            name = r['name']
+            level = r['level']
+            if level not in ('C', 'D'):
+                _sub_level_cache[name] = (level, level, FOLLOWUP_DAYS.get(level, 30))
+                continue
 
-            if total_orders == 1 and first_amount < 500:
-                sub = 'C4'; name = '一次性客户'
-            elif days_since <= 90:
-                sub = 'C1'; name = '高频活跃客户'
-            elif days_since <= 180:
-                sub = 'C2'; name = '低频客户'
-            elif days_since <= 365:
-                sub = 'C3'; name = '沉睡客户'
-            else:
-                sub = 'C3'; name = '沉睡客户'
-        else:  # D类
-            cur.execute("SELECT COUNT(*) as cnt FROM sales_records WHERE cust = %s", (cust_name,))
-            total_orders = cur.fetchone()['cnt']
-            # Check note/status for D1 (recent inquiry)
-            cur.execute("SELECT status, note, created_at FROM customers WHERE name = %s", (cust_name,))
-            cust_row = cur.fetchone()
-            has_inquiry = (cust_row and cust_row['status'] == 'inquiry') or (cust_row and cust_row['note'] and '询价' in str(cust_row['note']))
-            recently_added = cust_row and cust_row['created_at'] and (today - cust_row['created_at'].date()).days <= 30
+            if level == 'C':
+                total_orders = int(r['total_orders'])
+                first_amount = float(r['first_amount']) if r['first_amount'] else 0
+                last_order = r['last_order_date']
+                days_since = (today - last_order.date()).days if last_order and hasattr(last_order, 'date') else 999
 
-            if has_inquiry or recently_added:
-                sub = 'D1'; name = '新线索客户'
-            elif total_orders >= 1:
-                sub = 'D2'; name = '流失老客户'
-            elif cust_row:
-                sub = 'D3'; name = '无效线索'
-            else:
-                sub = 'D4'; name = '从未互动客户'
+                if total_orders == 1 and first_amount < 500:
+                    sub, label = 'C4', '一次性客户'
+                elif days_since <= 90:
+                    sub, label = 'C1', '高频活跃客户'
+                elif days_since <= 180:
+                    sub, label = 'C2', '低频客户'
+                elif days_since <= 365:
+                    sub, label = 'C3', '沉睡客户'
+                else:
+                    sub, label = 'C3', '沉睡客户'
+            else:  # D
+                total_orders = int(r['total_orders'])
+                has_inquiry = (r['status'] == 'inquiry') or (r['note'] and '询价' in str(r['note']))
+                recently_added = r['created_at'] and (today - r['created_at'].date()).days <= 30
 
-        freq = FOLLOWUP_DAYS.get(sub, 30)
-        return sub, name, freq
+                if has_inquiry or recently_added:
+                    sub, label = 'D1', '新线索客户'
+                elif total_orders >= 1:
+                    sub, label = 'D2', '流失老客户'
+                elif r['created_at'] is not None:
+                    sub, label = 'D3', '无效线索'
+                else:
+                    sub, label = 'D4', '从未互动客户'
+
+            _sub_level_cache[name] = (sub, label, FOLLOWUP_DAYS.get(sub, 30))
     finally:
         cur.close()
         conn.close()
@@ -1133,6 +1158,8 @@ def get_today_tasks():
     """获取今日需跟进的客户（含任务目的和建议）"""
     from datetime import date
     today = date.today()
+    # 一次性预加载所有子等级，避免逐行查询
+    preload_all_sub_levels()
     y0, y1, y2 = today.year, today.year - 1, today.year - 2
     conn = get_db()
     cur = get_cursor(conn)
