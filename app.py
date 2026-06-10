@@ -1158,10 +1158,50 @@ def get_today_tasks():
     """获取今日需跟进的客户（含任务目的和建议）"""
     from datetime import date
     today = date.today()
-    # 一次性预加载所有子等级，避免逐行查询
-    preload_all_sub_levels()
     y0, y1, y2 = today.year, today.year - 1, today.year - 2
     conn = get_db()
+    # 预加载子等级（复用同一连接）
+    global _sub_level_cache
+    _sub_level_cache = {}
+    try:
+        cur2 = get_cursor(conn)
+        cur2.execute("""
+            WITH cust_stats AS (
+                SELECT c.name, c.level, c.status, c.note, c.created_at,
+                    COUNT(s.amount) as total_orders,
+                    COALESCE(MAX(s.date), NULL) as last_order_date,
+                    COALESCE(MIN(s.amount), 0) as first_amount
+                FROM customers c LEFT JOIN sales_records s ON c.name = s.cust
+                GROUP BY c.name, c.level, c.status, c.note, c.created_at
+            )
+            SELECT name, level, total_orders, first_amount, last_order_date, status, note, created_at
+            FROM cust_stats
+        """)
+        for r in cur2.fetchall():
+            nm = r['name']; lv = r['level']
+            if lv not in ('C', 'D'):
+                _sub_level_cache[nm] = (lv, lv, FOLLOWUP_DAYS.get(lv, 30))
+            elif lv == 'C':
+                orders = int(r['total_orders']); fa = float(r['first_amount'] or 0)
+                lo = r['last_order_date']
+                days = (today - lo.date()).days if lo and hasattr(lo, 'date') else 999
+                if orders == 1 and fa < 500: sub, lbl = 'C4', '一次性客户'
+                elif days <= 90: sub, lbl = 'C1', '高频活跃客户'
+                elif days <= 180: sub, lbl = 'C2', '低频客户'
+                else: sub, lbl = 'C3', '沉睡客户'
+                _sub_level_cache[nm] = (sub, lbl, FOLLOWUP_DAYS.get(sub, 30))
+            else:
+                orders = int(r['total_orders'])
+                has_inq = (r['status'] == 'inquiry') or (r['note'] and '询价' in str(r['note']))
+                recent = r['created_at'] and (today - r['created_at'].date()).days <= 30
+                if has_inq or recent: sub, lbl = 'D1', '新线索客户'
+                elif orders >= 1: sub, lbl = 'D2', '流失老客户'
+                elif r['created_at']: sub, lbl = 'D3', '无效线索'
+                else: sub, lbl = 'D4', '从未互动客户'
+                _sub_level_cache[nm] = (sub, lbl, FOLLOWUP_DAYS.get(sub, 30))
+        cur2.close()
+    except Exception:
+        pass  # Fallback: get_customer_sub_level will return defaults
     cur = get_cursor(conn)
     try:
         cur.execute("""
