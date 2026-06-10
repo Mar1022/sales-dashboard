@@ -534,7 +534,7 @@
   details summary:hover { background: #F5F5F5; }
   /* 任务卡片 */
   /* Tab4 新布局 */
-  .task-tab.active { border-color:#333 !important; }
+  .task-tab2.active { border-color:#333 !important; box-shadow:0 2px 8px rgba(0,0,0,.08); }
   .task-tab:hover { background:#F5F5F5 !important; }
   .task-row { display:flex; align-items:center; padding:10px 16px; border-bottom:1px solid #F0F0F0; font-size:13px; transition:opacity .2s; background:#fff; }
   .task-row:hover { background:#FAFAFA; }
@@ -741,49 +741,67 @@
 <!-- ═══════════════ Tab4: 客户管理与跟进 ═══════════════ -->
 <div id="tab-customer" class="tab-content" style="overflow-y:auto;background:#F8F9FA">
 
-  <!-- ⓘ 规则说明按钮 -->
-  <div style="display:flex;justify-content:flex-end;padding:12px 20px 0;gap:8px">
-    <button class="btn-outline" onclick="showRuleInfoOverlay()" style="font-size:12px">ⓘ 规则说明</button>
+  <!-- 客户管理 + 搜索 -->
+  <div style="display:flex;gap:8px;align-items:center;padding:12px 20px 0;flex-wrap:wrap">
+    <input id="cust-filter-input" placeholder="搜索客户名称或编码" style="padding:6px 10px;border:1px solid #DDD;border-radius:4px;font-size:12px;font-family:inherit;width:220px" onkeydown="if(event.key==='Enter')filterCustomerList()">
+    <button class="btn-primary" onclick="filterCustomerList()" style="font-size:12px;padding:6px 12px">搜索</button>
+    <button class="btn-outline" onclick="openCustMgmtDrawer()" style="font-size:12px">管理</button>
+    <span style="font-size:12px;color:#999;margin-left:auto">共 <b id="cust-mgmt-total">—</b> 个</span>
+    <button class="btn-outline" onclick="importCodesFile()" style="font-size:12px">导入编码</button>
   </div>
 
   <!-- 标签区 -->
-  <div id="task-tabs" style="display:flex;gap:16px;padding:12px 20px 16px">
-    <div class="task-tab active" data-tab="overdue" onclick="switchTaskTab('overdue')" style="padding:12px 20px;background:#fff;border-radius:8px;cursor:pointer;min-width:140px;border:2px solid transparent;transition:all .15s">
-      <div style="font-size:13px;color:#E53935;font-weight:500">🔴 逾期跟进</div>
-      <div style="font-size:24px;font-weight:600;color:#E53935;margin-top:4px" id="tab-count-overdue">0</div>
+  <div id="task-tabs" style="display:flex;gap:12px;padding:12px 20px 8px;flex-wrap:wrap">
+    <div class="task-tab2 active" data-tab="overdue" onclick="switchTaskTab('overdue')" style="padding:8px 16px;background:#fff;border-radius:8px;cursor:pointer;border:2px solid transparent;min-width:110px">
+      <div style="font-size:12px;color:#E53935;font-weight:500">逾期跟进</div>
+      <div style="font-size:22px;font-weight:600;color:#E53935" id="tab-count-overdue">0</div>
     </div>
-    <div class="task-tab" data-tab="regular" onclick="switchTaskTab('regular')" style="padding:12px 20px;background:#fff;border-radius:8px;cursor:pointer;min-width:140px;border:2px solid transparent;transition:all .15s">
-      <div style="font-size:13px;color:#333;font-weight:500">📋 常规跟进</div>
-      <div style="font-size:24px;font-weight:600;color:#333;margin-top:4px" id="tab-count-regular">0</div>
+    <div class="task-tab2" data-tab="regular" onclick="switchTaskTab('regular')" style="padding:8px 16px;background:#fff;border-radius:8px;cursor:pointer;border:2px solid transparent;min-width:110px">
+      <div style="font-size:12px;color:#333;font-weight:500">常规跟进</div>
+      <div style="font-size:22px;font-weight:600;color:#333" id="tab-count-regular">0</div>
     </div>
-    <div class="task-tab" data-tab="recovery" onclick="switchTaskTab('recovery')" style="padding:12px 20px;background:#fff;border-radius:8px;cursor:pointer;min-width:140px;border:2px solid transparent;transition:all .15s">
-      <div style="font-size:13px;color:#F9A825;font-weight:500">🔄 挽回任务</div>
-      <div style="font-size:24px;font-weight:600;color:#F9A825;margin-top:4px" id="tab-count-recovery">0</div>
+    <div class="task-tab2" data-tab="recovery" onclick="switchTaskTab('recovery')" style="padding:8px 16px;background:#fff;border-radius:8px;cursor:pointer;border:2px solid transparent;min-width:110px">
+      <div style="font-size:12px;color:#F9A825;font-weight:500">挽回任务</div>
+      <div style="font-size:22px;font-weight:600;color:#F9A825" id="tab-count-recovery">0</div>
+    </div>
+    <div class="task-tab2" data-tab="quotes" onclick="switchTaskTab('quotes')" style="padding:8px 16px;background:#fff;border-radius:8px;cursor:pointer;border:2px solid transparent;min-width:110px">
+      <div style="font-size:12px;color:#1565C0;font-weight:500">近期报价</div>
+      <div style="font-size:22px;font-weight:600;color:#1565C0" id="tab-count-quotes">0</div>
+    </div>
+    <div class="task-tab2" data-tab="done" onclick="switchTaskTab('done')" style="padding:8px 16px;background:#fff;border-radius:8px;cursor:pointer;border:2px solid transparent;min-width:110px">
+      <div style="font-size:12px;color:#2E7D32;font-weight:500">今日已完成</div>
+      <div style="font-size:22px;font-weight:600;color:#2E7D32" id="tab-count-done">0</div>
     </div>
   </div>
 
-  <!-- 客户列表区 -->
+  <!-- 批量操作 + 列表 -->
   <div style="margin:0 20px">
-    <!-- 表头 -->
-    <div style="display:flex;padding:8px 16px;font-size:12px;color:#999;font-weight:500;border-bottom:1px solid #EDEDED">
-      <span style="width:22%">客户名称</span>
-      <span style="width:12%">等级</span>
-      <span style="width:14%">上次跟进</span>
-      <span style="width:14%">计划跟进</span>
-      <span style="width:26%">建议内容</span>
-      <span style="width:12%;text-align:right">操作</span>
+    <div id="batch-bar" style="display:none;padding:6px 16px;background:#FFF8E1;border-radius:4px;margin-bottom:8px;display:none;align-items:center;gap:10px;font-size:12px">
+      <input type="checkbox" id="select-all" onchange="toggleSelectAll()"> 全选
+      <span id="selected-count" style="color:#F9A825;font-weight:600">0</span> 个已选
+      <button class="mark-done-btn" onclick="batchMarkDone()">批量标记完成</button>
     </div>
-    <!-- 列表 -->
+    <div style="display:flex;padding:8px 16px;font-size:11px;color:#999;font-weight:500;border-bottom:1px solid #EDEDED">
+      <span style="width:3%"><input type="checkbox" style="visibility:hidden"></span>
+      <span style="width:20%">客户名称</span>
+      <span style="width:8%">等级</span>
+      <span style="width:10%">上次跟进</span>
+      <span style="width:10%">计划跟进</span>
+      <span style="width:24%">建议内容</span>
+      <span style="width:25%;text-align:right">操作</span>
+    </div>
     <div id="task-list-container" style="min-height:200px"></div>
   </div>
 
   <!-- 底部统计 -->
-  <div id="task-stats-bar" style="margin:24px 20px;padding:16px 24px;background:#fff;border-radius:8px;display:flex;gap:40px;font-size:14px;color:#666">
-    <div>今日已完成 <b style="font-size:20px;color:#2E7D32" id="stat-completed">0</b> 个</div>
+  <div style="margin:16px 20px;padding:14px 20px;background:#fff;border-radius:8px;display:flex;gap:32px;font-size:13px;color:#666">
+    <div>今日已完成 <b style="font-size:18px;color:#2E7D32" id="stat-completed">0</b> 个</div>
     <div style="color:#DDD">|</div>
-    <div>逾期客户 <b style="font-size:20px;color:#E53935" id="stat-overdue">0</b> 个</div>
+    <div>逾期客户 <b style="font-size:18px;color:#E53935" id="stat-overdue">0</b> 个</div>
     <div style="color:#DDD">|</div>
-    <div>客户总数 <b style="font-size:20px;color:#333" id="stat-total">—</b> 个</div>
+    <div>近期报价 <b style="font-size:18px;color:#1565C0" id="stat-quotes">0</b> 个</div>
+    <div style="color:#DDD">|</div>
+    <div>客户总数 <b style="font-size:18px;color:#333" id="stat-total">—</b> 个</div>
   </div>
 
   <!-- 客户等级分布 & 编码管理 -->
@@ -794,29 +812,19 @@
         <span class="chart-title" style="margin:0">客户等级分布</span>
         <select id="level-year-select" style="padding:4px 8px;border-radius:4px;border:1px solid #ddd" onchange="loadLevelStats()"></select>
       </div>
-      <div id="level-stats-container" style="display:flex;gap:20px;flex-wrap:wrap;margin-bottom:20px"></div>
-      <div style="display:flex;gap:12px;flex-wrap:wrap">
-        <button class="btn-outline" onclick="importCodesFile()">导入编码对照表</button>
-        <button class="btn-outline" onclick="exportPendingCodesFile()">导出待编码客户</button>
-      </div>
+      <div id="level-stats-container" style="display:flex;gap:20px;flex-wrap:wrap;margin-bottom:16px"></div>
     </div>
   </details>
 
-  <!-- 原有分析报表 -->
+  <!-- 分析报表 -->
   <details style="margin:0 20px 16px">
     <summary style="cursor:pointer;font-weight:500;padding:8px 12px">📈 分析报表（偶尔查看）</summary>
     <div style="margin-top:16px">
-      <div class="tab-filter-sticky">
-        <div class="filter-bar">
-          <span class="filter-label">日期范围</span>
-          <input type="date" id="c-dateStart">
-          <span class="date-sep">—</span>
-          <input type="date" id="c-dateEnd">
-          <button class="btn-apply" onclick="refreshCustomerTab()">刷新</button>
-          <button class="btn-outline" onclick="resetCustomerFilter()">重置</button>
-          <span style="font-size:11px;color:#999;margin-left:8px">* 当年至今数据列标题标注*号</span>
-        </div>
-      </div>
+      <div class="tab-filter-sticky"><div class="filter-bar">
+        <span class="filter-label">日期范围</span><input type="date" id="c-dateStart"><span class="date-sep">—</span><input type="date" id="c-dateEnd">
+        <button class="btn-apply" onclick="refreshCustomerTab()">刷新</button><button class="btn-outline" onclick="resetCustomerFilter()">重置</button>
+        <span style="font-size:11px;color:#999;margin-left:8px">* 当年至今数据列标题标注*号</span>
+      </div></div>
       <div class="tab-inner">
         <div class="chart-card" style="margin-bottom:20px">
           <div class="chart-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
@@ -828,57 +836,21 @@
               <button class="btn-outline" onclick="exportCustYearCSV()" style="font-size:12px">导出CSV</button>
             </div>
           </div>
-          <div class="table-scroll" style="max-height:520px;overflow:auto">
-            <table id="cust-year-table" style="min-width:100%"><thead id="cust-year-thead"></thead><tbody id="cust-year-tbody"></tbody></table>
-          </div>
+          <div class="table-scroll" style="max-height:520px;overflow:auto"><table id="cust-year-table" style="min-width:100%"><thead id="cust-year-thead"></thead><tbody id="cust-year-tbody"></tbody></table></div>
           <div id="cust-year-empty" class="target-empty" style="display:none">暂无数据</div>
         </div>
         <div class="chart-card" style="margin-bottom:20px">
           <div class="chart-title" style="display:flex;align-items:center;justify-content:space-between"><span>二、老客户流失分析</span><button class="btn-outline" onclick="exportChurnCSV()" style="font-size:12px">导出CSV</button></div>
-          <div class="table-scroll" style="max-height:400px;overflow:auto">
-            <table id="churn-table" style="min-width:100%"><thead><tr><th>年份</th><th style="text-align:center">年初客户数</th><th style="text-align:center">当年活跃客户数</th><th style="text-align:center">留存客户数</th><th style="text-align:center">流失客户数</th><th style="text-align:center">流失率</th></tr></thead><tbody id="churn-tbody"></tbody></table>
-          </div>
+          <div class="table-scroll" style="max-height:400px;overflow:auto"><table id="churn-table" style="min-width:100%"><thead><tr><th>年份</th><th style="text-align:center">年初客户数</th><th style="text-align:center">当年活跃客户数</th><th style="text-align:center">留存客户数</th><th style="text-align:center">流失客户数</th><th style="text-align:center">流失率</th></tr></thead><tbody id="churn-tbody"></tbody></table></div>
           <div id="churn-empty" class="target-empty" style="display:none">暂无数据</div>
         </div>
         <div class="chart-card" style="margin-bottom:20px">
           <div class="chart-title">三、活跃客户数趋势 — 按年汇总</div>
-          <div class="table-scroll" style="max-height:360px;overflow:auto">
-            <table id="activity-year-table" style="min-width:100%"><thead><tr><th>年份</th><th style="text-align:center">活跃客户数</th><th style="text-align:center">同比增长率</th><th style="text-align:center">新客户数</th><th style="text-align:center">老客户留存数</th></tr></thead><tbody id="activity-year-tbody"></tbody></table>
-          </div>
+          <div class="table-scroll" style="max-height:360px;overflow:auto"><table id="activity-year-table" style="min-width:100%"><thead><tr><th>年份</th><th style="text-align:center">活跃客户数</th><th style="text-align:center">同比增长率</th><th style="text-align:center">新客户数</th><th style="text-align:center">老客户留存数</th></tr></thead><tbody id="activity-year-tbody"></tbody></table></div>
         </div>
       </div>
     </div>
   </details>
-
-</div>
-
-<!-- 规则说明浮层 -->
-<div class="overlay-backdrop" id="rule-info-overlay" style="display:none;position:fixed;inset:0;z-index:1500;background:rgba(0,0,0,.3)" onclick="closeRuleInfoOverlay()">
-  <div style="position:fixed;right:0;top:0;bottom:0;width:420px;background:#fff;z-index:1501;overflow-y:auto;padding:24px;box-shadow:-2px 0 16px rgba(0,0,0,.08)" onclick="event.stopPropagation()">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
-      <h3 style="font-size:16px;font-weight:600">ⓘ 规则说明</h3>
-      <button onclick="closeRuleInfoOverlay()" style="border:none;background:none;font-size:20px;cursor:pointer;color:#999">&times;</button>
-    </div>
-    <div style="font-size:13px;line-height:1.8;color:#555">
-      <div style="font-weight:600;color:#333;margin-bottom:8px">等级定义及跟进频率</div>
-      <div>A类（年销售额≥50万）：<b>每7天</b>跟进一次</div>
-      <div>B类（年销售额≥10万）：<b>每14天</b>跟进一次</div>
-      <div>C类（年销售额>0）：<b>每30天</b>跟进一次</div>
-      <div>D类（无销售额）：<b>每30天</b>跟进一次</div>
-      <div style="font-weight:600;color:#333;margin:16px 0 8px">挽回规则</div>
-      <div>近3年内历史最高等级为A或B，且当前等级为C或D</div>
-      <div>挽回间隔：<b>每60天</b></div>
-      <div style="font-weight:600;color:#333;margin:16px 0 8px">逾期判断</div>
-      <div>当前日期 > 计划跟进日期 = 逾期</div>
-      <div style="font-weight:600;color:#333;margin:16px 0 8px">任务类型优先级</div>
-      <div>1. 逾期跟进 > 2. 挽回任务 > 3. 常规跟进</div>
-    </div>
-  </div>
-</div>
-
-<!-- 客户规则详情浮层 -->
-<div id="rule-detail-tooltip" style="display:none;position:fixed;z-index:1600;background:#fff;border-radius:12px;box-shadow:0 4px 24px rgba(0,0,0,.12);padding:16px 20px;font-size:13px;line-height:1.7;max-width:380px;color:#555">
-  <div id="rule-detail-content"></div>
 </div>
 
 <!-- ════ 客户订单明细弹窗 ════ -->
@@ -2569,14 +2541,34 @@ document.addEventListener("click", function(e){
 }
 
 var taskData = [];
+var completedData = [];
+var quoteData = [];
 var activeTaskTab = 'overdue';
+var selectedRows = {};
 
 function switchTaskTab(tab) {
     activeTaskTab = tab;
-    document.querySelectorAll('.task-tab').forEach(function(el){
+    document.querySelectorAll('.task-tab2').forEach(function(el){
         el.classList.toggle('active', el.getAttribute('data-tab') === tab);
     });
     renderTaskList();
+    document.getElementById('batch-bar').style.display = (tab === 'done' || tab === 'quotes') ? 'none' : 'flex';
+    document.getElementById('select-all').checked = false;
+    selectedRows = {};
+}
+
+function filterCustomerList() {
+    var kw = document.getElementById('cust-filter-input').value.trim();
+    if (!kw) { loadTodayTasks(); return; }
+    var resp = fetch('/api/customers/all?search='+encodeURIComponent(kw)+'&limit=100').then(function(r){return r.json();});
+    resp.then(function(result){
+        if (!result.success) return;
+        taskData = result.data.map(function(c){return {
+            name:c.name, level:c.level, last_followup:null, next_followup:null,
+            peak_level:c.level, purpose:'手动搜索', suggestion:'', priority:9
+        };});
+        renderTaskList();
+    });
 }
 
 async function loadTodayTasks() {
@@ -2584,73 +2576,135 @@ async function loadTodayTasks() {
     var result = await resp.json();
     if (!result.success) return;
     taskData = result.data;
+    // Load quote data from localStorage
+    try { quoteData = JSON.parse(localStorage.getItem('quote_customers')||'[]'); } catch(e) { quoteData = []; }
+    try { completedData = JSON.parse(localStorage.getItem('completed_customers')||'[]'); } catch(e) { completedData = []; }
     var today = new Date().toISOString().slice(0,10);
     var overdue = taskData.filter(function(t){return t.next_followup < today;});
     document.getElementById('tab-count-overdue').innerText = overdue.length;
-    document.getElementById('tab-count-regular').innerText = taskData.filter(function(t){
+    var regular = taskData.filter(function(t){
         return t.next_followup === today && !(t.peak_level && (t.peak_level==='A'||t.peak_level==='B') && (t.level==='C'||t.level==='D'));
-    }).length;
-    document.getElementById('tab-count-recovery').innerText = taskData.filter(function(t){
+    });
+    document.getElementById('tab-count-regular').innerText = regular.length;
+    var recovery = taskData.filter(function(t){
         return t.peak_level && (t.peak_level==='A'||t.peak_level==='B') && (t.level==='C'||t.level==='D') && t.next_followup === today;
-    }).length;
+    });
+    document.getElementById('tab-count-recovery').innerText = recovery.length;
+    document.getElementById('tab-count-quotes').innerText = quoteData.length;
+    document.getElementById('tab-count-done').innerText = completedData.length;
     switchTaskTab('overdue');
     loadTaskStats();
 }
 
 function renderTaskList() {
     var container = document.getElementById('task-list-container');
-    if (!taskData.length) {
-        container.innerHTML = '<div style="padding:60px;text-align:center;color:#CCC;font-size:14px">暂无待跟进客户</div>';
-        return;
-    }
-    var today = new Date().toISOString().slice(0,10);
     var list;
-    if (activeTaskTab === 'overdue') {
-        list = taskData.filter(function(t){return t.next_followup < today;});
-    } else if (activeTaskTab === 'recovery') {
-        list = taskData.filter(function(t){
-            return t.peak_level && (t.peak_level==='A'||t.peak_level==='B') && (t.level==='C'||t.level==='D') && t.next_followup === today;
-        });
+    if (activeTaskTab === 'done') {
+        list = completedData;
+    } else if (activeTaskTab === 'quotes') {
+        list = quoteData;
     } else {
-        list = taskData.filter(function(t){
-            return t.next_followup === today && !(t.peak_level && (t.peak_level==='A'||t.peak_level==='B') && (t.level==='C'||t.level==='D'));
-        });
+        if (!taskData.length) {
+            container.innerHTML = '<div style="padding:60px;text-align:center;color:#CCC;font-size:14px">暂无待跟进客户</div>';
+            return;
+        }
+        var today = new Date().toISOString().slice(0,10);
+        if (activeTaskTab === 'overdue') {
+            list = taskData.filter(function(t){return t.next_followup < today;});
+        } else if (activeTaskTab === 'recovery') {
+            list = taskData.filter(function(t){
+                return t.peak_level && (t.peak_level==='A'||t.peak_level==='B') && (t.level==='C'||t.level==='D') && t.next_followup === today;
+            });
+        } else {
+            list = taskData.filter(function(t){
+                return t.next_followup === today && !(t.peak_level && (t.peak_level==='A'||t.peak_level==='B') && (t.level==='C'||t.level==='D'));
+            });
+        }
     }
     if (!list.length) {
-        var labels = {overdue:'逾期跟进',regular:'常规跟进',recovery:'挽回任务'};
+        var labels = {overdue:'逾期跟进',regular:'常规跟进',recovery:'挽回任务',quotes:'近期报价',done:'今日已完成'};
         container.innerHTML = '<div style="padding:40px;text-align:center;color:#CCC;font-size:13px">暂无'+labels[activeTaskTab]+'客户</div>';
         return;
     }
+    var isEditable = (activeTaskTab !== 'done' && activeTaskTab !== 'quotes');
     var html = '';
     list.forEach(function(task){
         var safeName = escapeHtml(task.name);
-        var lvlClass = 'level-badge level-badge-' + task.level;
         var escName = safeName.replace(/'/g, "\\'");
+        var lvlClass = 'level-badge level-badge-' + task.level;
+        var isChecked = selectedRows[escName] ? 'checked' : '';
         html += '<div class="task-row" id="row_'+escName+'">';
-        html += '<span style="width:22%;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+safeName+'<span class="rule-icon" onclick="event.stopPropagation();showRuleDetail(\''+escName+'\')" title="查看计算详情">?</span></span>';
-        html += '<span style="width:12%"><span class="'+lvlClass+'" title="'+(task.level==='A'?'A类：每7天':'')+(task.level==='B'?'B类：每14天':'')+(task.level==='C'?'C类：每30天':'')+(task.level==='D'?'D类：每30天':'')+'">'+task.level+'类</span></span>';
-        html += '<span style="width:14%;font-size:12px;color:#999">'+(task.last_followup||'—')+'</span>';
-        html += '<span style="width:14%;font-size:12px;color:#999" title="基于上次跟进+间隔天数">'+task.next_followup+'</span>';
-        html += '<span style="width:26%;font-size:12px;color:#666;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(task.suggestion||'')+'</span>';
-        html += '<span style="width:12%;text-align:right"><button class="mark-done-btn" onclick="markDone(\''+escName+'\')">标记完成</button></span>';
-        html += '</div>';
+        html += '<span style="width:3%">'+(isEditable?'<input type="checkbox" '+isChecked+' onchange="toggleRow(this,\''+escName+'\')">':'')+'</span>';
+        html += '<span style="width:20%;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+safeName+'</span>';
+        html += '<span style="width:8%"><span class="'+lvlClass+'">'+task.level+'类</span></span>';
+        html += '<span style="width:10%;font-size:11px;color:#999">'+(task.last_followup||'—')+'</span>';
+        html += '<span style="width:10%;font-size:11px;color:#999">'+(task.next_followup||'—')+'</span>';
+        html += '<span style="width:24%;font-size:11px;color:#666;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(task.suggestion||'')+'</span>';
+        html += '<span style="width:25%;text-align:right;display:flex;gap:4px;justify-content:flex-end">';
+        if (activeTaskTab === 'done') {
+            html += '<span style="font-size:11px;color:#2E7D32">已完成</span>';
+        } else if (activeTaskTab === 'quotes') {
+            html += '<span style="font-size:11px;color:#1565C0">近期报价</span>';
+        } else {
+            html += '<button class="mark-done-btn" onclick="markDone(\''+escName+'\')">完成</button>';
+            html += '<button class="task-btn task-btn-postpone" onclick="addNote(\''+escName+'\')" style="font-size:10px;padding:4px 8px" title="备注">备注</button>';
+        }
+        html += '</span></div>';
     });
     container.innerHTML = html;
+    document.getElementById('selected-count').innerText = Object.keys(selectedRows).length;
+}
+
+function toggleRow(cb, escName) {
+    if (cb.checked) selectedRows[escName] = true;
+    else delete selectedRows[escName];
+    document.getElementById('selected-count').innerText = Object.keys(selectedRows).length;
+}
+
+function toggleSelectAll() {
+    var all = document.getElementById('select-all').checked;
+    var cbs = document.querySelectorAll('#task-list-container input[type=checkbox]');
+    selectedRows = {};
+    cbs.forEach(function(cb){
+        cb.checked = all;
+        if (all) {
+            var row = cb.closest('.task-row');
+            if (row) selectedRows[row.id.replace('row_','')] = true;
+        }
+    });
+    document.getElementById('selected-count').innerText = Object.keys(selectedRows).length;
+}
+
+async function batchMarkDone() {
+    var names = Object.keys(selectedRows);
+    if (!names.length) { showToast('请先选择客户', 'error'); return; }
+    for (var i=0; i<names.length; i++) {
+        var name = names[i];
+        await fetch('/api/customers/followup/mark', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({customer_name:name})});
+        // Add to completed
+        completedData.push({name:name, level:'', last_followup:'', next_followup:new Date().toISOString().slice(0,10), suggestion:'', purpose:'已完成'});
+    }
+    localStorage.setItem('completed_customers', JSON.stringify(completedData));
+    selectedRows = {};
+    showToast('批量完成 '+names.length+' 个', 'success');
+    loadTodayTasks();
 }
 
 async function markDone(custName) {
     var row = document.getElementById('row_'+custName);
     if (row) row.classList.add('fade-out');
-    var resp = await fetch('/api/customers/followup/mark', {
-        method:'POST', headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({customer_name:custName})
-    });
+    var resp = await fetch('/api/customers/followup/mark', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({customer_name:custName})});
     var result = await resp.json();
     if (result.success) {
+        // Add to completed
+        var cust = taskData.find(function(t){return t.name === custName;}) || {};
+        completedData.push({name:custName, level:cust.level||'', last_followup:cust.last_followup||'', next_followup:new Date().toISOString().slice(0,10), suggestion:cust.suggestion||'', purpose:'已完成'});
+        localStorage.setItem('completed_customers', JSON.stringify(completedData));
+        document.getElementById('tab-count-done').innerText = completedData.length;
+        document.getElementById('stat-completed').innerText = completedData.length;
         setTimeout(function(){
             taskData = taskData.filter(function(t){return t.name !== custName;});
-            var tab = activeTaskTab;
-            loadTodayTasks().then(function(){switchTaskTab(tab);});
+            renderTaskList();
         }, 200);
     } else {
         if (row) row.classList.remove('fade-out');
@@ -2658,110 +2712,77 @@ async function markDone(custName) {
     }
 }
 
+function addNote(custName) {
+    var note = prompt('备注内容（如"近期有报价"）：', '近期有报价');
+    if (!note) return;
+    if (note === '近期有报价') {
+        // Move to quotes tab
+        var cust = taskData.find(function(t){return t.name === custName;}) || {};
+        quoteData.push({name:custName, level:cust.level||'', last_followup:cust.last_followup||'', next_followup:new Date().toISOString().slice(0,10), suggestion:cust.suggestion||'', purpose:'近期报价'});
+        localStorage.setItem('quote_customers', JSON.stringify(quoteData));
+        taskData = taskData.filter(function(t){return t.name !== custName;});
+        document.getElementById('tab-count-quotes').innerText = quoteData.length;
+        document.getElementById('stat-quotes').innerText = quoteData.length;
+        document.getElementById('stat-completed').innerText = completedData.length;
+        fetch('/api/customers/note', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({customer_name:custName, note:note, status:'quotes'})});
+        renderTaskList();
+    }
+    showToast('已备注：'+note, 'success');
+}
+
 async function loadTaskStats() {
     var statsResp = await fetch('/api/customers/followup/today-stats');
     var statsResult = await statsResp.json();
     if (statsResult.success) {
         document.getElementById('stat-overdue').innerText = statsResult.data.overdue_total;
-        document.getElementById('stat-total').innerText = statsResult.data.today_total;
     }
+    document.getElementById('stat-completed').innerText = completedData.length;
+    document.getElementById('stat-quotes').innerText = quoteData.length;
     var allResp = await fetch('/api/customers/all?limit=1');
     var allResult = await allResp.json();
     if (allResult.success) document.getElementById('stat-total').innerText = allResult.total;
-    var today = new Date().toISOString().slice(0,10);
-    var completed = taskData.filter(function(t){return t.next_followup > today;}).length;
-    document.getElementById('stat-completed').innerText = completed;
 }
 
-var completedCount = 0;
-function incrementCompleted() {
-    completedCount++;
-    document.getElementById('stat-completed').innerText = completedCount;
-}
-
-async function showRuleDetail(custName) {
-    var resp = await fetch('/api/customers/followup/rule-detail?customer_name='+encodeURIComponent(custName));
-    var result = await resp.json();
-    if (!result.success) return;
-    var d = result.data;
-    var html = '<div style="font-weight:600;color:#333;margin-bottom:8px">'+escapeHtml(d.customer_name)+'</div>';
-    html += '<div>当前等级：<b>'+d.current_level+'类</b>（每'+d.followup_frequency+'天跟进）</div>';
-    html += '<div>历史最高等级：<b>'+d.peak_level+'类</b></div>';
-    if (d.is_recovery) {
-        html += '<div style="color:#F9A825">挽回规则适用：历史A/B + 当前C/D → 每'+d.recovery_interval+'天跟进</div>';
-    }
-    html += '<div>上次跟进：'+(d.last_followup_date||'从未')+'</div>';
-    html += '<div>计划跟进：<b>'+d.next_followup_date+'</b>（基于'+d.effective_interval+'天间隔）</div>';
-    html += '<div>今天：'+d.today+'</div>';
-    html += '<div style="font-weight:600;margin-top:4px;color:'+(d.is_overdue?'#E53935':'#2E7D32')+'">判断结果：'+d.judgment+'</div>';
-    document.getElementById('rule-detail-content').innerHTML = html;
-    var tip = document.getElementById('rule-detail-tooltip');
-    tip.style.display = 'block';
-    // Position near mouse
-    if (window.event) {
-        tip.style.left = Math.min(window.event.clientX+10, window.innerWidth-400)+'px';
-        tip.style.top = Math.min(window.event.clientY+10, window.innerHeight-300)+'px';
-    }
-}
-
-function showRuleInfoOverlay() {
-    document.getElementById('rule-info-overlay').style.display = 'block';
-}
-
-function closeRuleInfoOverlay() {
-    document.getElementById('rule-info-overlay').style.display = 'none';
-}
-
-// Close tooltip on outside click
-document.addEventListener('click', function(e){
-    var tip = document.getElementById('rule-detail-tooltip');
-    if (tip && !e.target.closest('.rule-icon') && !e.target.closest('#rule-detail-tooltip')) {
-        tip.style.display = 'none';
-    }
-});
-
-// Load level stats (keep existing)
+// Level stats
 async function loadLevelStats() {
     var year = document.getElementById('level-year-select').value || (new Date().getFullYear()-1);
     var resp = await fetch('/api/customers/stats?year='+year);
     var result = await resp.json();
     if (!result.success) return;
-    var stats = result.data;
-    var container = document.getElementById('level-stats-container');
-    container.innerHTML = '<div class="level-card" onclick="showLevelCustomers(\'A\')"><div class="level-num">'+stats.A+'</div><div class="level-label">A类</div></div>'+
-        '<div class="level-card" onclick="showLevelCustomers(\'B\')"><div class="level-num">'+stats.B+'</div><div class="level-label">B类</div></div>'+
-        '<div class="level-card" onclick="showLevelCustomers(\'C\')"><div class="level-num">'+stats.C+'</div><div class="level-label">C类</div></div>'+
-        '<div class="level-card" onclick="showLevelCustomers(\'D\')"><div class="level-num">'+stats.D+'</div><div class="level-label">D类</div></div>';
+    var s = result.data;
+    document.getElementById('level-stats-container').innerHTML =
+        '<div class="level-card" onclick="showLevelCustomers(\'A\')"><div class="level-num">'+s.A+'</div><div class="level-label">A类(>5万)</div></div>'+
+        '<div class="level-card" onclick="showLevelCustomers(\'B\')"><div class="level-num">'+s.B+'</div><div class="level-label">B类(1-5万)</div></div>'+
+        '<div class="level-card" onclick="showLevelCustomers(\'C\')"><div class="level-num">'+s.C+'</div><div class="level-label">C类(0.2-1万)</div></div>'+
+        '<div class="level-card" onclick="showLevelCustomers(\'D\')"><div class="level-num">'+s.D+'</div><div class="level-label">D类(<0.2万)</div></div>';
 }
-
-// Keep level modal functions
 var currentLevelModal = { level:'', page:1, year:'' };
 async function showLevelCustomers(level) { var year = document.getElementById('level-year-select').value; currentLevelModal = {level, page:1, year}; await renderLevelModal(); document.getElementById('level-modal').classList.add('show'); }
 async function renderLevelModal() { var l=currentLevelModal.level, p=currentLevelModal.page, y=currentLevelModal.year; var resp=await fetch('/api/customers/by-level?level='+l+'&year='+y+'&page='+p+'&limit=20'); var result=await resp.json(); if(!result.success)return; document.getElementById('level-modal-title').innerHTML=l+'类客户（共'+result.total+'个）'; document.getElementById('level-modal-tbody').innerHTML=result.data.map(function(c,i){return '<tr><td>'+((p-1)*20+i+1)+'</td><td>'+escapeHtml(c.name)+'</td><td>'+(c.code||'<span style="color:#FF9800">待补充</span>')+'</td><td class="td-amount">¥'+c.sales.toLocaleString()+'</td></tr>';}).join(''); var tp=Math.ceil(result.total/20); document.getElementById('level-modal-pagination').innerHTML='<button class="page-btn" onclick="changeLevelPage('+(p-1)+')" '+(p<=1?'disabled':'')+'>上一页</button><span class="page-info">第'+p+'/'+tp+'页</span><button class="page-btn" onclick="changeLevelPage('+(p+1)+')" '+(p>=tp?'disabled':'')+'>下一页</button>'; }
 function changeLevelPage(p) { currentLevelModal.page=p; renderLevelModal(); }
 function closeLevelModal() { document.getElementById('level-modal').classList.remove('show'); }
 
-// Keep import/export
+// Import/export
 function importCodesFile() {
     var input = document.createElement('input'); input.type='file'; input.accept='.xlsx,.xls,.csv';
     input.onchange = async function(e){
         var file = e.target.files[0]; if(!file) return;
-        showToast('正在导入编码...', 'success');
-        var formData = new FormData(); formData.append('file', file);
+        showToast('正在导入...', 'success');
+        var fd = new FormData(); fd.append('file', file);
         try {
-            var resp = await fetch('/api/customers/import-codes', {method:'POST', body:formData});
+            var resp = await fetch('/api/customers/import-codes', {method:'POST', body:fd});
             var result = await resp.json();
-            if (result.success) { showToast(result.message, 'success'); loadLevelStats(); }
-            else { showToast(result.error, 'error'); }
-        } catch(err) { showToast('导入失败：'+err.message, 'error'); }
+            showToast(result.success?result.message:result.error, result.success?'success':'error');
+            if (result.success) { loadLevelStats(); loadCustCount(); }
+        } catch(err) { showToast('导入失败', 'error'); }
     };
     input.click();
 }
 async function exportPendingCodesFile() { window.open('/api/customers/export-pending-codes', '_blank'); }
 
-// Customer management drawer (keep)
+// Customer drawer (keep)
 var custMgmtPage = 1, custMgmtSearch = '';
-async function loadCustCount() { var resp=await fetch('/api/customers/all?limit=1'); var result=await resp.json(); if(result.success)document.getElementById('stat-total').innerText=result.total; }
+async function loadCustCount() { var resp=await fetch('/api/customers/all?limit=1'); var result=await resp.json(); if(result.success)document.getElementById('cust-mgmt-total').innerText=result.total; }
 function openCustMgmtDrawer() { custMgmtPage=1; custMgmtSearch=''; var ds=document.getElementById('cust-mgmt-drawer-search'); if(ds)ds.value=''; document.getElementById('cust-mgmt-drawer').classList.add('show'); loadCustMgmtDrawer(); }
 function closeCustMgmtDrawer(e) { if(e&&e.target!==document.getElementById('cust-mgmt-drawer'))return; document.getElementById('cust-mgmt-drawer').classList.remove('show'); }
 async function loadCustMgmtDrawer() {
@@ -2771,13 +2792,29 @@ async function loadCustMgmtDrawer() {
         var resp = await fetch('/api/customers/all?'+params.toString()); var result = await resp.json();
         if(!result.success){showToast(result.error||'加载失败','error');return;}
         var body=document.getElementById('cust-mgmt-drawer-body');
-        if(result.data.length===0){body.innerHTML='<div class="drawer-empty">暂无客户数据</div>';}
-        else{body.innerHTML=result.data.map(function(c){return '<div class="drawer-item"><span class="drawer-item-name" style="font-weight:500;min-width:120px">'+(c.code?escapeHtml(c.code):'<span style="color:#CCC">—</span>')+'</span><span style="flex:1;font-size:13px">'+escapeHtml(c.name)+'</span><span class="cust-level cust-level-'+c.level.toLowerCase()+'">'+c.level+'类</span></div>';}).join('');}
+        if(result.data.length===0){body.innerHTML='<div class="drawer-empty">暂无数据</div>';}
+        else{body.innerHTML=result.data.map(function(c){return '<div class="drawer-item"><span class="drawer-item-name" style="font-weight:500;min-width:120px">'+(c.code?escapeHtml(c.code):'<span style="color:#CCC">—</span>')+'</span><span style="flex:1;font-size:13px">'+escapeHtml(c.name)+'</span><span class="cust-level cust-level-'+c.level.toLowerCase()+'">'+c.level+'类</span><button class="btn-delete-sm" onclick="event.stopPropagation();deleteCust(\''+escapeHtml(c.name).replace(/'/g,"\\\\'")+'\')">删除</button><button class="btn-outline" style="font-size:10px;padding:2px 6px;margin-left:4px" onclick="event.stopPropagation();editCust(\''+escapeHtml(c.name).replace(/'/g,"\\\\'")+'\',\''+(c.code||'').replace(/'/g,"\\\\'")+'\')">编辑</button></div>';}).join('');}
         var tp=Math.ceil(result.total/50); var pg=document.getElementById('cust-mgmt-pagination');
-        pg.innerHTML=tp>1?'<button class="page-btn" onclick="custMgmtGoPage('+(custMgmtPage-1)+')" '+(custMgmtPage<=1?'disabled':'')+'>上一页</button><span class="page-info">第'+custMgmtPage+'/'+tp+'页（共'+result.total+'个）</span><button class="page-btn" onclick="custMgmtGoPage('+(custMgmtPage+1)+')" '+(custMgmtPage>=tp?'disabled':'')+'>下一页</button>':'<span class="page-info" style="font-size:12px;color:#999">共 '+result.total+' 个客户</span>';
+        pg.innerHTML=tp>1?'<button class="page-btn" onclick="custMgmtGoPage('+(custMgmtPage-1)+')" '+(custMgmtPage<=1?'disabled':'')+'>上一页</button><span class="page-info">第'+custMgmtPage+'/'+tp+'页（共'+result.total+'个）</span><button class="page-btn" onclick="custMgmtGoPage('+(custMgmtPage+1)+')" '+(custMgmtPage>=tp?'disabled':'')+'>下一页</button>':'<span class="page-info" style="font-size:12px;color:#999">共 '+result.total+' 个</span>';
     } catch(e) { showToast('网络错误', 'error'); }
 }
 function custMgmtGoPage(p) { custMgmtPage=p; loadCustMgmtDrawer(); }
+async function deleteCust(name) {
+    if (!confirm('确定删除客户：'+name+'？')) return;
+    var resp = await fetch('/api/customers/delete', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({customer_name:name})});
+    var result = await resp.json();
+    showToast(result.success?result.message:result.error, result.success?'success':'error');
+    if (result.success) { loadCustMgmtDrawer(); loadCustCount(); loadTodayTasks(); }
+}
+async function editCust(name, code) {
+    var nn = prompt('新名称（留空不变）：', name);
+    var nc = prompt('新编码（留空不变）：', code);
+    if (!nn && !nc) return;
+    var resp = await fetch('/api/customers/update', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({old_name:name, new_name:nn||'', new_code:nc||''})});
+    var result = await resp.json();
+    showToast(result.success?result.message:result.error, result.success?'success':'error');
+    if (result.success) { loadCustMgmtDrawer(); loadCustCount(); }
+}
 
 function initCustomerTab() {
     const yearSelect = document.getElementById('level-year-select');

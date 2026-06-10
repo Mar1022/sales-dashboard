@@ -126,6 +126,9 @@ def init_db():
 
         cur.execute("ALTER TABLE customers ADD COLUMN IF NOT EXISTS purpose_rule TEXT DEFAULT 'auto'")
         cur.execute("ALTER TABLE customers ADD COLUMN IF NOT EXISTS custom_suggestion TEXT")
+        cur.execute("ALTER TABLE customers ADD COLUMN IF NOT EXISTS last_purchase_date DATE")
+        cur.execute("ALTER TABLE customers ADD COLUMN IF NOT EXISTS status TEXT DEFAULT ''")
+        cur.execute("ALTER TABLE customers ADD COLUMN IF NOT EXISTS note TEXT DEFAULT ''")
 
         # 首次初始化时写入默认新品规格
         cur.execute("SELECT COUNT(*) AS cnt FROM new_products")
@@ -829,11 +832,11 @@ def get_customer_year_sales(cust_name, year):
 
 def get_customer_level_by_sales(sales):
     """根据销售额返回等级"""
-    if sales >= 500000:
+    if sales >= 50000:
         return 'A'
-    elif sales >= 100000:
+    elif sales >= 10000:
         return 'B'
-    elif sales > 0:
+    elif sales >= 2000:
         return 'C'
     else:
         return 'D'
@@ -990,9 +993,9 @@ def get_customer_stats():
             SELECT level, COUNT(*) as cnt FROM (
                 SELECT c.name,
                     CASE
-                        WHEN COALESCE(SUM(s.amount), 0) >= 500000 THEN 'A'
-                        WHEN COALESCE(SUM(s.amount), 0) >= 100000 THEN 'B'
-                        WHEN COALESCE(SUM(s.amount), 0) > 0 THEN 'C'
+                        WHEN COALESCE(SUM(s.amount), 0) >= 50000 THEN 'A'
+                        WHEN COALESCE(SUM(s.amount), 0) >= 10000 THEN 'B'
+                        WHEN COALESCE(SUM(s.amount), 0) >= 2000 THEN 'C'
                         ELSE 'D'
                     END as level
                 FROM customers c
@@ -1037,9 +1040,9 @@ def get_customers_by_level():
             SELECT name, code, total FROM cust_sales
             WHERE
                 CASE
-                    WHEN total >= 500000 THEN 'A'
-                    WHEN total >= 100000 THEN 'B'
-                    WHEN total > 0 THEN 'C'
+                    WHEN total >= 50000 THEN 'A'
+                    WHEN total >= 10000 THEN 'B'
+                    WHEN total >= 2000 THEN 'C'
                     ELSE 'D'
                 END = %s
             ORDER BY total DESC
@@ -1051,9 +1054,9 @@ def get_customers_by_level():
             SELECT COUNT(*) as cnt FROM (
                 SELECT
                     CASE
-                        WHEN COALESCE(SUM(s.amount), 0) >= 500000 THEN 'A'
-                        WHEN COALESCE(SUM(s.amount), 0) >= 100000 THEN 'B'
-                        WHEN COALESCE(SUM(s.amount), 0) > 0 THEN 'C'
+                        WHEN COALESCE(SUM(s.amount), 0) >= 50000 THEN 'A'
+                        WHEN COALESCE(SUM(s.amount), 0) >= 10000 THEN 'B'
+                        WHEN COALESCE(SUM(s.amount), 0) >= 2000 THEN 'C'
                         ELSE 'D'
                     END as lv
                 FROM customers c
@@ -1091,9 +1094,9 @@ def get_today_tasks():
             peak AS (
                 SELECT name,
                     CASE
-                        WHEN s0 >= 500000 OR s1 >= 500000 OR s2 >= 500000 THEN 'A'
-                        WHEN s0 >= 100000 OR s1 >= 100000 OR s2 >= 100000 THEN 'B'
-                        WHEN s0 > 0 OR s1 > 0 OR s2 > 0 THEN 'C'
+                        WHEN s0 >= 50000 OR s1 >= 50000 OR s2 >= 50000 THEN 'A'
+                        WHEN s0 >= 10000 OR s1 >= 10000 OR s2 >= 10000 THEN 'B'
+                        WHEN s0 >= 2000 OR s1 >= 2000 OR s2 >= 2000 THEN 'C'
                         ELSE 'D'
                     END as peak_level,
                     (s1 < s2 AND s0 < s1 AND s1 > 0) as is_declining
@@ -1353,6 +1356,70 @@ def update_customer_suggestion():
         )
         conn.commit()
         return jsonify({'success': True, 'message': '建议话术已保存'})
+    finally:
+        cur.close()
+        conn.close()
+
+
+@app.route('/api/customers/update', methods=['POST'])
+def update_customer():
+    """更新客户名称或编码"""
+    data = request.get_json()
+    old_name = data.get('old_name', '')
+    new_name = data.get('new_name', '')
+    new_code = data.get('new_code', '')
+    if not old_name:
+        return jsonify({'error': '缺少原客户名称'}), 400
+    conn = get_db()
+    cur = get_cursor(conn)
+    try:
+        if new_name and new_name != old_name:
+            cur.execute("UPDATE customers SET name = %s, updated_at = NOW() WHERE name = %s", (new_name, old_name))
+        if new_code is not None:
+            cur.execute("UPDATE customers SET code = %s, updated_at = NOW() WHERE name = %s", (new_code, new_name or old_name))
+        conn.commit()
+        return jsonify({'success': True, 'message': '已更新'})
+    finally:
+        cur.close()
+        conn.close()
+
+
+@app.route('/api/customers/delete', methods=['POST'])
+def delete_customer():
+    """删除客户"""
+    data = request.get_json()
+    cust_name = data.get('customer_name', '')
+    if not cust_name:
+        return jsonify({'error': '缺少客户名称'}), 400
+    conn = get_db()
+    cur = get_cursor(conn)
+    try:
+        cur.execute("DELETE FROM customers WHERE name = %s", (cust_name,))
+        conn.commit()
+        return jsonify({'success': True, 'message': '已删除'})
+    finally:
+        cur.close()
+        conn.close()
+
+
+@app.route('/api/customers/note', methods=['POST'])
+def add_customer_note():
+    """添加客户备注（近期报价等）"""
+    data = request.get_json()
+    cust_name = data.get('customer_name', '')
+    note = data.get('note', '')
+    status = data.get('status', '')
+    if not cust_name:
+        return jsonify({'error': '缺少客户名称'}), 400
+    conn = get_db()
+    cur = get_cursor(conn)
+    try:
+        if status:
+            cur.execute("UPDATE customers SET status = %s, updated_at = NOW() WHERE name = %s", (status, cust_name))
+        if note:
+            cur.execute("UPDATE customers SET note = %s, updated_at = NOW() WHERE name = %s", (note, cust_name))
+        conn.commit()
+        return jsonify({'success': True, 'message': '已更新'})
     finally:
         cur.close()
         conn.close()
