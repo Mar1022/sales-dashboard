@@ -449,7 +449,6 @@ def upload():
         INSERT_SQL = '''
             INSERT INTO sales_records AS t (date, cust, product, spec, unit, qty, price, amount)
             VALUES %s
-            ON CONFLICT(date, cust, product, spec, unit, qty, price, amount) DO NOTHING
         '''
 
         insert_errors = []
