@@ -1278,7 +1278,7 @@ def get_today_tasks():
                 'priority': priority,
                 'purpose_rule': r['purpose_rule'] or 'auto',
                 'custom_suggestion': r['custom_suggestion'] or '',
-                'last_order_date': last_order_date.isoformat() if last_order_date else None,
+                'last_order_date': last_order_date.strftime('%Y-%m-%d') if last_order_date else None,
                 'consecutive_decline': r['is_declining']
             })
         return jsonify({'success': True, 'data': result})

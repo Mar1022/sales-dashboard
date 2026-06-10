@@ -803,15 +803,7 @@
   </div>
 
   <!-- 底部统计 -->
-  <div style="margin:16px 20px;padding:14px 20px;background:#fff;border-radius:8px;display:flex;gap:32px;font-size:13px;color:#666">
-    <div>今日已完成 <b style="font-size:18px;color:#2E7D32" id="stat-completed">0</b> 个</div>
-    <div style="color:#DDD">|</div>
-    <div>逾期客户 <b style="font-size:18px;color:#E53935" id="stat-overdue">0</b> 个</div>
-    <div style="color:#DDD">|</div>
-    <div>近期报价 <b style="font-size:18px;color:#1565C0" id="stat-quotes">0</b> 个</div>
-    <div style="color:#DDD">|</div>
-    <div>客户总数 <b style="font-size:18px;color:#333" id="stat-total">—</b> 个</div>
-  </div>
+  
 
 
 
@@ -2694,7 +2686,7 @@ async function markDone(custName) {
         localStorage.setItem('completed_customers', JSON.stringify(completedData));
         taskData = taskData.filter(function(t){return t.name !== custName;});
         document.getElementById('tab-count-done').innerText = completedData.length;
-        document.getElementById('stat-completed').innerText = completedData.length;
+        //stat-completed = completedData.length;
         // Update current tab count
         var today = new Date().toISOString().slice(0,10);
         document.getElementById('tab-count-overdue').innerText = taskData.filter(function(t){return t.next_followup < today;}).length;
@@ -2722,7 +2714,7 @@ function applyNote(custName, note) {
         localStorage.setItem('quote_customers', JSON.stringify(quoteData));
         taskData = taskData.filter(function(t){return t.name !== custName;});
         document.getElementById('tab-count-quotes').innerText = quoteData.length;
-        document.getElementById('stat-quotes').innerText = quoteData.length;
+        //stat-quotes = quoteData.length;
         fetch('/api/customers/note', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({customer_name:custName, note:note, status:'quotes'})});
         renderTaskList();
     }
@@ -2752,10 +2744,10 @@ async function loadTaskStats() {
     var statsResp = await fetch('/api/customers/followup/today-stats');
     var statsResult = await statsResp.json();
     if (statsResult.success) {
-        document.getElementById('stat-overdue').innerText = statsResult.data.overdue_total;
+        //stat-overdue = statsResult.data.overdue_total;
     }
-    document.getElementById('stat-completed').innerText = completedData.length;
-    document.getElementById('stat-quotes').innerText = quoteData.length;
+    //stat-completed = completedData.length;
+    //stat-quotes = quoteData.length;
     var allResp = await fetch('/api/customers/all?limit=1');
     var allResult = await allResp.json();
     if (allResult.success) document.getElementById('stat-total').innerText = allResult.total;
@@ -2772,7 +2764,9 @@ async function loadLevelStats() {
         '<span class="level-badge level-badge-A" style="cursor:pointer" onclick="showLevelCustomers(\'A\')">A '+s.A+'</span> '+
         '<span class="level-badge level-badge-B" style="cursor:pointer" onclick="showLevelCustomers(\'B\')">B '+s.B+'</span> '+
         '<span class="level-badge level-badge-C" style="cursor:pointer" onclick="showLevelCustomers(\'C\')">C '+s.C+'</span> '+
-        '<span class="level-badge level-badge-D" style="cursor:pointer" onclick="showLevelCustomers(\'D\')">D '+s.D+'</span>';
+        '<span class="level-badge level-badge-D" style="cursor:pointer" onclick="var e=document.getElementById(\'d-sub-stats\');e.style.display=e.style.display===\'none\'?\'\':\'none\'">D '+s.D+'</span>'+
+        '<span id="d-sub-stats" style="display:none;font-size:11px;color:#888;margin-left:4px">'+
+        '（D1新线索/D2流失老客户/D3无效/D4从未互动）点击查看详情</span>';
 }
 var currentLevelModal = { level:'', page:1, year:'' };
 async function showLevelCustomers(level) { var year = document.getElementById('level-year-select').value; currentLevelModal = {level, page:1, year}; await renderLevelModal(); document.getElementById('level-modal').classList.add('show'); }
