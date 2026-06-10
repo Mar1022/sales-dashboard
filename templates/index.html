@@ -743,11 +743,14 @@
 
   <!-- 客户管理 + 搜索 -->
   <div style="display:flex;gap:8px;align-items:center;padding:12px 20px 0;flex-wrap:wrap">
-    <input id="cust-filter-input" placeholder="搜索客户名称或编码" style="padding:6px 10px;border:1px solid #DDD;border-radius:4px;font-size:12px;font-family:inherit;width:220px" onkeydown="if(event.key==='Enter')filterCustomerList()">
+    <input id="cust-filter-input" placeholder="搜索客户名称或编码" style="padding:6px 10px;border:1px solid #DDD;border-radius:4px;font-size:12px;font-family:inherit;width:200px" onkeydown="if(event.key==='Enter')filterCustomerList()">
     <button class="btn-primary" onclick="filterCustomerList()" style="font-size:12px;padding:6px 12px">搜索</button>
     <button class="btn-outline" onclick="openCustMgmtDrawer()" style="font-size:12px">管理</button>
+    <span style="color:#DDD;margin:0 8px">|</span>
+    <select id="level-year-select" style="padding:4px 6px;border:1px solid #DDD;border-radius:3px;font-size:11px;font-family:inherit" onchange="loadLevelStats()"></select>
+    <span id="level-stats-inline" style="font-size:11px;color:#666"></span>
     <span style="font-size:12px;color:#999;margin-left:auto">共 <b id="cust-mgmt-total">—</b> 个</span>
-    <button class="btn-outline" onclick="importCodesFile()" style="font-size:12px">导入编码</button>
+    <button class="btn-outline" onclick="importCodesFile()" style="font-size:12px">导入客户</button>
   </div>
 
   <!-- 标签区 -->
@@ -785,9 +788,10 @@
       <span style="width:3%"><input type="checkbox" style="visibility:hidden"></span>
       <span style="width:20%">客户名称</span>
       <span style="width:8%">等级</span>
-      <span style="width:10%">上次跟进</span>
-      <span style="width:10%">计划跟进</span>
-      <span style="width:24%">建议内容</span>
+      <span style="width:9%">上次跟进</span>
+      <span style="width:9%">计划跟进</span>
+      <span style="width:9%">最后下单</span>
+      <span style="width:19%">建议内容</span>
       <span style="width:25%;text-align:right">操作</span>
     </div>
     <div id="task-list-container" style="min-height:200px"></div>
@@ -804,17 +808,7 @@
     <div>客户总数 <b style="font-size:18px;color:#333" id="stat-total">—</b> 个</div>
   </div>
 
-  <!-- 客户等级分布 & 编码管理 -->
-  <details style="margin:0 20px 16px">
-    <summary style="cursor:pointer;font-weight:500;padding:8px 12px">📊 客户等级分布 & 编码管理</summary>
-    <div style="margin-top:12px">
-      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:12px">
-        <span class="chart-title" style="margin:0">客户等级分布</span>
-        <select id="level-year-select" style="padding:4px 8px;border-radius:4px;border:1px solid #ddd" onchange="loadLevelStats()"></select>
-      </div>
-      <div id="level-stats-container" style="display:flex;gap:20px;flex-wrap:wrap;margin-bottom:16px"></div>
-    </div>
-  </details>
+
 
   <!-- 分析报表 -->
   <details style="margin:0 20px 16px">
@@ -2635,12 +2629,13 @@ function renderTaskList() {
         var isChecked = selectedRows[escName] ? 'checked' : '';
         html += '<div class="task-row" id="row_'+escName+'">';
         html += '<span style="width:3%">'+(isEditable?'<input type="checkbox" '+isChecked+' onchange="toggleRow(this,\''+escName+'\')">':'')+'</span>';
-        html += '<span style="width:20%;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+safeName+'</span>';
+        html += '<span style="width:18%;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+safeName+'<span class="rule-icon" onclick="event.stopPropagation();showRuleDetail(\''+escName+'\')" title="计算详情">?</span></span>';
         html += '<span style="width:8%"><span class="'+lvlClass+'">'+task.level+'类</span></span>';
-        html += '<span style="width:10%;font-size:11px;color:#999">'+(task.last_followup||'—')+'</span>';
-        html += '<span style="width:10%;font-size:11px;color:#999">'+(task.next_followup||'—')+'</span>';
-        html += '<span style="width:24%;font-size:11px;color:#666;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(task.suggestion||'')+'</span>';
-        html += '<span style="width:25%;text-align:right;display:flex;gap:4px;justify-content:flex-end">';
+        html += '<span style="width:9%;font-size:11px;color:#999">'+(task.last_followup||'—')+'</span>';
+        html += '<span style="width:9%;font-size:11px;color:#999">'+(task.next_followup||'—')+'</span>';
+        html += '<span style="width:9%;font-size:11px;color:#999">'+(task.last_order_date||'—')+'</span>';
+        html += '<span style="width:19%;font-size:11px;color:#666;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(task.suggestion||'')+'</span>';
+        html += '<span style="width:21%;text-align:right;display:flex;gap:4px;justify-content:flex-end">';
         if (activeTaskTab === 'done') {
             html += '<span style="font-size:11px;color:#2E7D32">已完成</span>';
         } else if (activeTaskTab === 'quotes') {
@@ -2739,6 +2734,23 @@ function applyNote(custName, note) {
 // Close dropdowns on outside click
 document.addEventListener('click', function(){document.querySelectorAll('.note-dropdown-menu.show').forEach(function(el){el.classList.remove('show');});});
 
+async function showRuleDetail(custName) {
+    var resp = await fetch('/api/customers/followup/rule-detail?customer_name='+encodeURIComponent(custName));
+    var result = await resp.json();
+    if (!result.success) return;
+    var d = result.data;
+    var lines = [];
+    lines.push('客户：'+escapeHtml(d.customer_name));
+    lines.push('等级：'+d.current_level+'类（每'+d.followup_frequency+'天跟进）');
+    lines.push('历史最高：'+d.peak_level+'类');
+    if (d.is_recovery) lines.push('挽回规则：适用（每'+d.recovery_interval+'天）');
+    lines.push('上次跟进：'+(d.last_followup_date||'从未'));
+    lines.push('计划跟进：'+d.next_followup_date);
+    lines.push('今天：'+d.today);
+    lines.push('判断：'+d.judgment);
+    alert(lines.join(String.fromCharCode(10)));
+}
+
 async function loadTaskStats() {
     var statsResp = await fetch('/api/customers/followup/today-stats');
     var statsResult = await statsResp.json();
@@ -2759,11 +2771,11 @@ async function loadLevelStats() {
     var result = await resp.json();
     if (!result.success) return;
     var s = result.data;
-    document.getElementById('level-stats-container').innerHTML =
-        '<div class="level-card" onclick="showLevelCustomers(\'A\')"><div class="level-num">'+s.A+'</div><div class="level-label">A类(>5万)</div></div>'+
-        '<div class="level-card" onclick="showLevelCustomers(\'B\')"><div class="level-num">'+s.B+'</div><div class="level-label">B类(1-5万)</div></div>'+
-        '<div class="level-card" onclick="showLevelCustomers(\'C\')"><div class="level-num">'+s.C+'</div><div class="level-label">C类(0.2-1万)</div></div>'+
-        '<div class="level-card" onclick="showLevelCustomers(\'D\')"><div class="level-num">'+s.D+'</div><div class="level-label">D类(<0.2万)</div></div>';
+    document.getElementById('level-stats-inline').innerHTML =
+        'A<b style="color:#2E7D32">'+s.A+'</b> '+
+        'B<b style="color:#1565C0">'+s.B+'</b> '+
+        'C<b style="color:#E65100">'+s.C+'</b> '+
+        'D<b style="color:#888">'+s.D+'</b>';
 }
 var currentLevelModal = { level:'', page:1, year:'' };
 async function showLevelCustomers(level) { var year = document.getElementById('level-year-select').value; currentLevelModal = {level, page:1, year}; await renderLevelModal(); document.getElementById('level-modal').classList.add('show'); }
