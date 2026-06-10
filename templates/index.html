@@ -534,7 +534,7 @@
   details summary:hover { background: #F5F5F5; }
   /* 任务卡片 */
   /* Tab4 新布局 */
-  .task-tab2.active { border-color:#333 !important; box-shadow:0 2px 8px rgba(0,0,0,.08); }
+  .task-tab2 { cursor:pointer; user-select:none; } .task-tab2.active { border-color:#333 !important; box-shadow:0 2px 8px rgba(0,0,0,.08); } .task-row { transition:all .2s; } .task-row.removing { opacity:0; max-height:0; padding:0; overflow:hidden; } .note-dropdown { position:relative; display:inline-block; } .note-dropdown-menu { display:none; position:absolute; right:0; top:100%; background:#fff; border:1px solid #EDEDED; border-radius:4px; box-shadow:0 2px 8px rgba(0,0,0,.1); z-index:100; min-width:120px; } .note-dropdown-menu.show { display:block; } .note-dropdown-menu div { padding:6px 12px; font-size:11px; cursor:pointer; white-space:nowrap; } .note-dropdown-menu div:hover { background:#F5F5F5; }
   .task-tab:hover { background:#F5F5F5 !important; }
   .task-row { display:flex; align-items:center; padding:10px 16px; border-bottom:1px solid #F0F0F0; font-size:13px; transition:opacity .2s; background:#fff; }
   .task-row:hover { background:#FAFAFA; }
@@ -2647,7 +2647,7 @@ function renderTaskList() {
             html += '<span style="font-size:11px;color:#1565C0">近期报价</span>';
         } else {
             html += '<button class="mark-done-btn" onclick="markDone(\''+escName+'\')">完成</button>';
-            html += '<button class="task-btn task-btn-postpone" onclick="addNote(\''+escName+'\')" style="font-size:10px;padding:4px 8px" title="备注">备注</button>';
+            html += '<span class="note-dropdown"><button class="task-btn task-btn-postpone" onclick="toggleNoteDropdown(\''+escName+'\',event)" style="font-size:10px;padding:4px 8px">备注</button><div class="note-dropdown-menu" id="note_menu_'+escName+'"><div onclick="applyNote(\''+escName+'\',\'近期有报价\')">近期有报价</div></div></span>';
         }
         html += '</span></div>';
     });
@@ -2678,57 +2678,66 @@ function toggleSelectAll() {
 async function batchMarkDone() {
     var names = Object.keys(selectedRows);
     if (!names.length) { showToast('请先选择客户', 'error'); return; }
-    for (var i=0; i<names.length; i++) {
-        var name = names[i];
-        await fetch('/api/customers/followup/mark', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({customer_name:name})});
-        // Add to completed
-        completedData.push({name:name, level:'', last_followup:'', next_followup:new Date().toISOString().slice(0,10), suggestion:'', purpose:'已完成'});
-    }
-    localStorage.setItem('completed_customers', JSON.stringify(completedData));
-    selectedRows = {};
-    showToast('批量完成 '+names.length+' 个', 'success');
-    loadTodayTasks();
+    showToast('正在批量完成 '+names.length+' 个...', 'success');
+    // Parallel API calls
+    Promise.all(names.map(function(n){
+        return fetch('/api/customers/followup/mark', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({customer_name:n})});
+    })).then(function(){
+        names.forEach(function(n){ completedData.push({name:n, level:'', last_followup:'', next_followup:new Date().toISOString().slice(0,10), suggestion:'', purpose:'已完成'}); });
+        localStorage.setItem('completed_customers', JSON.stringify(completedData));
+        selectedRows = {};
+        showToast('批量完成 '+names.length+' 个', 'success');
+        loadTodayTasks();
+    });
 }
 
 async function markDone(custName) {
     var row = document.getElementById('row_'+custName);
-    if (row) row.classList.add('fade-out');
+    if (row) row.classList.add('removing');
     var resp = await fetch('/api/customers/followup/mark', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({customer_name:custName})});
     var result = await resp.json();
     if (result.success) {
-        // Add to completed
         var cust = taskData.find(function(t){return t.name === custName;}) || {};
         completedData.push({name:custName, level:cust.level||'', last_followup:cust.last_followup||'', next_followup:new Date().toISOString().slice(0,10), suggestion:cust.suggestion||'', purpose:'已完成'});
         localStorage.setItem('completed_customers', JSON.stringify(completedData));
+        taskData = taskData.filter(function(t){return t.name !== custName;});
         document.getElementById('tab-count-done').innerText = completedData.length;
         document.getElementById('stat-completed').innerText = completedData.length;
-        setTimeout(function(){
-            taskData = taskData.filter(function(t){return t.name !== custName;});
-            renderTaskList();
-        }, 200);
+        // Update current tab count
+        var today = new Date().toISOString().slice(0,10);
+        document.getElementById('tab-count-overdue').innerText = taskData.filter(function(t){return t.next_followup < today;}).length;
+        document.getElementById('tab-count-regular').innerText = taskData.filter(function(t){return t.next_followup === today && !(t.peak_level&&(t.peak_level==='A'||t.peak_level==='B')&&(t.level==='C'||t.level==='D'));}).length;
+        document.getElementById('tab-count-recovery').innerText = taskData.filter(function(t){return t.peak_level&&(t.peak_level==='A'||t.peak_level==='B')&&(t.level==='C'||t.level==='D')&&t.next_followup===today;}).length;
+        renderTaskList();
     } else {
-        if (row) row.classList.remove('fade-out');
+        if (row) row.classList.remove('removing');
         showToast(result.error, 'error');
     }
 }
 
-function addNote(custName) {
-    var note = prompt('备注内容（如"近期有报价"）：', '近期有报价');
-    if (!note) return;
+function toggleNoteDropdown(custName, e) {
+    e.stopPropagation();
+    // Close all other dropdowns
+    document.querySelectorAll('.note-dropdown-menu.show').forEach(function(el){el.classList.remove('show');});
+    var menu = document.getElementById('note_menu_'+custName.replace(/'/g,''));
+    if (menu) menu.classList.toggle('show');
+}
+function applyNote(custName, note) {
+    document.querySelectorAll('.note-dropdown-menu.show').forEach(function(el){el.classList.remove('show');});
     if (note === '近期有报价') {
-        // Move to quotes tab
         var cust = taskData.find(function(t){return t.name === custName;}) || {};
         quoteData.push({name:custName, level:cust.level||'', last_followup:cust.last_followup||'', next_followup:new Date().toISOString().slice(0,10), suggestion:cust.suggestion||'', purpose:'近期报价'});
         localStorage.setItem('quote_customers', JSON.stringify(quoteData));
         taskData = taskData.filter(function(t){return t.name !== custName;});
         document.getElementById('tab-count-quotes').innerText = quoteData.length;
         document.getElementById('stat-quotes').innerText = quoteData.length;
-        document.getElementById('stat-completed').innerText = completedData.length;
         fetch('/api/customers/note', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({customer_name:custName, note:note, status:'quotes'})});
         renderTaskList();
     }
     showToast('已备注：'+note, 'success');
 }
+// Close dropdowns on outside click
+document.addEventListener('click', function(){document.querySelectorAll('.note-dropdown-menu.show').forEach(function(el){el.classList.remove('show');});});
 
 async function loadTaskStats() {
     var statsResp = await fetch('/api/customers/followup/today-stats');
