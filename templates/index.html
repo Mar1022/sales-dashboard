@@ -740,6 +740,10 @@
 
 <!-- ═══════════════ Tab4: 客户管理与跟进 ═══════════════ -->
 <div id="tab-customer" class="tab-content" style="overflow-y:auto;background:#F8F9FA">
+  <div style="position:sticky;top:0;z-index:10;background:#F8F9FA">
+  <div style="display:flex;justify-content:flex-end;padding:8px 20px 0">
+    <button class="btn-outline" onclick="showRulesPopup()" style="font-size:11px">规则设置</button>
+  </div>
 
   <!-- 客户管理 + 搜索 -->
   <div style="display:flex;gap:8px;align-items:center;padding:12px 20px 0;flex-wrap:wrap">
@@ -753,6 +757,7 @@
     <button class="btn-outline" onclick="importCodesFile()" style="font-size:12px">导入客户</button>
   </div>
 
+  </div>
   <!-- 标签区 -->
   <div id="task-tabs" style="display:flex;gap:12px;padding:12px 20px 8px;flex-wrap:wrap">
     <div class="task-tab2 active" data-tab="overdue" onclick="switchTaskTab('overdue')" style="padding:8px 16px;background:#fff;border-radius:8px;cursor:pointer;border:2px solid transparent;min-width:110px">
@@ -2535,6 +2540,25 @@ document.addEventListener("click", function(e){
 }
 
 var taskData = [];
+var taskDataCache = null;
+var taskDataCacheTime = 0;
+
+function showRulesPopup() {
+    var lines = [];
+    lines.push('等级定义：');
+    lines.push('A类：年销售额≥5万，每7天跟进一次');
+    lines.push('B类：年销售额≥1万，每14天跟进一次');
+    lines.push('C类：年销售额≥0.2万，每30天跟进一次');
+    lines.push('D类：年销售额<0.2万，每30天跟进一次');
+    lines.push('');
+    lines.push('挽回规则：');
+    lines.push('近3年内最高等级为A/B，当前为C/D，每60天跟进一次（按B类频次）');
+    lines.push('');
+    lines.push('逾期判断：当前日期>计划跟进日期');
+    lines.push('');
+    lines.push('优先级：逾期跟进>挽回任务>常规跟进');
+    alert(lines.join(String.fromCharCode(10)));
+}
 var completedData = [];
 var quoteData = [];
 var activeTaskTab = 'overdue';
@@ -2566,10 +2590,18 @@ function filterCustomerList() {
 }
 
 async function loadTodayTasks() {
-    var resp = await fetch('/api/customers/followup/today');
+    var now = Date.now();
+    // 30秒缓存避免频繁请求
+    if (taskDataCache && (now - taskDataCacheTime) < 30000) {
+        taskData = JSON.parse(JSON.stringify(taskDataCache));
+    } else {
+        var resp = await fetch('/api/customers/followup/today');
     var result = await resp.json();
     if (!result.success) return;
     taskData = result.data;
+        taskDataCache = JSON.parse(JSON.stringify(result.data));
+        taskDataCacheTime = Date.now();
+    }
     // Load quote data from localStorage
     try { quoteData = JSON.parse(localStorage.getItem('quote_customers')||'[]'); } catch(e) { quoteData = []; }
     try { completedData = JSON.parse(localStorage.getItem('completed_customers')||'[]'); } catch(e) { completedData = []; }
@@ -2772,10 +2804,10 @@ async function loadLevelStats() {
     if (!result.success) return;
     var s = result.data;
     document.getElementById('level-stats-inline').innerHTML =
-        'A<b style="color:#2E7D32">'+s.A+'</b> '+
-        'B<b style="color:#1565C0">'+s.B+'</b> '+
-        'C<b style="color:#E65100">'+s.C+'</b> '+
-        'D<b style="color:#888">'+s.D+'</b>';
+        '<span class="level-badge level-badge-A">A '+s.A+'</span> '+
+        '<span class="level-badge level-badge-B">B '+s.B+'</span> '+
+        '<span class="level-badge level-badge-C">C '+s.C+'</span> '+
+        '<span class="level-badge level-badge-D">D '+s.D+'</span>';
 }
 var currentLevelModal = { level:'', page:1, year:'' };
 async function showLevelCustomers(level) { var year = document.getElementById('level-year-select').value; currentLevelModal = {level, page:1, year}; await renderLevelModal(); document.getElementById('level-modal').classList.add('show'); }

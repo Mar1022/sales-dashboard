@@ -179,7 +179,7 @@ def get_data():
             params.append(start)
         if end:
             conditions.append("date <= %s")
-            params.append(end if ' ' in end else end + ' 23:59:59')
+            params.append(end if ' ' in end else end)
         if conditions:
             sql += " WHERE " + " AND ".join(conditions)
         sql += " ORDER BY date DESC LIMIT %s"
@@ -187,7 +187,7 @@ def get_data():
         cur.execute(sql, params)
         rows = cur.fetchall()
         return jsonify([{
-            "date": r["date"].strftime('%Y-%m-%d %H:%M:%S') if hasattr(r["date"], 'strftime') else str(r["date"])[:19],
+            "date": r["date"].strftime('%Y-%m-%d') if hasattr(r["date"], 'strftime') else str(r["date"])[:10],
             "cust": r["cust"],
             "product": r["product"],
             "spec": r["spec"],
@@ -214,7 +214,7 @@ def get_summary():
     try:
         def _agg(s, e):
             """用SQL聚合计算总额和客户数"""
-            e_fixed = (e if (' ' in e) else (e + ' 23:59:59')) if e else None
+            e_fixed = (e if (' ' in e) else (e)) if e else None
             if s and e_fixed:
                 cur.execute(
                     "SELECT COALESCE(SUM(amount),0) as total, COUNT(DISTINCT cust) as cust_cnt FROM sales_records WHERE date >= %s AND date <= %s",
@@ -239,7 +239,7 @@ def get_summary():
 
         # 新客户金额：首次购买在当前时间段内的客户
         s_val = start
-        e_fixed = (end if (' ' in end) else (end + ' 23:59:59')) if end else None
+        e_fixed = (end if (' ' in end) else (end)) if end else None
         new_amt = 0
         old_amt = 0
         new_cust_cnt = 0
@@ -883,7 +883,7 @@ def calculate_next_followup(level, peak_level, last_followup):
     from datetime import date, timedelta
     today = date.today()
     if last_followup is None:
-        return today
+        return today  # Will be updated by caller with last_purchase_date
     base_days = FOLLOWUP_DAYS.get(level, 30)
     next_date = last_followup + timedelta(days=base_days)
     if peak_level in ['A', 'B'] and level in ['C', 'D']:
