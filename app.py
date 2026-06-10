@@ -808,7 +808,11 @@ def delete_new_product(idx):
 
 # ==================== 客户管理与跟进任务模块 ====================
 
-FOLLOWUP_DAYS = {'A': 7, 'B': 14, 'C': 30, 'D': 30}
+FOLLOWUP_DAYS = {
+    'A': 7, 'B': 14,
+    'C1': 14, 'C2': 30, 'C3': 60, 'C4': 90, 'C': 30,  # C defaults to 30
+    'D1': 30, 'D2': 90, 'D3': 0, 'D4': 0, 'D': 30     # D3/D4 no active followup
+}
 RECOVERY_DAYS = 60
 
 
@@ -842,7 +846,61 @@ def get_customer_level_by_sales(sales):
         return 'D'
 
 
-def get_customer_peak_level(cust_name):
+def get_customer_sub_level(cust_name, level):
+    """获取C/D类客户的子标签（C1-C4, D1-D4）"""
+    if level not in ('C', 'D'):
+        return level, level, FOLLOWUP_DAYS.get(level, 30)
+    from datetime import date
+    today = date.today()
+    conn = get_db()
+    cur = get_cursor(conn)
+    try:
+        if level == 'C':
+            # 总订单次数
+            cur.execute("SELECT COUNT(*) as cnt FROM sales_records WHERE cust = %s", (cust_name,))
+            total_orders = cur.fetchone()['cnt']
+            # 第一笔订单金额
+            cur.execute("SELECT amount FROM sales_records WHERE cust = %s ORDER BY date ASC LIMIT 1", (cust_name,))
+            first = cur.fetchone()
+            first_amount = float(first['amount']) if first else 0
+            # 最后下单日期
+            cur.execute("SELECT MAX(date) as last_date FROM sales_records WHERE cust = %s", (cust_name,))
+            last_order = cur.fetchone()['last_date']
+            days_since = (today - last_order.date()).days if last_order and hasattr(last_order, 'date') else 999
+
+            if total_orders == 1 and first_amount < 500:
+                sub = 'C4'; name = '一次性客户'
+            elif days_since <= 90:
+                sub = 'C1'; name = '高频活跃客户'
+            elif days_since <= 180:
+                sub = 'C2'; name = '低频客户'
+            elif days_since <= 365:
+                sub = 'C3'; name = '沉睡客户'
+            else:
+                sub = 'C3'; name = '沉睡客户'
+        else:  # D类
+            cur.execute("SELECT COUNT(*) as cnt FROM sales_records WHERE cust = %s", (cust_name,))
+            total_orders = cur.fetchone()['cnt']
+            # Check note/status for D1 (recent inquiry)
+            cur.execute("SELECT status, note, created_at FROM customers WHERE name = %s", (cust_name,))
+            cust_row = cur.fetchone()
+            has_inquiry = (cust_row and cust_row['status'] == 'inquiry') or (cust_row and cust_row['note'] and '询价' in str(cust_row['note']))
+            recently_added = cust_row and cust_row['created_at'] and (today - cust_row['created_at'].date()).days <= 30
+
+            if has_inquiry or recently_added:
+                sub = 'D1'; name = '新线索客户'
+            elif total_orders >= 1:
+                sub = 'D2'; name = '流失老客户'
+            elif cust_row:
+                sub = 'D3'; name = '无效线索'
+            else:
+                sub = 'D4'; name = '从未互动客户'
+
+        freq = FOLLOWUP_DAYS.get(sub, 30)
+        return sub, name, freq
+    finally:
+        cur.close()
+        conn.close()
     """获取客户近3年内的最高等级"""
     current_year = datetime.now().year
     years = [current_year - 2, current_year - 1, current_year]
@@ -1139,9 +1197,13 @@ def get_today_tasks():
                 purpose = '自定义'
                 suggestion = r['custom_suggestion'] or ''
                 priority = 5
+            # Get sub-level for C/D
+            sub_level, sub_name, sub_freq = get_customer_sub_level(r['name'], level)
             result.append({
                 'name': r['name'],
                 'level': level,
+                'sub_level': sub_level,
+                'sub_name': sub_name,
                 'peak_level': peak_level,
                 'last_followup': last_followup.isoformat() if last_followup else None,
                 'next_followup': r['next_followup'].isoformat() if r['next_followup'] else None,

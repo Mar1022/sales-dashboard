@@ -815,42 +815,7 @@
 
 
 
-  <!-- 分析报表 -->
-  <details style="margin:0 20px 16px">
-    <summary style="cursor:pointer;font-weight:500;padding:8px 12px">📈 分析报表（偶尔查看）</summary>
-    <div style="margin-top:16px">
-      <div class="tab-filter-sticky"><div class="filter-bar">
-        <span class="filter-label">日期范围</span><input type="date" id="c-dateStart"><span class="date-sep">—</span><input type="date" id="c-dateEnd">
-        <button class="btn-apply" onclick="refreshCustomerTab()">刷新</button><button class="btn-outline" onclick="resetCustomerFilter()">重置</button>
-        <span style="font-size:11px;color:#999;margin-left:8px">* 当年至今数据列标题标注*号</span>
-      </div></div>
-      <div class="tab-inner">
-        <div class="chart-card" style="margin-bottom:20px">
-          <div class="chart-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
-            <span>一、客户年度销售对比及排行</span>
-            <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-              <label style="font-size:12px;color:#666;cursor:pointer;white-space:nowrap"><input type="radio" name="rankBy" value="recent12" checked onchange="refreshCustYearTable()"> 按近12个月</label>
-              <label style="font-size:12px;color:#666;cursor:pointer;white-space:nowrap"><input type="radio" name="rankBy" value="total" onchange="refreshCustYearTable()"> 按历史累计</label>
-              <button class="btn-outline" onclick="toggleCustLimit()" id="btn-cust-limit" style="font-size:12px">加载全部</button>
-              <button class="btn-outline" onclick="exportCustYearCSV()" style="font-size:12px">导出CSV</button>
-            </div>
-          </div>
-          <div class="table-scroll" style="max-height:520px;overflow:auto"><table id="cust-year-table" style="min-width:100%"><thead id="cust-year-thead"></thead><tbody id="cust-year-tbody"></tbody></table></div>
-          <div id="cust-year-empty" class="target-empty" style="display:none">暂无数据</div>
-        </div>
-        <div class="chart-card" style="margin-bottom:20px">
-          <div class="chart-title" style="display:flex;align-items:center;justify-content:space-between"><span>二、老客户流失分析</span><button class="btn-outline" onclick="exportChurnCSV()" style="font-size:12px">导出CSV</button></div>
-          <div class="table-scroll" style="max-height:400px;overflow:auto"><table id="churn-table" style="min-width:100%"><thead><tr><th>年份</th><th style="text-align:center">年初客户数</th><th style="text-align:center">当年活跃客户数</th><th style="text-align:center">留存客户数</th><th style="text-align:center">流失客户数</th><th style="text-align:center">流失率</th></tr></thead><tbody id="churn-tbody"></tbody></table></div>
-          <div id="churn-empty" class="target-empty" style="display:none">暂无数据</div>
-        </div>
-        <div class="chart-card" style="margin-bottom:20px">
-          <div class="chart-title">三、活跃客户数趋势 — 按年汇总</div>
-          <div class="table-scroll" style="max-height:360px;overflow:auto"><table id="activity-year-table" style="min-width:100%"><thead><tr><th>年份</th><th style="text-align:center">活跃客户数</th><th style="text-align:center">同比增长率</th><th style="text-align:center">新客户数</th><th style="text-align:center">老客户留存数</th></tr></thead><tbody id="activity-year-tbody"></tbody></table></div>
-        </div>
-      </div>
-    </div>
-  </details>
-</div>
+  </div>
 
 <!-- ════ 客户订单明细弹窗 ════ -->
 <div class="modal-overlay" id="cust-orders-modal" onclick="if(event.target===this)closeCustOrders()">
@@ -2545,18 +2510,27 @@ var taskDataCacheTime = 0;
 
 function showRulesPopup() {
     var lines = [];
-    lines.push('等级定义：');
-    lines.push('A类：年销售额≥5万，每7天跟进一次');
-    lines.push('B类：年销售额≥1万，每14天跟进一次');
-    lines.push('C类：年销售额≥0.2万，每30天跟进一次');
-    lines.push('D类：年销售额<0.2万，每30天跟进一次');
+    lines.push('等级定义：A≥5万 | B≥1万 | C≥0.2万 | D<0.2万');
     lines.push('');
-    lines.push('挽回规则：');
-    lines.push('近3年内最高等级为A/B，当前为C/D，每60天跟进一次（按B类频次）');
+    lines.push('C类细分：');
+    lines.push('C1 高频活跃(14天) 最后下单≤90天');
+    lines.push('C2 低频(30天) 最后下单91-180天');
+    lines.push('C3 沉睡(60天) 最后下单181-365天');
+    lines.push('C4 一次性(90天) 仅1单且<500元');
     lines.push('');
-    lines.push('逾期判断：当前日期>计划跟进日期');
+    lines.push('D类细分：');
+    lines.push('D1 新线索(30天) 近30天有询价');
+    lines.push('D2 流失老客户(90天) 曾有成交');
+    lines.push('D3 无效线索 仅导入无互动');
+    lines.push('D4 从未互动 无任何记录');
     lines.push('');
-    lines.push('优先级：逾期跟进>挽回任务>常规跟进');
+    lines.push('跟进频率：');
+    lines.push('A:7天 B:14天 C1:14天 C2:30天');
+    lines.push('C3:60天 C4:90天 D1:30天 D2:90天');
+    lines.push('D3/D4:不主动跟进');
+    lines.push('');
+    lines.push('挽回规则：历史A/B+当前C/D→60天');
+    lines.push('第一次跟进=最后下单日期(或今天)');
     alert(lines.join(String.fromCharCode(10)));
 }
 var completedData = [];
@@ -2662,7 +2636,8 @@ function renderTaskList() {
         html += '<div class="task-row" id="row_'+escName+'">';
         html += '<span style="width:3%">'+(isEditable?'<input type="checkbox" '+isChecked+' onchange="toggleRow(this,\''+escName+'\')">':'')+'</span>';
         html += '<span style="width:18%;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+safeName+'<span class="rule-icon" onclick="event.stopPropagation();showRuleDetail(\''+escName+'\')" title="计算详情">?</span></span>';
-        html += '<span style="width:8%"><span class="'+lvlClass+'">'+task.level+'类</span></span>';
+        var subTag = (task.sub_level && task.sub_level !== task.level) ? ' <span style="font-size:9px;color:#999">'+task.sub_name+'</span>' : '';
+        html += '<span style="width:10%"><span class="'+lvlClass+'">'+task.level+'类</span>'+subTag+'</span>';
         html += '<span style="width:9%;font-size:11px;color:#999">'+(task.last_followup||'—')+'</span>';
         html += '<span style="width:9%;font-size:11px;color:#999">'+(task.next_followup||'—')+'</span>';
         html += '<span style="width:9%;font-size:11px;color:#999">'+(task.last_order_date||'—')+'</span>';
@@ -2804,10 +2779,10 @@ async function loadLevelStats() {
     if (!result.success) return;
     var s = result.data;
     document.getElementById('level-stats-inline').innerHTML =
-        '<span class="level-badge level-badge-A">A '+s.A+'</span> '+
-        '<span class="level-badge level-badge-B">B '+s.B+'</span> '+
-        '<span class="level-badge level-badge-C">C '+s.C+'</span> '+
-        '<span class="level-badge level-badge-D">D '+s.D+'</span>';
+        '<span class="level-badge level-badge-A" style="cursor:pointer" onclick="showLevelCustomers(\'A\')">A '+s.A+'</span> '+
+        '<span class="level-badge level-badge-B" style="cursor:pointer" onclick="showLevelCustomers(\'B\')">B '+s.B+'</span> '+
+        '<span class="level-badge level-badge-C" style="cursor:pointer" onclick="showLevelCustomers(\'C\')">C '+s.C+'</span> '+
+        '<span class="level-badge level-badge-D" style="cursor:pointer" onclick="showLevelCustomers(\'D\')">D '+s.D+'</span>';
 }
 var currentLevelModal = { level:'', page:1, year:'' };
 async function showLevelCustomers(level) { var year = document.getElementById('level-year-select').value; currentLevelModal = {level, page:1, year}; await renderLevelModal(); document.getElementById('level-modal').classList.add('show'); }
