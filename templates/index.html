@@ -2505,8 +2505,6 @@ document.addEventListener("click", function(e){
 }
 
 var taskData = [];
-var taskDataCache = null;
-var taskDataCacheTime = 0;
 
 function showRulesPopup() {
     var lines = [];
@@ -2564,18 +2562,10 @@ function filterCustomerList() {
 }
 
 async function loadTodayTasks() {
-    var now = Date.now();
-    // 30秒缓存避免频繁请求
-    if (taskDataCache && (now - taskDataCacheTime) < 30000) {
-        taskData = JSON.parse(JSON.stringify(taskDataCache));
-    } else {
-        var resp = await fetch('/api/customers/followup/today');
+    var resp = await fetch('/api/customers/followup/today');
     var result = await resp.json();
     if (!result.success) return;
     taskData = result.data;
-        taskDataCache = JSON.parse(JSON.stringify(result.data));
-        taskDataCacheTime = Date.now();
-    }
     // Load quote data from localStorage
     try { quoteData = JSON.parse(localStorage.getItem('quote_customers')||'[]'); } catch(e) { quoteData = []; }
     try { completedData = JSON.parse(localStorage.getItem('completed_customers')||'[]'); } catch(e) { completedData = []; }
