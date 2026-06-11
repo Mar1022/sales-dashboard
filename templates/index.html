@@ -2646,15 +2646,15 @@ function renderTaskList() {
         var lvlClass = 'level-badge level-badge-' + task.level;
         var isChecked = selectedRows[escName] ? 'checked' : '';
         html += '<div class="task-row" id="row_'+escName+'">';
-        html += '<span style="width:3%">'+(isEditable?'<input type="checkbox" '+isChecked+' onchange="toggleRow(this,\''+escName+'\')">':'')+'</span>';
-        html += '<span style="width:18%;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center">'+safeName+'</span>';
+        html += '<span style="width:30px;flex-shrink:0">'+(isEditable?'<input type="checkbox" '+isChecked+' data-name="'+safeName+'" onchange="toggleRow(this,\''+escName+'\')">':'')+'</span>';
+        html += '<span style="width:18%;flex-shrink:0;min-width:140px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+safeName+'</span>';
         var subTag = (task.sub_level && task.sub_level !== task.level) ? ' <span style="font-size:9px;color:#999">'+task.sub_name+'</span>' : '';
-        html += '<span style="width:10%"><span class="'+lvlClass+'">'+task.level+'类</span>'+subTag+'</span>';
-        html += '<span style="width:9%;font-size:11px;color:#999">'+(task.last_followup||'—')+'</span>';
-        html += '<span style="width:9%;font-size:11px;color:#999">'+(task.next_followup||'—')+'</span>';
-        html += '<span style="width:9%;font-size:11px;color:#999">'+(task.last_order_date||'—')+'</span>';
-        html += '<span style="width:19%;font-size:11px;color:#666;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center">'+(task.suggestion||'')+'</span>';
-        html += '<span style="width:21%;text-align:right;display:flex;gap:4px;justify-content:flex-end">';
+        html += '<span style="width:8%;flex-shrink:0;min-width:60px"><span class="'+lvlClass+'">'+task.level+'类</span>'+subTag+'</span>';
+        html += '<span style="width:9%;flex-shrink:0;min-width:70px;font-size:11px;color:#999">'+(task.last_followup||'—')+'</span>';
+        html += '<span style="width:9%;flex-shrink:0;min-width:70px;font-size:11px;color:#999">'+(task.next_followup||'—')+'</span>';
+        html += '<span style="width:9%;flex-shrink:0;min-width:70px;font-size:11px;color:#999">'+(task.last_order_date||'—')+'</span>';
+        html += '<span style="width:19%;flex-shrink:0;min-width:140px;font-size:11px;color:#666;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(task.suggestion||'')+'</span>';
+        html += '<span style="flex:1;min-width:120px;display:flex;gap:4px;justify-content:flex-end">';
         if (activeTaskTab === 'done') {
             html += '<button class="task-btn task-btn-postpone" onclick="undoComplete(\''+escName+'\')" style="font-size:10px;padding:3px 6px">撤回</button>';
         } else if (activeTaskTab === 'quotes') {
