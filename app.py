@@ -1154,11 +1154,11 @@ def get_customers_by_level():
         conn.close()
 
 
-@app.route('/api/customers/followup/today')
 # 今日任务缓存
 _today_cache = None
 _today_cache_time = 0
 
+@app.route('/api/customers/followup/today')
 def get_today_tasks():
     """获取今日需跟进的客户（含任务目的和建议）"""
     from datetime import date
@@ -1290,6 +1290,7 @@ def get_today_tasks():
                 'last_order_date': last_order_date.strftime('%Y-%m-%d') if last_order_date else None,
                 'consecutive_decline': r['is_declining']
             })
+        global _today_cache, _today_cache_time
         resp = jsonify({'success': True, 'data': result})
         _today_cache = resp
         _today_cache_time = __import__('time').time()
