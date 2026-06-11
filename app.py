@@ -182,7 +182,8 @@ def get_data():
             params.append(end if ' ' in end else end)
         if conditions:
             sql += " WHERE " + " AND ".join(conditions)
-        sql += " ORDER BY date DESC"
+        sql += " ORDER BY date DESC LIMIT %s"
+        params.append(int(request.args.get('limit', 10000)))
         cur.execute(sql, params)
         rows = cur.fetchall()
         return jsonify([{
@@ -1154,9 +1155,17 @@ def get_customers_by_level():
 
 
 @app.route('/api/customers/followup/today')
+# 今日任务缓存
+_today_cache = None
+_today_cache_time = 0
+
 def get_today_tasks():
     """获取今日需跟进的客户（含任务目的和建议）"""
     from datetime import date
+    global _today_cache, _today_cache_time
+    now_ts = __import__('time').time()
+    if _today_cache and (now_ts - _today_cache_time) < 30:
+        return _today_cache
     today = date.today()
     y0, y1, y2 = today.year, today.year - 1, today.year - 2
     conn = get_db()
@@ -1281,7 +1290,10 @@ def get_today_tasks():
                 'last_order_date': last_order_date.strftime('%Y-%m-%d') if last_order_date else None,
                 'consecutive_decline': r['is_declining']
             })
-        return jsonify({'success': True, 'data': result})
+        resp = jsonify({'success': True, 'data': result})
+        _today_cache = resp
+        _today_cache_time = __import__('time').time()
+        return resp
     finally:
         cur.close()
         conn.close()
@@ -1406,6 +1418,8 @@ def mark_followup():
             (today, next_followup, cust_name)
         )
         conn.commit()
+        global _today_cache, _today_cache_time
+        _today_cache = None
         return jsonify({'success': True, 'message': '已标记跟进', 'next_followup': next_followup.isoformat()})
     finally:
         cur.close()
