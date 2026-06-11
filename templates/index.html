@@ -746,7 +746,7 @@
 
   <!-- 客户管理 + 搜索 -->
   <div style="display:flex;gap:8px;align-items:center;padding:12px 20px 0;flex-wrap:wrap">
-    <div style="position:sticky;top:0;z-index:20;background:#F8F9FA;padding-bottom:4px">
+    
     <input id="cust-filter-input" placeholder="搜索客户名称或编码" style="padding:6px 10px;border:1px solid #DDD;border-radius:4px;font-size:12px;font-family:inherit;width:200px" onkeydown="if(event.key==='Enter')filterCustomerList()">
     <button class="btn-primary" onclick="filterCustomerList()" style="font-size:12px;padding:6px 12px">搜索</button>
     <button class="btn-outline" onclick="openCustMgmtDrawer()" style="font-size:12px">管理</button>
@@ -785,12 +785,12 @@
 
   <!-- 批量操作 + 列表 -->
   <div style="margin:0 20px">
-    <div id="batch-bar" style="display:none;padding:6px 16px;background:#FFF8E1;border-radius:4px;margin-bottom:8px;display:none;align-items:center;gap:10px;font-size:12px">
+    <div id="batch-bar" style="display:none;padding:6px 16px;background:#FFF8E1;border-radius:4px;margin-bottom:8px;align-items:center;gap:10px;font-size:12px">
       <input type="checkbox" id="select-all" onchange="toggleSelectAll()"> 全选
       <span id="selected-count" style="color:#F9A825;font-weight:600">0</span> 个已选
       <button class="mark-done-btn" onclick="batchMarkDone()">批量标记完成</button>
     </div>
-    <div style="display:flex;padding:8px 16px;font-size:13px;color:#333;font-weight:600;border-bottom:1px solid #EDEDED;background:#FAFAFA;text-align:left">
+    <div style="display:flex;padding:8px 16px;font-size:13px;color:#333;font-weight:600;border-bottom:1px solid #EDEDED;background:#FAFAFA;text-align:left;position:sticky;top:0;z-index:20">
       <span style="width:30px;flex-shrink:0"><input type="checkbox" style="visibility:hidden"></span>
       <span style="width:18%;flex-shrink:0;min-width:140px">客户名称</span>
       <span style="width:8%;flex-shrink:0;min-width:60px">等级</span>
@@ -799,7 +799,6 @@
       <span style="width:9%;flex-shrink:0;min-width:70px">最后下单</span>
       <span style="width:19%;flex-shrink:0;min-width:140px">建议内容</span>
       <span style="flex:1;min-width:120px">操作</span>
-    </div>
     </div>
     <div id="task-list-container" style="min-height:200px;overflow-y:auto"></div>
   </div>
