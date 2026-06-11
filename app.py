@@ -1290,7 +1290,6 @@ def get_today_tasks():
                 'last_order_date': last_order_date.strftime('%Y-%m-%d') if last_order_date else None,
                 'consecutive_decline': r['is_declining']
             })
-        global _today_cache, _today_cache_time
         resp = jsonify({'success': True, 'data': result})
         _today_cache = resp
         _today_cache_time = __import__('time').time()
