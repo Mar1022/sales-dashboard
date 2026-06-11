@@ -2691,10 +2691,8 @@ async function batchMarkDone() {
     var names = Object.keys(selectedRows);
     if (!names.length) { showToast('请先选择客户', 'error'); return; }
     showToast('正在批量完成 '+names.length+' 个...', 'success');
-    // Parallel API calls
-    Promise.all(names.map(function(n){
-        return fetch('/api/customers/followup/mark', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({customer_name:n})});
-    })).then(function(){
+    // Single API call with all names
+    fetch('/api/customers/followup/batch-mark-names', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({names:names})}).then(function(){
         names.forEach(function(n){ completedData.push({name:n, level:'', last_followup:'', next_followup:new Date().toISOString().slice(0,10), suggestion:'', purpose:'已完成'}); });
         localStorage.setItem('completed_customers', JSON.stringify(completedData));
         selectedRows = {};

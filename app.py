@@ -1443,6 +1443,27 @@ def batch_mark_followup():
         conn.close()
 
 
+@app.route('/api/customers/followup/batch-mark-names', methods=['POST'])
+def batch_mark_by_names():
+    from datetime import date
+    data = request.get_json()
+    names = data.get('names', [])
+    if not names:
+        return jsonify({'error': '缺少客户名称列表'}), 400
+    conn = get_db(); cur = get_cursor(conn); today = date.today()
+    try:
+        for n in names:
+            cur.execute("SELECT level FROM customers WHERE name = %s", (n,))
+            r = cur.fetchone()
+            if not r: continue
+            peak = get_customer_peak_level(n)
+            nf = calculate_next_followup(r['level'], peak, today)
+            cur.execute("UPDATE customers SET last_followup=%s, next_followup=%s, updated_at=NOW() WHERE name=%s", (today, nf, n))
+        conn.commit()
+        return jsonify({'success': True, 'message': f'已完成 {len(names)} 个'})
+    finally: cur.close(); conn.close()
+
+
 @app.route('/api/customers/followup/postpone', methods=['POST'])
 def postpone_followup():
     """改期：将客户的跟进日期改为指定日期"""
