@@ -536,7 +536,7 @@
   /* Tab4 新布局 */
   .task-tab2 { cursor:pointer; user-select:none; } .task-tab2.active { border-color:#333 !important; box-shadow:0 2px 8px rgba(0,0,0,.08); } .task-row { transition:all .2s; } .task-row.removing { opacity:0; max-height:0; padding:0; overflow:hidden; } .note-dropdown { position:relative; display:inline-block; } .note-dropdown-menu { display:none; position:absolute; right:0; top:100%; background:#fff; border:1px solid #EDEDED; border-radius:4px; box-shadow:0 2px 8px rgba(0,0,0,.1); z-index:100; min-width:120px; } .note-dropdown-menu.show { display:block; } .note-dropdown-menu div { padding:6px 12px; font-size:11px; cursor:pointer; white-space:nowrap; } .note-dropdown-menu div:hover { background:#F5F5F5; }
   .task-tab:hover { background:#F5F5F5 !important; }
-  .task-row { display:flex; align-items:center; padding:10px 16px; border-bottom:1px solid #F0F0F0; font-size:13px; transition:opacity .2s; background:#fff; } .task-row span { text-align:center; }
+  .task-row { display:flex; align-items:center; padding:10px 16px; border-bottom:1px solid #F0F0F0; font-size:13px; transition:opacity .2s; background:#fff; } 
   .task-row:hover { background:#FAFAFA; }
   .task-row .rule-icon { width:18px; height:18px; display:inline-flex; align-items:center; justify-content:center; border-radius:50%; background:#F0F0F0; color:#999; font-size:11px; cursor:pointer; margin-left:4px; flex-shrink:0; }
   .task-row .rule-icon:hover { background:#DDD; color:#333; }
@@ -788,7 +788,7 @@
       <span id="selected-count" style="color:#F9A825;font-weight:600">0</span> 个已选
       <button class="mark-done-btn" onclick="batchMarkDone()">批量标记完成</button>
     </div>
-    <div style="display:flex;padding:8px 16px;font-size:13px;color:#333;font-weight:600;border-bottom:1px solid #EDEDED;background:#FAFAFA">
+    <div style="display:flex;padding:8px 16px;font-size:13px;color:#333;font-weight:600;border-bottom:1px solid #EDEDED;background:#FAFAFA;text-align:left">
       <span style="width:3%"><input type="checkbox" style="visibility:hidden"></span>
       <span style="width:20%">客户名称</span>
       <span style="width:8%">等级</span>
