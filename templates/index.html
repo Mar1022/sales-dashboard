@@ -790,13 +790,6 @@
     <div id="task-list-container" style="min-height:200px"></div>
   </div>
 
-  <div style="margin:16px 20px;padding:14px 20px;background:#fff;border-radius:8px;display:flex;gap:32px;font-size:13px;color:#666">
-    <div>今日已完成 <span style="font-size:18px;color:#2E7D32" id="stat-completed-bot">0</span></div>
-    <div style="color:#DDD">|</div>
-    <div>逾期 <span style="font-size:18px;color:#E53935" id="stat-overdue-bot">0</span></div>
-    <div style="color:#DDD">|</div>
-    <div>客户总数 <span style="font-size:18px;color:#333" id="stat-total-bot">—</span></div>
-  </div>
 
   <details style="margin:0 20px 16px">
     <summary style="cursor:pointer;font-weight:500;padding:8px 12px">📊 客户等级分布 & 编码管理</summary>
@@ -2769,7 +2762,7 @@ async function markDone(custName) {
         localStorage.setItem('completed_customers', JSON.stringify(completedData));
         taskData = taskData.filter(function(t){return t.name !== custName;});
         document.getElementById('tab-count-done').innerText = completedData.length;
-        //stat-completed = completedData.length;
+        
         // Update current tab count
         var today = new Date().toISOString().slice(0,10);
         document.getElementById('tab-count-overdue').innerText = taskData.filter(function(t){return t.next_followup < today;}).length;
@@ -2797,7 +2790,7 @@ function applyNote(custName, note) {
         localStorage.setItem('quote_customers', JSON.stringify(quoteData));
         taskData = taskData.filter(function(t){return t.name !== custName;});
         document.getElementById('tab-count-quotes').innerText = quoteData.length;
-        //stat-quotes = quoteData.length;
+        // removed
         fetch('/api/customers/note', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({customer_name:custName, note:note, status:'quotes'})});
         renderTaskList();
     }
@@ -2827,10 +2820,10 @@ async function loadTaskStats() {
     var statsResp = await fetch('/api/customers/followup/today-stats');
     var statsResult = await statsResp.json();
     if (statsResult.success) {
-        //stat-overdue = statsResult.data.overdue_total;
+        // removed = statsResult.data.overdue_total;
     }
-    //stat-completed = completedData.length;
-    //stat-quotes = quoteData.length;
+    
+    // removed
     var allResp = await fetch('/api/customers/all?limit=1');
     var allResult = await allResp.json();
     if (allResult.success) document.getElementById('stat-total').innerText = allResult.total;
