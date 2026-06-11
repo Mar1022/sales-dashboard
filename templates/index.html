@@ -740,6 +740,13 @@
 
 <!-- ═══════════════ Tab4: 客户管理与跟进 ═══════════════ -->
 <div id="tab-customer" class="tab-content" style="overflow-y:auto;background:#F8F9FA">
+  <div id="rules-inline-text" style="display:none;margin:8px 20px;padding:12px 16px;background:#fff;border-radius:8px;border:1px solid #EDEDED;font-size:12px;line-height:1.8;color:#555">
+    <b>等级定义：</b>A≥5万 | B≥1万 | C≥0.2万 | D<0.2万<br>
+    <b>C类细分：</b>C1高频活跃(14天 ≤90天) C2低频(30天 91-180天) C3沉睡(60天 181-365天) C4一次性(90天 仅1单<500元)<br>
+    <b>D类细分：</b>D1新线索(30天 有询价) D2流失老客户(90天 曾有成交) D3无效线索 D4从未互动(不跟进)<br>
+    <b>跟进频率：</b>A:7天 B:14天 C1:14天 C2:30天 C3:60天 C4:90天 D1:30天 D2:90天 D3/D4:不主动跟进<br>
+    <b>挽回规则：</b>历史A/B+当前C/D→60天 | <b>首次跟进=</b>最后下单日期(或今天)
+  </div>
   <div style="position:sticky;top:0;z-index:10;background:#F8F9FA">
   <div style="display:flex;justify-content:flex-end;padding:8px 20px 0">
     <button class="btn-outline" onclick="showRulesPopup()" style="font-size:11px">规则设置</button>
@@ -747,6 +754,7 @@
 
   <!-- 客户管理 + 搜索 -->
   <div style="display:flex;gap:8px;align-items:center;padding:12px 20px 0;flex-wrap:wrap">
+    <div style="position:sticky;top:0;z-index:20;background:#F8F9FA;padding-bottom:4px">
     <input id="cust-filter-input" placeholder="搜索客户名称或编码" style="padding:6px 10px;border:1px solid #DDD;border-radius:4px;font-size:12px;font-family:inherit;width:200px" onkeydown="if(event.key==='Enter')filterCustomerList()">
     <button class="btn-primary" onclick="filterCustomerList()" style="font-size:12px;padding:6px 12px">搜索</button>
     <button class="btn-outline" onclick="openCustMgmtDrawer()" style="font-size:12px">管理</button>
@@ -797,7 +805,8 @@
       <span style="width:9%">计划跟进</span>
       <span style="width:9%">最后下单</span>
       <span style="width:19%">建议内容</span>
-      <span style="width:25%;text-align:right">操作</span>
+      <span style="width:25%;text-align:center">操作</span>
+    </div>
     </div>
     <div id="task-list-container" style="min-height:200px"></div>
   </div>
@@ -1453,7 +1462,7 @@ function setQuick(mode) {
   currentMode = mode;
   ['year','last-year','quarter','last-quarter','month','last-month','week','last-week','custom'].forEach(m => {
     const btn = document.getElementById('qbtn-'+m);
-    if (btn) btn.classList.toggle('active', m === mode);
+    if (btn) btn.classList.toggle('active', m.replace(/-/g,'') === mode);
   });
   const r = getRange(mode);
   if (mode !== 'custom') {
@@ -2498,30 +2507,12 @@ document.addEventListener("click", function(e){
 
 var taskData = [];
 
+var rulesExpanded = false;
 function showRulesPopup() {
-    var lines = [];
-    lines.push('等级定义：A≥5万 | B≥1万 | C≥0.2万 | D<0.2万');
-    lines.push('');
-    lines.push('C类细分：');
-    lines.push('C1 高频活跃(14天) 最后下单≤90天');
-    lines.push('C2 低频(30天) 最后下单91-180天');
-    lines.push('C3 沉睡(60天) 最后下单181-365天');
-    lines.push('C4 一次性(90天) 仅1单且<500元');
-    lines.push('');
-    lines.push('D类细分：');
-    lines.push('D1 新线索(30天) 近30天有询价');
-    lines.push('D2 流失老客户(90天) 曾有成交');
-    lines.push('D3 无效线索 仅导入无互动');
-    lines.push('D4 从未互动 无任何记录');
-    lines.push('');
-    lines.push('跟进频率：');
-    lines.push('A:7天 B:14天 C1:14天 C2:30天');
-    lines.push('C3:60天 C4:90天 D1:30天 D2:90天');
-    lines.push('D3/D4:不主动跟进');
-    lines.push('');
-    lines.push('挽回规则：历史A/B+当前C/D→60天');
-    lines.push('第一次跟进=最后下单日期(或今天)');
-    alert(lines.join(String.fromCharCode(10)));
+    var el = document.getElementById('rules-inline-text');
+    if (!el) return;
+    rulesExpanded = !rulesExpanded;
+    el.style.display = rulesExpanded ? 'block' : 'none';
 }
 var completedData = [];
 var quoteData = [];
@@ -2633,8 +2624,13 @@ function renderTaskList() {
         var label = getLevelGroupLabel(key);
         var gid = 'grp_'+key;
         html += '<div style="margin-bottom:2px">';
-        html += '<div onclick="var e=document.getElementById(\''+gid+'\');e.style.display=e.style.display===\'none\'?\'\':\'none\'" style="display:flex;align-items:center;gap:6px;padding:4px 8px;background:#FAFAFA;border-radius:3px;cursor:pointer;font-size:12px;font-weight:500;color:#555">';
-        html += '<span>'+label+' ('+items.length+'个) &#9662;</span></div>';
+        html += '<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:#F5F5F5;border-radius:6px;margin-bottom:4px;cursor:pointer" onclick="var e=document.getElementById(\''+gid+'\');e.style.display=e.style.display===\'none\'?\'\':\'none\'">';
+        html += '<span style="font-size:15px;font-weight:700;color:#333">'+label+'</span>';
+        html += '<span style="background:#3B5998;color:#fff;padding:2px 10px;border-radius:12px;font-size:12px;font-weight:600">'+items.length+'</span>';
+        html += '<span style="flex:1"></span>';
+        html += '<input type="checkbox" onclick="event.stopPropagation();toggleGroupSelect(\''+key+'\',this)" title="全选此组">';
+        html += '<span style="font-size:11px;color:#999">全选此组</span>';
+        html += '</div>';
         html += '<div id="'+gid+'">';
         items.forEach(function(task){
         var safeName = escapeHtml(task.name);
@@ -2664,6 +2660,21 @@ function renderTaskList() {
         html += '</div></div>';
     });
     container.innerHTML = html;
+    document.getElementById('selected-count').innerText = Object.keys(selectedRows).length;
+}
+
+function toggleGroupSelect(key, cb) {
+    // Find all rows in this group
+    var gid = 'grp_'+key;
+    var groupDiv = document.getElementById(gid);
+    if (!groupDiv) return;
+    var cbs = groupDiv.querySelectorAll('input[type=checkbox]');
+    cbs.forEach(function(c){
+        c.checked = cb.checked;
+        var escName = c.getAttribute('data-name') || '';
+        if (cb.checked) selectedRows[escName] = true;
+        else delete selectedRows[escName];
+    });
     document.getElementById('selected-count').innerText = Object.keys(selectedRows).length;
 }
 
@@ -2795,10 +2806,10 @@ async function loadLevelStats() {
     if (!result.success) return;
     var s = result.data;
     document.getElementById('level-stats-inline').innerHTML =
-        '<span class="level-badge level-badge-A" style="cursor:pointer" onclick="showLevelCustomers(\'A\')">A '+s.A+'</span> '+
-        '<span class="level-badge level-badge-B" style="cursor:pointer" onclick="showLevelCustomers(\'B\')">B '+s.B+'</span> '+
-        '<span class="level-badge level-badge-C" style="cursor:pointer" onclick="showLevelCustomers(\'C\')">C '+s.C+'</span> '+
-        '<span class="level-badge level-badge-D" style="cursor:pointer" onclick="var e=document.getElementById(\'d-sub-stats\');e.style.display=e.style.display===\'none\'?\'\':\'none\'">D '+s.D+'</span>'+
+        '<span class="level-badge level-badge-A" style="cursor:pointer;font-size:13px;padding:4px 12px;font-weight:600" onclick="showLevelCustomers(\'A\')">A '+s.A+'</span> '+
+        '<span class="level-badge level-badge-B" style="cursor:pointer;font-size:13px;padding:4px 12px;font-weight:600" onclick="showLevelCustomers(\'B\')">B '+s.B+'</span> '+
+        '<span class="level-badge level-badge-C" style="cursor:pointer;font-size:13px;padding:4px 12px;font-weight:600" onclick="showLevelCustomers(\'C\')">C '+s.C+'</span> '+
+        '<span class="level-badge level-badge-D" style="cursor:pointer;font-size:13px;padding:4px 12px;font-weight:600" onclick="var e=document.getElementById(\'d-sub-stats\');e.style.display=e.style.display===\'none\'?\'\':\'none\'">D '+s.D+'</span>'+
         '<span id="d-sub-stats" style="display:none;font-size:11px;color:#888;margin-left:4px">'+
         '（D1新线索/D2流失老客户/D3无效/D4从未互动）点击查看详情</span>';
 }
@@ -2836,7 +2847,7 @@ async function loadCustMgmtDrawer() {
     var params = new URLSearchParams({page:custMgmtPage, limit:50}); if(custMgmtSearch)params.set('search',custMgmtSearch);
     try {
         var resp = await fetch('/api/customers/all?'+params.toString()); var result = await resp.json();
-        if(!result.success){showToast(result.error||'加载失败','error');return;}
+        if(!result.success){var body=document.getElementById('cust-mgmt-drawer-body');body.innerHTML='<div class="drawer-empty">加载失败：'+(result.error||'未知错误')+'</div>';return;}
         var body=document.getElementById('cust-mgmt-drawer-body');
         if(result.data.length===0){body.innerHTML='<div class="drawer-empty">暂无数据</div>';}
         else{body.innerHTML=result.data.map(function(c){return '<div class="drawer-item"><span class="drawer-item-name" style="font-weight:500;min-width:120px">'+(c.code?escapeHtml(c.code):'<span style="color:#CCC">—</span>')+'</span><span style="flex:1;font-size:13px">'+escapeHtml(c.name)+'</span><span class="cust-level cust-level-'+c.level.toLowerCase()+'">'+c.level+'类</span><button class="btn-delete-sm" onclick="event.stopPropagation();deleteCust(\''+escapeHtml(c.name).replace(/'/g,"\\\\'")+'\')">删除</button><button class="btn-outline" style="font-size:10px;padding:2px 6px;margin-left:4px" onclick="event.stopPropagation();editCust(\''+escapeHtml(c.name).replace(/'/g,"\\\\'")+'\',\''+(c.code||'').replace(/'/g,"\\\\'")+'\')">编辑</button></div>';}).join('');}
