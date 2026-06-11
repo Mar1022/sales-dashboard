@@ -742,10 +742,11 @@
 
 <!-- ═══════════════ Tab4: 客户管理与跟进 ═══════════════ -->
 <div id="tab-customer" class="tab-content" style="overflow-y:auto;background:#F8F9FA">
-  <div style="position:sticky;top:0;z-index:20;background:#F8F9FA;padding-bottom:4px">
-  <!-- 客户管理 + 搜索 -->
+
+  <!-- STICKY TOP SECTION -->
+  <div style="position:sticky;top:0;z-index:20;background:#F8F9FA">
+
   <div style="display:flex;gap:8px;align-items:center;padding:12px 20px 0;flex-wrap:wrap">
-    
     <input id="cust-filter-input" placeholder="搜索客户名称或编码" style="padding:6px 10px;border:1px solid #DDD;border-radius:4px;font-size:12px;font-family:inherit;width:200px" onkeydown="if(event.key==='Enter')filterCustomerList()">
     <button class="btn-primary" onclick="filterCustomerList()" style="font-size:12px;padding:6px 12px">搜索</button>
     <button class="btn-outline" onclick="openCustMgmtDrawer()" style="font-size:12px">管理</button>
@@ -757,31 +758,14 @@
     <button class="btn-outline" onclick="importCodesFile()" style="font-size:12px">导入客户</button>
   </div>
 
-  <!-- 标签区 -->
   <div id="task-tabs" style="display:flex;gap:12px;padding:12px 20px 8px;flex-wrap:wrap">
-    <div class="task-tab2 active" data-tab="overdue" onclick="switchTaskTab('overdue')" style="padding:8px 16px;background:#fff;border-radius:8px;cursor:pointer;border:2px solid transparent;min-width:110px">
-      <div style="font-size:12px;color:#E53935;font-weight:500">逾期跟进</div>
-      <div style="font-size:22px;font-weight:600;color:#E53935" id="tab-count-overdue">0</div>
-    </div>
-    <div class="task-tab2" data-tab="regular" onclick="switchTaskTab('regular')" style="padding:8px 16px;background:#fff;border-radius:8px;cursor:pointer;border:2px solid transparent;min-width:110px">
-      <div style="font-size:12px;color:#333;font-weight:500">常规跟进</div>
-      <div style="font-size:22px;font-weight:600;color:#333" id="tab-count-regular">0</div>
-    </div>
-    <div class="task-tab2" data-tab="recovery" onclick="switchTaskTab('recovery')" style="padding:8px 16px;background:#fff;border-radius:8px;cursor:pointer;border:2px solid transparent;min-width:110px">
-      <div style="font-size:12px;color:#F9A825;font-weight:500">挽回任务</div>
-      <div style="font-size:22px;font-weight:600;color:#F9A825" id="tab-count-recovery">0</div>
-    </div>
-    <div class="task-tab2" data-tab="quotes" onclick="switchTaskTab('quotes')" style="padding:8px 16px;background:#fff;border-radius:8px;cursor:pointer;border:2px solid transparent;min-width:110px">
-      <div style="font-size:12px;color:#1565C0;font-weight:500">近期报价</div>
-      <div style="font-size:22px;font-weight:600;color:#1565C0" id="tab-count-quotes">0</div>
-    </div>
-    <div class="task-tab2" data-tab="done" onclick="switchTaskTab('done')" style="padding:8px 16px;background:#fff;border-radius:8px;cursor:pointer;border:2px solid transparent;min-width:110px">
-      <div style="font-size:12px;color:#2E7D32;font-weight:500">今日已完成</div>
-      <div style="font-size:22px;font-weight:600;color:#2E7D32" id="tab-count-done">0</div>
-    </div>
+    <div class="task-tab2 active" data-tab="overdue" onclick="switchTaskTab('overdue')" style="padding:8px 16px;background:#fff;border-radius:8px;cursor:pointer;border:2px solid transparent;min-width:110px"><div style="font-size:12px;color:#E53935;font-weight:500">逾期跟进</div><div style="font-size:22px;font-weight:600;color:#E53935" id="tab-count-overdue">0</div></div>
+    <div class="task-tab2" data-tab="regular" onclick="switchTaskTab('regular')" style="padding:8px 16px;background:#fff;border-radius:8px;cursor:pointer;border:2px solid transparent;min-width:110px"><div style="font-size:12px;color:#333;font-weight:500">常规跟进</div><div style="font-size:22px;font-weight:600;color:#333" id="tab-count-regular">0</div></div>
+    <div class="task-tab2" data-tab="recovery" onclick="switchTaskTab('recovery')" style="padding:8px 16px;background:#fff;border-radius:8px;cursor:pointer;border:2px solid transparent;min-width:110px"><div style="font-size:12px;color:#F9A825;font-weight:500">挽回任务</div><div style="font-size:22px;font-weight:600;color:#F9A825" id="tab-count-recovery">0</div></div>
+    <div class="task-tab2" data-tab="quotes" onclick="switchTaskTab('quotes')" style="padding:8px 16px;background:#fff;border-radius:8px;cursor:pointer;border:2px solid transparent;min-width:110px"><div style="font-size:12px;color:#1565C0;font-weight:500">近期报价</div><div style="font-size:22px;font-weight:600;color:#1565C0" id="tab-count-quotes">0</div></div>
+    <div class="task-tab2" data-tab="done" onclick="switchTaskTab('done')" style="padding:8px 16px;background:#fff;border-radius:8px;cursor:pointer;border:2px solid transparent;min-width:110px"><div style="font-size:12px;color:#2E7D32;font-weight:500">今日已完成</div><div style="font-size:22px;font-weight:600;color:#2E7D32" id="tab-count-done">0</div></div>
   </div>
 
-  <!-- 批量操作 + 列表 -->
   <div style="margin:0 20px">
     <div id="batch-bar" style="display:none;padding:6px 16px;background:#FFF8E1;border-radius:4px;margin-bottom:8px;align-items:center;gap:10px;font-size:12px">
       <input type="checkbox" id="select-all" onchange="toggleSelectAll()"> 全选
@@ -798,15 +782,67 @@
       <span style="width:19%;flex-shrink:0;min-width:140px">建议内容</span>
       <span style="flex:1;min-width:120px">操作</span>
     </div>
-    <div id="task-list-container" style="min-height:200px;overflow-y:auto"></div>
   </div>
 
-  <!-- 底部统计 -->
-  
+  </div><!-- END STICKY -->
 
-
-
+  <div style="margin:0 20px">
+    <div id="task-list-container" style="min-height:200px"></div>
   </div>
+
+  <div style="margin:16px 20px;padding:14px 20px;background:#fff;border-radius:8px;display:flex;gap:32px;font-size:13px;color:#666">
+    <div>今日已完成 <span style="font-size:18px;color:#2E7D32" id="stat-completed-bot">0</span></div>
+    <div style="color:#DDD">|</div>
+    <div>逾期 <span style="font-size:18px;color:#E53935" id="stat-overdue-bot">0</span></div>
+    <div style="color:#DDD">|</div>
+    <div>客户总数 <span style="font-size:18px;color:#333" id="stat-total-bot">—</span></div>
+  </div>
+
+  <details style="margin:0 20px 16px">
+    <summary style="cursor:pointer;font-weight:500;padding:8px 12px">📊 客户等级分布 & 编码管理</summary>
+    <div style="margin-top:12px;display:flex;gap:12px;flex-wrap:wrap">
+      <button class="btn-outline" onclick="importCodesFile()">导入编码对照表</button>
+      <button class="btn-outline" onclick="exportPendingCodesFile()">导出待编码客户</button>
+    </div>
+  </details>
+
+  <details style="margin:0 20px 16px">
+    <summary style="cursor:pointer;font-weight:500;padding:8px 12px">📈 分析报表（偶尔查看）</summary>
+    <div style="margin-top:16px">
+      <div class="tab-filter-sticky"><div class="filter-bar">
+        <span class="filter-label">日期范围</span><input type="date" id="c-dateStart"><span class="date-sep">—</span><input type="date" id="c-dateEnd">
+        <button class="btn-apply" onclick="refreshCustomerTab()">刷新</button><button class="btn-outline" onclick="resetCustomerFilter()">重置</button>
+        <span style="font-size:11px;color:#999;margin-left:8px">* 当年至今数据列标题标注*号</span>
+      </div></div>
+      <div class="tab-inner">
+        <div class="chart-card" style="margin-bottom:20px">
+          <div class="chart-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+            <span>一、客户年度销售对比及排行</span>
+            <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+              <label style="font-size:12px;color:#666;cursor:pointer"><input type="radio" name="rankBy" value="recent12" checked onchange="refreshCustYearTable()"> 按近12个月</label>
+              <label style="font-size:12px;color:#666;cursor:pointer"><input type="radio" name="rankBy" value="total" onchange="refreshCustYearTable()"> 按历史累计</label>
+              <button class="btn-outline" onclick="toggleCustLimit()" id="btn-cust-limit" style="font-size:12px">加载全部</button>
+              <button class="btn-outline" onclick="exportCustYearCSV()" style="font-size:12px">导出CSV</button>
+            </div>
+          </div>
+          <div class="table-scroll" style="max-height:520px;overflow:auto"><table id="cust-year-table" style="min-width:100%"><thead id="cust-year-thead"></thead><tbody id="cust-year-tbody"></tbody></table></div>
+          <div id="cust-year-empty" class="target-empty" style="display:none">暂无数据</div>
+        </div>
+        <div class="chart-card" style="margin-bottom:20px">
+          <div class="chart-title" style="display:flex;align-items:center;justify-content:space-between"><span>二、老客户流失分析</span><button class="btn-outline" onclick="exportChurnCSV()" style="font-size:12px">导出CSV</button></div>
+          <div class="table-scroll" style="max-height:400px;overflow:auto"><table id="churn-table" style="min-width:100%"><thead><tr><th>年份</th><th style="text-align:center">年初客户数</th><th style="text-align:center">当年活跃客户数</th><th style="text-align:center">留存客户数</th><th style="text-align:center">流失客户数</th><th style="text-align:center">流失率</th></tr></thead><tbody id="churn-tbody"></tbody></table></div>
+          <div id="churn-empty" class="target-empty" style="display:none">暂无数据</div>
+        </div>
+        <div class="chart-card" style="margin-bottom:20px">
+          <div class="chart-title">三、活跃客户数趋势 — 按年汇总</div>
+          <div class="table-scroll" style="max-height:360px;overflow:auto"><table id="activity-year-table" style="min-width:100%"><thead><tr><th>年份</th><th style="text-align:center">活跃客户数</th><th style="text-align:center">同比增长率</th><th style="text-align:center">新客户数</th><th style="text-align:center">老客户留存数</th></tr></thead><tbody id="activity-year-tbody"></tbody></table></div>
+        </div>
+      </div>
+    </div>
+  </details>
+
+</div>
+
 
 <!-- ════ 客户订单明细弹窗 ════ -->
 <div class="modal-overlay" id="cust-orders-modal" onclick="if(event.target===this)closeCustOrders()">
