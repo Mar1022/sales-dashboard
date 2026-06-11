@@ -852,6 +852,20 @@ def get_customer_level_by_sales(sales):
         return 'D'
 
 
+def get_customer_peak_level(cust_name):
+    """获取客户近3年内的最高等级"""
+    current_year = datetime.now().year
+    years = [current_year - 2, current_year - 1, current_year]
+    peak = 'D'
+    level_order = {'A': 4, 'B': 3, 'C': 2, 'D': 1}
+    for y in years:
+        sales = get_customer_year_sales(cust_name, y)
+        level = get_customer_level_by_sales(sales)
+        if level_order.get(level, 0) > level_order.get(peak, 0):
+            peak = level
+    return peak
+
+
 # 子等级缓存（请求级，避免重复查询）
 _sub_level_cache = {}
 
