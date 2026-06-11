@@ -8,8 +8,8 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  html, body { height: 100%; }
-  body {
+  html, body { cursor:default;  height: 100%; }
+  body { cursor:default; 
     font-family: -apple-system, 'Segoe UI', 'Microsoft YaHei', sans-serif;
     background: #F5F5F5;
     color: #333;
@@ -423,7 +423,7 @@
   }
   .drawer-close:hover { background: #F5F5F5; color: #333; }
 
-  .drawer-body { flex: 1; overflow-y: auto; padding: 8px 0; }
+  .drawer-body { cursor:default;  flex: 1; overflow-y: auto; padding: 8px 0; }
 
   .drawer-item {
     display: flex; align-items: center; justify-content: space-between;
@@ -442,7 +442,7 @@
     font-size: 13px; color: #666; background: #FAFAFA; flex-shrink: 0;
   }
   .nc-drawer-summary b { color: #3B5998; }
-  .nc-drawer-body { flex: 1; overflow-y: auto; }
+  .nc-drawer-body { cursor:default;  flex: 1; overflow-y: auto; }
   .nc-row {
     display: flex; align-items: center; padding: 11px 20px;
     border-bottom: 1px solid #F5F5F5; transition: background .1s;
@@ -740,17 +740,7 @@
 
 <!-- ═══════════════ Tab4: 客户管理与跟进 ═══════════════ -->
 <div id="tab-customer" class="tab-content" style="overflow-y:auto;background:#F8F9FA">
-  <div id="rules-inline-text" style="display:none;margin:8px 20px;padding:12px 16px;background:#fff;border-radius:8px;border:1px solid #EDEDED;font-size:12px;line-height:1.8;color:#555">
-    <b>等级定义：</b>A≥5万 | B≥1万 | C≥0.2万 | D<0.2万<br>
-    <b>C类细分：</b>C1高频活跃(14天 ≤90天) C2低频(30天 91-180天) C3沉睡(60天 181-365天) C4一次性(90天 仅1单<500元)<br>
-    <b>D类细分：</b>D1新线索(30天 有询价) D2流失老客户(90天 曾有成交) D3无效线索 D4从未互动(不跟进)<br>
-    <b>跟进频率：</b>A:7天 B:14天 C1:14天 C2:30天 C3:60天 C4:90天 D1:30天 D2:90天 D3/D4:不主动跟进<br>
-    <b>挽回规则：</b>历史A/B+当前C/D→60天 | <b>首次跟进=</b>最后下单日期(或今天)
-  </div>
-  <div style="position:sticky;top:0;z-index:10;background:#F8F9FA">
-  <div style="display:flex;justify-content:flex-end;padding:8px 20px 0">
-    <button class="btn-outline" onclick="showRulesPopup()" style="font-size:11px">规则设置</button>
-  </div>
+  
 
   <!-- 客户管理 + 搜索 -->
   <div style="display:flex;gap:8px;align-items:center;padding:12px 20px 0;flex-wrap:wrap">
@@ -762,6 +752,7 @@
     <select id="level-year-select" style="padding:4px 6px;border:1px solid #DDD;border-radius:3px;font-size:11px;font-family:inherit" onchange="loadLevelStats()"></select>
     <span id="level-stats-inline" style="font-size:11px;color:#666"></span>
     <span style="font-size:12px;color:#999;margin-left:auto">共 <b id="cust-mgmt-total">—</b> 个</span>
+    <button class="btn-outline" onclick="showRuleModal()" style="font-size:12px">⚙️ 规则设置</button>
     <button class="btn-outline" onclick="importCodesFile()" style="font-size:12px">导入客户</button>
   </div>
 
@@ -797,7 +788,7 @@
       <span id="selected-count" style="color:#F9A825;font-weight:600">0</span> 个已选
       <button class="mark-done-btn" onclick="batchMarkDone()">批量标记完成</button>
     </div>
-    <div style="display:flex;padding:8px 16px;font-size:11px;color:#999;font-weight:500;border-bottom:1px solid #EDEDED">
+    <div style="display:flex;padding:8px 16px;font-size:13px;color:#333;font-weight:600;border-bottom:1px solid #EDEDED;background:#FAFAFA">
       <span style="width:3%"><input type="checkbox" style="visibility:hidden"></span>
       <span style="width:20%">客户名称</span>
       <span style="width:8%">等级</span>
@@ -968,6 +959,22 @@
     <div id="rule-table-container" style="max-height:55vh;overflow-y:auto"></div>
     <div class="modal-btns"><button class="btn-outline" onclick="closeRuleModal()">关闭</button></div>
     <div style="font-size:10px;color:#CCC;margin-top:8px">💡 点击单元格可编辑，修改后自动保存。删除后需「恢复默认」才能找回。</div>
+  </div>
+</div>
+
+<!-- ════ 规则设置弹窗 ════ -->
+<div class="overlay-backdrop" id="rule-info-overlay2" style="display:none;position:fixed;inset:0;z-index:1500;background:rgba(0,0,0,.3)" onclick="closeRuleModal()">
+  <div style="position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);background:#fff;border-radius:12px;padding:28px 32px;box-shadow:0 8px 40px rgba(0,0,0,.15);max-width:520px;width:90%;z-index:1501;font-size:13px;line-height:2;color:#555" onclick="event.stopPropagation()">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <span style="font-size:16px;font-weight:600;color:#333">⚙️ 规则设置</span>
+      <button onclick="closeRuleModal()" style="border:none;background:none;font-size:22px;cursor:pointer;color:#999">&times;</button>
+    </div>
+    <div><b>等级定义：</b>A≥5万 | B≥1万 | C≥0.2万 | D<0.2万</div>
+    <div><b>跟进频率：</b>A:7天 B:14天 C1:14天 C2:30天 C3:60天 C4:90天 | D1:30天 D2:90天 D3/D4:不跟</div>
+    <div><b>C类细分：</b>C1高频活跃(≤90天) C2低频(91-180天) C3沉睡(181-365天) C4一次性(仅1单<500元)</div>
+    <div><b>D类细分：</b>D1新线索(30天) D2流失老客户(有成交) D3无效线索 D4从未互动(不跟)</div>
+    <div><b>挽回规则：</b>历史A/B+当前C/D→60天 | <b>首次跟进=</b>最后下单日期(或今天)</div>
+    <div style="margin-top:16px"><button class="btn-outline" onclick="closeRuleModal()">关闭</button></div>
   </div>
 </div>
 
@@ -2507,12 +2514,11 @@ document.addEventListener("click", function(e){
 
 var taskData = [];
 
-var rulesExpanded = false;
-function showRulesPopup() {
-    var el = document.getElementById('rules-inline-text');
-    if (!el) return;
-    rulesExpanded = !rulesExpanded;
-    el.style.display = rulesExpanded ? 'block' : 'none';
+function showRuleModal() {
+    document.getElementById('rule-info-overlay2').style.display = 'block';
+}
+function closeRuleModal() {
+    document.getElementById('rule-info-overlay2').style.display = 'none';
 }
 var completedData = [];
 var quoteData = [];
@@ -2624,8 +2630,8 @@ function renderTaskList() {
         var label = getLevelGroupLabel(key);
         var gid = 'grp_'+key;
         html += '<div style="margin-bottom:2px">';
-        html += '<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:#F5F5F5;border-radius:6px;margin-bottom:4px;cursor:pointer" onclick="var e=document.getElementById(\''+gid+'\');e.style.display=e.style.display===\'none\'?\'\':\'none\'">';
-        html += '<span style="font-size:15px;font-weight:700;color:#333">'+label+'</span>';
+        html += '<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:#F5F5F5;border-radius:6px;margin-bottom:4px">';
+        html += '<input type="checkbox" onclick="event.stopPropagation();toggleGroupSelect(\''+key+'\',this)" title="全选此组" style="margin-right:4px">'; html += '<span style="font-size:15px;font-weight:700;color:#333;cursor:pointer" onclick="var e=document.getElementById(\''+gid+'\');e.style.display=e.style.display===\'none\'?\'\':\'none\'">'+label+'</span>';
         html += '<span style="background:#3B5998;color:#fff;padding:2px 10px;border-radius:12px;font-size:12px;font-weight:600">'+items.length+'</span>';
         html += '<span style="flex:1"></span>';
         html += '<input type="checkbox" onclick="event.stopPropagation();toggleGroupSelect(\''+key+'\',this)" title="全选此组">';
@@ -2639,7 +2645,7 @@ function renderTaskList() {
         var isChecked = selectedRows[escName] ? 'checked' : '';
         html += '<div class="task-row" id="row_'+escName+'">';
         html += '<span style="width:3%">'+(isEditable?'<input type="checkbox" '+isChecked+' onchange="toggleRow(this,\''+escName+'\')">':'')+'</span>';
-        html += '<span style="width:18%;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+safeName+'</span>';
+        html += '<span style="width:18%;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center">'+safeName+'</span>';
         var subTag = (task.sub_level && task.sub_level !== task.level) ? ' <span style="font-size:9px;color:#999">'+task.sub_name+'</span>' : '';
         html += '<span style="width:10%"><span class="'+lvlClass+'">'+task.level+'类</span>'+subTag+'</span>';
         html += '<span style="width:9%;font-size:11px;color:#999">'+(task.last_followup||'—')+'</span>';
