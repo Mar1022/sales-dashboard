@@ -821,6 +821,37 @@
   </div>
 </div>
 
+<!-- ════ 确认删除弹窗 ════ -->
+<div class="confirm-overlay" id="confirm-dialog" onclick="closeConfirm()">
+  <div class="confirm-box" onclick="event.stopPropagation()">
+    <h3>确认删除</h3>
+    <p>确定删除该规格？删除后相关数据将不再计入新品统计。</p>
+    <div class="confirm-btns">
+      <button class="btn-outline" onclick="closeConfirm()">取消</button>
+      <button class="btn-primary" id="confirm-delete-btn" style="background:#E74C3C;border-color:#E74C3C">删除</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════ 导入 Modal ════ -->
+<div class="modal-overlay" id="import-modal">
+  <div class="modal">
+    <h3>导入数据文件</h3>
+    <p>请上传 Excel 或 CSV 文件，上传后数据将存入服务器数据库。</p>
+    <label class="upload-area" for="fileInput">
+      <div class="upload-icon">+</div>
+      <div>点击选择文件</div>
+      <div style="margin-top:4px;font-size:11px;color:#CCC">支持 .xlsx / .xls / .csv</div>
+      <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" onchange="handleFileSelect(event)">
+    </label>
+    <div id="import-preview" style="font-size:12px;color:#777;margin-top:8px;"></div>
+    <div class="modal-btns">
+      <button class="btn-outline" onclick="closeImport()">取消</button>
+      <button class="btn-primary" id="btn-import-upload" onclick="doImport()" disabled>上传到服务器</button>
+    </div>
+  </div>
+</div>
+
 <!-- ════ 客户等级明细弹窗 ════ -->
 <div class="modal-overlay" id="level-modal" onclick="if(event.target===this)closeLevelModal()">
   <div class="modal" style="width:750px;max-width:90vw;max-height:80vh;overflow-y:auto">
