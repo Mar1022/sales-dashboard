@@ -788,128 +788,7 @@
 
   <div style="margin:0 20px">
     <div id="task-list-container" style="min-height:200px"></div>
-  </div>
-
-
-  <div class="modal" style="width:800px;max-width:95vw;max-height:85vh;overflow-y:auto">
-    <h3 id="active-cust-title">活跃客户明细</h3>
-    <div class="table-scroll" style="max-height:50vh;overflow:auto">
-      <table style="min-width:500px">
-        <thead><tr><th>客户名称</th><th>购买次数</th><th>总销售额</th></tr></thead>
-        <tbody id="active-cust-tbody"></tbody>
-      </table>
-    </div>
-    <div id="active-cust-summary" style="font-size:12px;color:#666;margin-top:10px"></div>
-    <div class="modal-btns">
-      <button class="btn-outline" onclick="closeActiveCust()">关闭</button>
-    </div>
-  </div>
-</div>
-
-<!-- ════ 导入 Modal ════ -->
-<div class="modal-overlay" id="import-modal">
-  <div class="modal">
-    <h3>导入数据文件</h3>
-    <p>请上传 Excel 或 CSV 文件，上传后数据将存入服务器数据库。</p>
-    <label class="upload-area" for="fileInput">
-      <div class="upload-icon">+</div>
-      <div>点击选择文件</div>
-      <div style="margin-top:4px;font-size:11px;color:#CCC">支持 .xlsx / .xls / .csv</div>
-      <div style="margin-top:2px;font-size:11px;color:#E67E22">💡 大数据文件建议另存为 CSV（UTF-8）格式上传</div>
-      <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" onchange="handleFileSelect(event)">
-    </label>
-    <div id="import-preview" style="font-size:12px;color:#777;margin-top:8px;"></div>
-    <div class="modal-btns">
-      <button class="btn-outline" onclick="closeImport()">取消</button>
-      <button class="btn-primary" id="btn-import-upload" onclick="doImport()" disabled>上传到服务器</button>
-    </div>
-  </div>
-</div>
-
-<!-- ════ 目标设置 Modal ════ -->
-<div class="modal-overlay" id="target-modal">
-  <div class="modal" style="max-width:560px">
-    <h3>📊 业绩目标管理</h3>
-    <!-- 新增区域 -->
-    <div class="target-section-title" style="margin-top:16px">设定目标</div>
-    <div style="display:flex;gap:12px;align-items:center;margin-top:12px;flex-wrap:wrap">
-      <span style="font-size:13px;color:#555;white-space:nowrap">年份</span>
-      <select id="target-year" style="padding:7px 10px;border:1px solid #DDD;border-radius:3px;font-size:13px;font-family:inherit"></select>
-      <span style="font-size:13px;color:#555;white-space:nowrap">月目标(元)</span>
-      <input id="target-monthly" type="number" placeholder="月销售额目标" oninput="calcYearly()" style="padding:7px 10px;border:1px solid #DDD;border-radius:3px;font-size:13px;font-family:inherit;width:150px">
-      <span class="target-auto-yearly">年目标：<b id="target-yearly-preview">—</b></span>
-    </div>
-    <div class="modal-btns" style="margin-top:14px">
-      <button class="btn-outline" onclick="closeTarget()">取消</button>
-      <button class="btn-primary" onclick="saveTarget()">保存</button>
-    </div>
-    <!-- 已设目标列表 -->
-    <div class="target-section-title" style="margin-top:24px">已设定的年度目标</div>
-    <div style="max-height:240px;overflow-y:auto;margin-top:10px" id="target-list-container">
-      <div class="target-empty" id="target-empty">暂无已设定的目标</div>
-      <table class="target-table" id="target-table" style="display:none">
-        <thead><tr><th>年份</th><th style="text-align:right">月目标</th><th style="text-align:right">年目标</th><th style="width:50px"></th></tr></thead>
-        <tbody id="target-tbody"></tbody>
-      </table>
-    </div>
-  </div>
-</div>
-
-<div class="toast" id="toast"></div>
-
-<!-- ════ Drawer：管理新品规格 ════ -->
-<div class="drawer-overlay" id="newprod-drawer" onclick="closeNewProdDrawer(event)">
-  <div class="drawer-panel" onclick="event.stopPropagation()">
-    <div class="drawer-header">
-      <h3>管理新品规格</h3>
-      <button class="drawer-close" onclick="closeNewProdDrawer()">×</button>
-    </div>
-    <div class="drawer-body" id="drawer-body"></div>
-  </div>
-</div>
-
-<!-- ════ Drawer：新客户明细 ════ -->
-<div class="drawer-overlay" id="nc-drawer" onclick="closeNewCustDrawer(event)">
-  <div class="drawer-panel wide" onclick="event.stopPropagation()">
-    <div class="drawer-header">
-      <h3>新客户明细</h3>
-      <button class="drawer-close" onclick="closeNewCustDrawer()">×</button>
-    </div>
-    <div class="nc-drawer-summary" id="nc-summary"></div>
-    <div class="nc-drawer-body" id="nc-body"></div>
-  </div>
-</div>
-
-<!-- ════ 确认删除弹窗 ════ -->
-<div class="confirm-overlay" id="confirm-dialog" onclick="closeConfirm()">
-  <div class="confirm-box" onclick="event.stopPropagation()">
-    <h3>确认删除</h3>
-    <p>确定删除该规格？删除后相关数据将不再计入新品统计。</p>
-    <div class="confirm-btns">
-      <button class="btn-outline" onclick="closeConfirm()">取消</button>
-      <button class="btn-primary" id="confirm-delete-btn" style="background:#E74C3C;border-color:#E74C3C">删除</button>
-    </div>
-  </div>
-</div>
-
-<!-- ════ 客户管理抽屉 ════ -->
-<div class="drawer-overlay" id="cust-mgmt-drawer" onclick="closeCustMgmtDrawer(event)">
-  <div class="drawer-panel wide" onclick="event.stopPropagation()" style="width:620px">
-    <div class="drawer-header">
-      <h3>客户管理</h3>
-      <button class="drawer-close" onclick="closeCustMgmtDrawer()">×</button>
-    </div>
-    <div style="padding:8px 16px;border-bottom:1px solid #F5F5F5;display:flex;gap:8px">
-      <input id="cust-mgmt-drawer-search" placeholder="搜索客户名称或编码" style="flex:1;padding:6px 10px;border:1px solid #DDD;border-radius:3px;font-size:12px;font-family:inherit"
-             onkeydown="if(event.key==='Enter')loadCustMgmtDrawer()">
-      <button class="btn-primary" onclick="loadCustMgmtDrawer()" style="font-size:12px">搜索</button>
-    </div>
-    <div class="drawer-body" id="cust-mgmt-drawer-body"></div>
-    <div id="cust-mgmt-pagination" style="padding:10px 16px;display:flex;justify-content:flex-end;gap:6px;border-top:1px solid #F0F0F0"></div>
-  </div>
-</div>
-
-<!-- ════ 判断规则弹窗 ════ -->
+  </div><!-- ════ 判断规则弹窗 ════ -->
 <div class="modal-overlay" id="rule-modal" onclick="if(event.target===this)closeRuleModal()">
   <div class="modal" style="width:780px;max-width:95vw;max-height:85vh;overflow-y:auto">
     <h3 style="display:flex;justify-content:space-between;align-items:center">
@@ -2622,7 +2501,7 @@ function renderTaskList() {
         if (activeTaskTab === 'done') {
             html += '<button class="task-btn task-btn-postpone" onclick="undoComplete(\''+escName+'\')" style="font-size:10px;padding:3px 6px">撤回</button>';
         } else if (activeTaskTab === 'quotes') {
-            html += '<span style="font-size:11px;color:#1565C0">近期报价</span>';
+            html += '<button class="mark-done-btn" onclick="markDone(\''+escName+'\')" style="margin-right:4px">完成</button>'; html += '<span style="font-size:11px;color:#1565C0">近期报价</span>';
         } else {
             html += '<button class="mark-done-btn" onclick="markDone(\''+escName+'\')">完成</button>';
             html += '<span class="note-dropdown"><button class="task-btn task-btn-postpone" onclick="toggleNoteDropdown(\''+escName+'\',event)" style="font-size:10px;padding:4px 8px">备注</button><div class="note-dropdown-menu" id="note_menu_'+escName+'"><div onclick="applyNote(\''+escName+'\',\'近期有报价\')">近期有报价</div></div></span>';
