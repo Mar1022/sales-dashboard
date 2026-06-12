@@ -11,7 +11,8 @@
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body { height: 100%; }
-  table, .task-row, .task-header, .task-body, .chart-card, .drawer-item, .card, .level-card { cursor: default; }
+  body { user-select: none; -webkit-user-select: none; }
+  input, textarea, [contenteditable] { user-select: text; -webkit-user-select: text; }
   body {     font-family: -apple-system, 'Segoe UI', 'Microsoft YaHei', sans-serif;
     background: #F5F5F5;
     color: #333;
