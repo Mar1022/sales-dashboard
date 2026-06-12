@@ -2806,6 +2806,28 @@ function escapeHtml(str) {
   setQuick('year');
 })();
 </script>
+<!-- ════ 新客户明细抽屉 ════ -->
+<div class="drawer-overlay" id="nc-drawer" onclick="closeNewCustDrawer(event)">
+  <div class="drawer-panel wide" onclick="event.stopPropagation()">
+    <div class="drawer-header"><h3>新客户明细</h3><button class="drawer-close" onclick="closeNewCustDrawer()">×</button></div>
+    <div class="nc-drawer-summary" id="nc-summary"></div>
+    <div class="nc-drawer-body" id="nc-body"></div>
+  </div>
+</div>
+
+<!-- ════ 客户管理抽屉 ════ -->
+<div class="drawer-overlay" id="cust-mgmt-drawer" onclick="closeCustMgmtDrawer(event)">
+  <div class="drawer-panel wide" onclick="event.stopPropagation()" style="width:620px">
+    <div class="drawer-header"><h3>客户管理</h3><button class="drawer-close" onclick="closeCustMgmtDrawer()">×</button></div>
+    <div style="padding:8px 16px;border-bottom:1px solid #F5F5F5;display:flex;gap:8px">
+      <input id="cust-mgmt-drawer-search" placeholder="搜索客户名称或编码" style="flex:1;padding:6px 10px;border:1px solid #DDD;border-radius:3px;font-size:12px" onkeydown="if(event.key==='Enter')loadCustMgmtDrawer()">
+      <button class="btn-primary" onclick="loadCustMgmtDrawer()" style="font-size:12px">搜索</button>
+    </div>
+    <div class="drawer-body" id="cust-mgmt-drawer-body"></div>
+    <div id="cust-mgmt-pagination" style="padding:10px 16px;display:flex;justify-content:flex-end;gap:6px;border-top:1px solid #F0F0F0"></div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 </body>
 </html>
