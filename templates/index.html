@@ -674,6 +674,7 @@
       <button class="btn-primary" onclick="openImport()">导入 Excel</button>
       <button class="btn-outline" onclick="exportData()">导出数据</button>
       <button class="btn-outline" onclick="downloadTemplate()">下载模板</button>
+      <button class="btn-danger-outline" onclick="batchDeleteRecords()" id="btn-batch-delete" style="display:none">删除选中</button>
     </div>
   </div>
 
@@ -686,6 +687,7 @@
       <table id="detail-table">
         <thead>
           <tr>
+            <th><input type="checkbox" id="detail-select-all" onchange="toggleSelectAllDetail()"></th>
             <th>#</th>
             <th>终审日期</th>
             <th>客户名称</th>
@@ -1739,13 +1741,14 @@ function renderDetailTable() {
   document.getElementById('detail-count').textContent = '共 ' + total + ' 条记录';
 
   if (total === 0) {
-    tbody.innerHTML = '<tr><td colspan="9"><div class="empty-state">暂无数据</div></td></tr>';
+    tbody.innerHTML = '<tr><td colspan="10"><div class="empty-state">暂无数据</div></td></tr>';
     document.getElementById('pagination').innerHTML = '';
     return;
   }
 
   tbody.innerHTML = slice.map((r, i) =>
     '<tr>'+
+      '<td><input type="checkbox" value="'+r.id+'" onchange="updateDeleteBtn()"></td>'+
       '<td style="color:#999">'+(start+i+1)+'</td>'+
       '<td class="td-date">'+r.date+'</td>'+
       '<td>'+r.cust+'</td>'+
@@ -1774,6 +1777,30 @@ function renderDetailTable() {
 function goPage(p) {
   detailPage = p;
   renderDetailTable();
+}
+
+// ── 批量删除 ──
+function toggleSelectAllDetail() {
+  var all = document.getElementById('detail-select-all');
+  var cbs = document.querySelectorAll('#detail-tbody input[type=checkbox]');
+  cbs.forEach(function(cb){ cb.checked = all.checked; });
+  updateDeleteBtn();
+}
+function updateDeleteBtn() {
+  var cbs = document.querySelectorAll('#detail-tbody input[type=checkbox]:checked');
+  var btn = document.getElementById('btn-batch-delete');
+  btn.style.display = cbs.length > 0 ? '' : 'none';
+  btn.textContent = '删除选中('+cbs.length+')';
+}
+async function batchDeleteRecords() {
+  var cbs = document.querySelectorAll('#detail-tbody input[type=checkbox]:checked');
+  if (!cbs.length) return;
+  if (!confirm('确定删除 '+cbs.length+' 条记录？此操作不可恢复。')) return;
+  var ids = Array.from(cbs).map(function(cb){ return parseInt(cb.value); });
+  var resp = await fetch('/api/data/delete', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ids:ids})});
+  var result = await resp.json();
+  if (result.success) { showToast('已删除 '+result.deleted+' 条', 'success'); refreshDetail(); }
+  else { showToast(result.error, 'error'); }
 }
 
 // ════════════ 导入/导出 ════════════

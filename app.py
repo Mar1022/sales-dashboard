@@ -178,7 +178,7 @@ def get_data():
     conn = get_db()
     cur = get_cursor(conn)
     try:
-        sql = "SELECT date, cust, product, spec, unit, qty, price, amount FROM sales_records"
+        sql = "SELECT id, date, cust, product, spec, unit, qty, price, amount FROM sales_records"
         params = []
         conditions = []
         if start:
@@ -194,6 +194,7 @@ def get_data():
         cur.execute(sql, params)
         rows = cur.fetchall()
         return jsonify([{
+            "id": r["id"],
             "date": r["date"].strftime('%Y-%m-%d') if hasattr(r["date"], 'strftime') else str(r["date"])[:10],
             "cust": r["cust"],
             "product": r["product"],
@@ -203,6 +204,23 @@ def get_data():
             "price": float(r["price"]),
             "amount": float(r["amount"])
         } for r in rows])
+    finally:
+        cur.close()
+        conn.close()
+
+
+@app.route('/api/data/delete', methods=['POST'])
+def delete_records():
+    """批量删除销售记录"""
+    ids = request.get_json().get('ids', [])
+    if not ids:
+        return jsonify({'error': '未提供ID'}), 400
+    conn = get_db()
+    cur = get_cursor(conn)
+    try:
+        cur.execute("DELETE FROM sales_records WHERE id = ANY(%s)", (ids,))
+        conn.commit()
+        return jsonify({'success': True, 'deleted': cur.rowcount})
     finally:
         cur.close()
         conn.close()
