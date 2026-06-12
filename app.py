@@ -218,7 +218,7 @@ def delete_records():
     conn = get_db()
     cur = get_cursor(conn)
     try:
-        cur.execute("DELETE FROM sales_records WHERE id = ANY(%s)", (ids,))
+        cur.execute("DELETE FROM sales_records WHERE id IN %s", (tuple(ids),))
         conn.commit()
         return jsonify({'success': True, 'deleted': cur.rowcount})
     finally:

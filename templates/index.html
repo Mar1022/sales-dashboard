@@ -1799,7 +1799,7 @@ async function batchDeleteRecords() {
   var ids = Array.from(cbs).map(function(cb){ return parseInt(cb.value); });
   var resp = await fetch('/api/data/delete', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ids:ids})});
   var result = await resp.json();
-  if (result.success) { showToast('已删除 '+result.deleted+' 条', 'success'); refreshDetail(); }
+  if (result.success) { showToast('已删除 '+result.deleted+' 条', 'success'); await loadAllData(); populateCustFilter(); refreshDetail(); refreshDashboard(); }
   else { showToast(result.error, 'error'); }
 }
 
