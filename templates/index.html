@@ -821,6 +821,17 @@
   </div>
 </div>
 
+<!-- ════ 新品管理抽屉 ════ -->
+<div class="drawer-overlay" id="newprod-drawer" onclick="closeNewProdDrawer(event)">
+  <div class="drawer-panel" onclick="event.stopPropagation()">
+    <div class="drawer-header">
+      <h3>管理新品规格</h3>
+      <button class="drawer-close" onclick="closeNewProdDrawer()">×</button>
+    </div>
+    <div class="drawer-body" id="drawer-body"></div>
+  </div>
+</div>
+
 <!-- ════ 确认删除弹窗 ════ -->
 <div class="confirm-overlay" id="confirm-dialog" onclick="closeConfirm()">
   <div class="confirm-box" onclick="event.stopPropagation()">
@@ -2341,8 +2352,8 @@ function downloadCSV(csv, filename) {
 
 // ── Tab4 主刷新 ──
 function refreshCustomerTab() {
-  custFilterStart = document.getElementById('c-dateStart').value;
-  custFilterEnd   = document.getElementById('c-dateEnd').value;
+  custFilterStart = document.getElementById('c-dateStart')?.value || '';
+  custFilterEnd   = document.getElementById('c-dateEnd')?.value || '';
   buildCustomerData();
   refreshCustYearTable();
   refreshChurnTable();
@@ -2672,7 +2683,7 @@ async function loadTaskStats() {
     // removed
     var allResp = await fetch('/api/customers/all?limit=1');
     var allResult = await allResp.json();
-    if (allResult.success) document.getElementById('stat-total').innerText = allResult.total;
+    if (allResult.success) { var el = document.getElementById('stat-total'); if (el) el.innerText = allResult.total; }
 }
 
 function undoComplete(custName) {
