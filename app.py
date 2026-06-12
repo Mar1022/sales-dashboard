@@ -190,7 +190,7 @@ def get_data():
         if conditions:
             sql += " WHERE " + " AND ".join(conditions)
         sql += " ORDER BY date DESC LIMIT %s"
-        params.append(int(request.args.get('limit', 10000)))
+        params.append(int(request.args.get('limit', 5000)))
         cur.execute(sql, params)
         rows = cur.fetchall()
         return jsonify([{
