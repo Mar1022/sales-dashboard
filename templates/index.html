@@ -1116,7 +1116,7 @@ function closeConfirm() {
   pendingDeleteIdx = null;
   document.getElementById('confirm-dialog').classList.remove('show');
 }
-document.getElementById('confirm-delete-btn').addEventListener('click', function(){
+var _cbd = document.getElementById('confirm-delete-btn'); if (_cbd) _cbd.addEventListener('click', function(){
   if (pendingDeleteIdx !== null) {
     removeNewProd(pendingDeleteIdx);
     pendingDeleteIdx = null;
