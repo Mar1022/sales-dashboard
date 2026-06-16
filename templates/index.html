@@ -2483,12 +2483,12 @@ async function loadTodayTasks() {
     taskData = result.data;
     // Load quote data from localStorage
     try { quoteData = JSON.parse(localStorage.getItem('quote_customers')||'[]'); } catch(e) { quoteData = []; }
-    try { var todayStr = new Date().toISOString().slice(0,10);
-    completedData = JSON.parse(localStorage.getItem('completed_'+todayStr)||'[]');
+    try { window.todayStr = new Date().toISOString().slice(0,10);
+    completedData = JSON.parse(localStorage.getItem('completed_'+window.todayStr)||'[]');
     // Clear old completed keys
     for(var i=0; i<localStorage.length; i++){
         var k = localStorage.key(i);
-        if(k && k.startsWith('completed_') && k !== 'completed_'+todayStr) localStorage.removeItem(k);
+        if(k && k.startsWith('completed_') && k !== 'completed_'+window.todayStr) localStorage.removeItem(k);
     }; } catch(e) { completedData = []; }
     var today = new Date().toISOString().slice(0,10);
     var overdue = taskData.filter(function(t){return t.next_followup < today;});
@@ -2648,7 +2648,7 @@ async function batchMarkDone() {
     // Single API call with all names
     fetch('/api/customers/followup/batch-mark-names', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({names:names})}).then(function(){
         names.forEach(function(n){ completedData.push({name:n, level:'', last_followup:'', next_followup:new Date().toISOString().slice(0,10), suggestion:'', purpose:'已完成'}); });
-        localStorage.setItem('completed_'+todayStr, JSON.stringify(completedData));
+        localStorage.setItem('completed_'+window.todayStr, JSON.stringify(completedData));
         selectedRows = {};
         showToast('批量完成 '+names.length+' 个', 'success');
         loadTodayTasks();
@@ -2663,7 +2663,7 @@ async function markDone(custName) {
     if (result.success) {
         var cust = taskData.find(function(t){return t.name === custName;}) || {};
         completedData.push({name:custName, level:cust.level||'', last_followup:cust.last_followup||'', next_followup:new Date().toISOString().slice(0,10), suggestion:cust.suggestion||'', purpose:'已完成'});
-        localStorage.setItem('completed_'+todayStr, JSON.stringify(completedData));
+        localStorage.setItem('completed_'+window.todayStr, JSON.stringify(completedData));
         taskData = taskData.filter(function(t){return t.name !== custName;});
         document.getElementById('tab-count-done').innerText = completedData.length;
         
@@ -2735,7 +2735,7 @@ async function loadTaskStats() {
 
 function undoComplete(custName) {
     completedData = completedData.filter(function(t){return t.name !== custName;});
-    localStorage.setItem('completed_'+todayStr, JSON.stringify(completedData));
+    localStorage.setItem('completed_'+window.todayStr, JSON.stringify(completedData));
     document.getElementById('tab-count-done').innerText = completedData.length;
     loadTodayTasks();
     showToast('已撤回', 'success');
