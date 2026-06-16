@@ -817,11 +817,22 @@
       <span style="font-size:16px;font-weight:600;color:#333">⚙️ 规则设置</span>
       <button onclick="closeRuleModal()" style="border:none;background:none;font-size:22px;cursor:pointer;color:#999">&times;</button>
     </div>
-    <div><b>等级定义：</b>A≥5万 | B≥1万 | C≥0.2万 | D<0.2万</div>
-    <div><b>跟进频率：</b>A:7天 B:14天 C1:14天 C2:30天 C3:60天 C4:90天 | D1:30天 D2:90天 D3/D4:不跟</div>
-    <div><b>C类细分：</b>C1高频活跃(≤90天) C2低频(91-180天) C3沉睡(181-365天) C4一次性(仅1单<500元)</div>
-    <div><b>D类细分：</b>D1新线索(30天) D2流失老客户(有成交) D3无效线索 D4从未互动(不跟)</div>
-    <div><b>挽回规则：</b>历史A/B+当前C/D→60天 | <b>首次跟进=</b>最后下单日期(或今天)</div>
+    <div style="line-height:2"><b>等级定义（基于今年累计销售额）</b></div>
+    <div>A类 ≥ 5万 | B类 1-5万 | C类 0.2-1万 | D类 < 0.2万</div>
+    <div style="margin-top:8px"><b>跟进频率</b></div>
+    <div>A类 — 每7天跟进一次</div>
+    <div>B类 — 每14天跟进一次</div>
+    <div style="margin-top:8px"><b>C类细分</b></div>
+    <div>C1 高频活跃 — 最后下单距今≤90天，每14天跟进</div>
+    <div>C2 低频 — 最后下单距今91-180天，每30天跟进</div>
+    <div>C3 沉睡 — 最后下单距今>180天，每60天跟进</div>
+    <div style="margin-top:8px"><b>D类细分</b></div>
+    <div>D1 新线索 — 2026.06.16后导入且无下单，每30天跟进</div>
+    <div>D2 流失老客户 — 曾有成交记录，每90天跟进</div>
+    <div style="margin-top:8px"><b>挽回规则</b></div>
+    <div>历史A/B + 当前C/D → 每60天跟进</div>
+    <div style="margin-top:8px"><b>首次跟进</b></div>
+    <div>有下单 → 最后下单日期 | 无下单 → 今天</div>
     <div style="margin-top:16px"><button class="btn-outline" onclick="closeRuleModal()">关闭</button></div>
   </div>
 </div>

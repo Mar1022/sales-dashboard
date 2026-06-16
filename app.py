@@ -1669,12 +1669,12 @@ def get_all_customers():
         offset = (page - 1) * limit
         if search:
             cur.execute(
-                "SELECT name, code, level FROM customers WHERE name ILIKE %s OR code ILIKE %s ORDER BY code::int DESC NULLS LAST, name ASC LIMIT %s OFFSET %s",
+                "SELECT name, code, level FROM customers WHERE name ILIKE %s OR code ILIKE %s ORDER BY CASE WHEN code ~ '^[0-9]+$' THEN code::integer ELSE 0 END DESC, code DESC NULLS LAST, name ASC LIMIT %s OFFSET %s",
                 (f'%{search}%', f'%{search}%', limit, offset)
             )
         else:
             cur.execute(
-                "SELECT name, code, level FROM customers ORDER BY code::int DESC NULLS LAST, name ASC LIMIT %s OFFSET %s",
+                "SELECT name, code, level FROM customers ORDER BY CASE WHEN code ~ '^[0-9]+$' THEN code::integer ELSE 0 END DESC, code DESC NULLS LAST, name ASC LIMIT %s OFFSET %s",
                 (limit, offset)
             )
         rows = cur.fetchall()
