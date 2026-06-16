@@ -2559,6 +2559,7 @@ function renderTaskList() {
     order.forEach(function(key){
         if (!grouped[key] || !grouped[key].length) return;
         var items = grouped[key];
+        items.sort(function(a,b){ return (b.last_order_date||'') > (a.last_order_date||'') ? 1 : -1; });
         var label = getLevelGroupLabel(key);
         var gid = 'grp_'+key;
         html += '<div style="margin-bottom:2px">';
@@ -2737,6 +2738,7 @@ function undoComplete(custName) {
     completedData = completedData.filter(function(t){return t.name !== custName;});
     localStorage.setItem('completed_'+window.todayStr, JSON.stringify(completedData));
     document.getElementById('tab-count-done').innerText = completedData.length;
+    fetch('/api/customers/followup/undo', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({customer_name:custName})});
     loadTodayTasks();
     showToast('已撤回', 'success');
 }

@@ -1546,6 +1546,20 @@ def batch_mark_by_names():
     finally: cur.close(); conn.close()
 
 
+@app.route('/api/customers/followup/undo', methods=['POST'])
+def undo_followup():
+    from datetime import date
+    data = request.get_json()
+    cust_name = data.get('customer_name', '')
+    if not cust_name: return jsonify({'error': '缺少客户名称'}), 400
+    conn = get_db(); cur = get_cursor(conn); today = date.today()
+    try:
+        cur.execute("UPDATE customers SET next_followup = %s, updated_at = NOW() WHERE name = %s", (today, cust_name))
+        conn.commit()
+        return jsonify({'success': True, 'message': '已撤回'})
+    finally: cur.close(); conn.close()
+
+
 @app.route('/api/customers/followup/postpone', methods=['POST'])
 def postpone_followup():
     """改期：将客户的跟进日期改为指定日期"""
@@ -1756,6 +1770,7 @@ def import_codes():
             conn.commit()
             total += len(chunk)
 
+        _adjust_followup_after_upload()
         return jsonify({'success': True, 'message': f'已更新{total}个客户的编码'})
     finally:
         cur.close()
