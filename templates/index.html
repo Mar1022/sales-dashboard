@@ -2734,7 +2734,7 @@ async function loadTaskStats() {
     if (allResult.success) { var el = document.getElementById('stat-total'); if (el) el.innerText = allResult.total; }
 }
 
-function undoComplete(custName) {
+async function undoComplete(custName) {
     completedData = completedData.filter(function(t){return t.name !== custName;});
     localStorage.setItem('completed_'+window.todayStr, JSON.stringify(completedData));
     document.getElementById('tab-count-done').innerText = completedData.length;
