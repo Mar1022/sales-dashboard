@@ -1039,10 +1039,17 @@ def refresh_all_customer_followup():
 
 
 def _adjust_followup_after_upload():
-    """Task1: 上传后，如果最后下单日期更新了，计划跟进 = 最后下单日期 + 频次"""
+    """Task1: 上传后先刷新 last_purchase_date，再调整计划跟进 = 最后下单日期 + 频次"""
     conn = get_db()
     cur = get_cursor(conn)
     try:
+        # 先更新所有客户的最后下单日期
+        cur.execute("""
+            UPDATE customers c SET last_purchase_date = (
+                SELECT MAX(s.date)::date FROM sales_records s WHERE s.cust = c.name
+            )
+        """)
+        # 再调整计划跟进日期
         cur.execute("""
             UPDATE customers c SET next_followup = (
                 c.last_purchase_date + (
