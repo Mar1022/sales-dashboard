@@ -556,7 +556,8 @@ def upload():
 
     sync_customers_from_sales()
     refresh_all_customer_levels()
-    refresh_all_customer_followup()
+    # Task1: 上传后自动调整计划跟进 = last_purchase_date + 频次
+    _adjust_followup_after_upload()
 
     return jsonify({
         "success": True,
@@ -728,7 +729,7 @@ def upload_csv():
 
     sync_customers_from_sales()
     refresh_all_customer_levels()
-    refresh_all_customer_followup()
+    _adjust_followup_after_upload()
 
     return jsonify({
         "success": True,
@@ -834,8 +835,8 @@ def delete_new_product(idx):
 
 FOLLOWUP_DAYS = {
     'A': 7, 'B': 14,
-    'C1': 14, 'C2': 30, 'C3': 60, 'C4': 90, 'C': 30,  # C defaults to 30
-    'D1': 30, 'D2': 90, 'D3': 0, 'D4': 0, 'D': 30     # D3/D4 no active followup
+    'C1': 14, 'C2': 30, 'C3': 60, 'C': 30,
+    'D1': 30, 'D2': 90, 'D': 30
 }
 RECOVERY_DAYS = 60
 
@@ -936,9 +937,7 @@ def preload_all_sub_levels():
                 last_order = r['last_order_date']
                 days_since = (today - last_order.date()).days if last_order and hasattr(last_order, 'date') else 999
 
-                if total_orders == 1 and first_amount < 500:
-                    sub, label = 'C4', '一次性客户'
-                elif days_since <= 90:
+                if days_since <= 90:
                     sub, label = 'C1', '高频活跃客户'
                 elif days_since <= 180:
                     sub, label = 'C2', '低频客户'
@@ -982,12 +981,12 @@ def refresh_all_customer_levels():
     conn = get_db()
     cur = get_cursor(conn)
     try:
-        last_year = datetime.now().year - 1
+        this_year = datetime.now().year
         cur.execute("SELECT DISTINCT cust FROM sales_records")
         customers = cur.fetchall()
         for row in customers:
             cust_name = row['cust']
-            sales = get_customer_year_sales(cust_name, last_year)
+            sales = get_customer_year_sales(cust_name, this_year)
             level = get_customer_level_by_sales(sales)
             cur.execute(
                 "UPDATE customers SET level = %s, updated_at = NOW() WHERE name = %s",
@@ -1033,6 +1032,29 @@ def refresh_all_customer_followup():
                 "UPDATE customers SET next_followup = %s, updated_at = NOW() WHERE name = %s",
                 (next_followup, cust_name)
             )
+        conn.commit()
+    finally:
+        cur.close()
+        conn.close()
+
+
+def _adjust_followup_after_upload():
+    """Task1: 上传后，如果最后下单日期更新了，计划跟进 = 最后下单日期 + 频次"""
+    conn = get_db()
+    cur = get_cursor(conn)
+    try:
+        cur.execute("""
+            UPDATE customers c SET next_followup = (
+                c.last_purchase_date + (
+                    CASE c.level
+                        WHEN 'A' THEN 7 WHEN 'B' THEN 14
+                        WHEN 'C' THEN 30 ELSE 30
+                    END || ' days'
+                )::interval
+            )::date
+            WHERE c.last_purchase_date IS NOT NULL
+              AND (c.last_followup IS NULL OR c.last_purchase_date > c.last_followup)
+        """)
         conn.commit()
     finally:
         cur.close()
@@ -1233,19 +1255,18 @@ def get_today_tasks():
                 orders = int(r['total_orders']); fa = float(r['first_amount'] or 0)
                 lo = r['last_order_date']
                 days = (today - lo.date()).days if lo and hasattr(lo, 'date') else 999
-                if orders == 1 and fa < 500: sub, lbl = 'C4', '一次性客户'
-                elif days <= 90: sub, lbl = 'C1', '高频活跃客户'
+                if days <= 90: sub, lbl = 'C1', '高频活跃客户'
                 elif days <= 180: sub, lbl = 'C2', '低频客户'
                 else: sub, lbl = 'C3', '沉睡客户'
                 _sub_level_cache[nm] = (sub, lbl, FOLLOWUP_DAYS.get(sub, 30))
             else:
                 orders = int(r['total_orders'])
+                cutoff_d = date(2026, 6, 16)
+                is_new_d = r['created_at'] and r['created_at'].date() >= cutoff_d and orders == 0
                 has_inq = (r['status'] == 'inquiry') or (r['note'] and '询价' in str(r['note']))
-                recent = r['created_at'] and (today - r['created_at'].date()).days <= 30
-                if has_inq or recent: sub, lbl = 'D1', '新线索客户'
+                if is_new_d or has_inq: sub, lbl = 'D1', '新线索客户'
                 elif orders >= 1: sub, lbl = 'D2', '流失老客户'
-                elif r['created_at']: sub, lbl = 'D3', '无效线索'
-                else: sub, lbl = 'D4', '从未互动客户'
+                else: sub, lbl = 'D2', '流失老客户'
                 _sub_level_cache[nm] = (sub, lbl, FOLLOWUP_DAYS.get(sub, 30))
         cur2.close()
     except Exception:
@@ -1286,7 +1307,8 @@ def get_today_tasks():
             LEFT JOIN last_order lo ON cu.name = lo.cust
             WHERE cu.next_followup <= %s
             ORDER BY cu.next_followup ASC,
-                CASE cu.level WHEN 'A' THEN 1 WHEN 'B' THEN 2 WHEN 'C' THEN 3 ELSE 4 END
+                CASE cu.level WHEN 'A' THEN 1 WHEN 'B' THEN 2 WHEN 'C' THEN 3 ELSE 4 END,
+                lo.last_date DESC NULLS LAST
         """, (f"{y0}-01-01", f"{y1}-01-01", f"{y0}-01-01", f"{y2}-01-01", f"{y1}-01-01", today))
         tasks = cur.fetchall()
         result = []
@@ -1647,12 +1669,12 @@ def get_all_customers():
         offset = (page - 1) * limit
         if search:
             cur.execute(
-                "SELECT name, code, level FROM customers WHERE name ILIKE %s OR code ILIKE %s ORDER BY code DESC NULLS LAST, name ASC LIMIT %s OFFSET %s",
+                "SELECT name, code, level FROM customers WHERE name ILIKE %s OR code ILIKE %s ORDER BY code::int DESC NULLS LAST, name ASC LIMIT %s OFFSET %s",
                 (f'%{search}%', f'%{search}%', limit, offset)
             )
         else:
             cur.execute(
-                "SELECT name, code, level FROM customers ORDER BY code DESC NULLS LAST, name ASC LIMIT %s OFFSET %s",
+                "SELECT name, code, level FROM customers ORDER BY code::int DESC NULLS LAST, name ASC LIMIT %s OFFSET %s",
                 (limit, offset)
             )
         rows = cur.fetchall()
