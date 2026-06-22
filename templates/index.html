@@ -2674,7 +2674,8 @@ async function batchMarkDone() {
     showToast('正在批量完成 '+names.length+' 个...', 'success');
     // Single API call with all names
     fetch('/api/customers/followup/batch-mark-names', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({names:names})}).then(function(){
-        names.forEach(function(n){ completedData.push({name:n, level:'', last_followup:'', next_followup:new Date().toISOString().slice(0,10), suggestion:'', purpose:'已完成'}); });
+        var levelMap = {}; taskData.forEach(function(t){ levelMap[t.name] = t.level; });
+        names.forEach(function(n){ completedData.push({name:n, level:levelMap[n]||'D', last_followup:'', next_followup:new Date().toISOString().slice(0,10), suggestion:'', purpose:'已完成'}); });
         localStorage.setItem('completed_'+window.todayStr, JSON.stringify(completedData));
         selectedRows = {};
         showToast('批量完成 '+names.length+' 个', 'success');

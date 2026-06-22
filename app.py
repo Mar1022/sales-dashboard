@@ -1534,13 +1534,18 @@ def batch_mark_by_names():
         return jsonify({'error': '缺少客户名称列表'}), 400
     conn = get_db(); cur = get_cursor(conn); today = date.today()
     try:
-        for n in names:
-            cur.execute("SELECT level FROM customers WHERE name = %s", (n,))
-            r = cur.fetchone()
-            if not r: continue
-            peak = get_customer_peak_level(n)
-            nf = calculate_next_followup(r['level'], peak, today)
-            cur.execute("UPDATE customers SET last_followup=%s, next_followup=%s, updated_at=NOW() WHERE name=%s", (today, nf, n))
+        # 单条 SQL 批量更新：根据等级自动计算下次跟进日期
+        cur.execute("""
+            UPDATE customers SET
+                last_followup = %s,
+                next_followup = (%s + (
+                    CASE level
+                        WHEN 'A' THEN 7 WHEN 'B' THEN 14
+                        WHEN 'C' THEN 30 ELSE 30
+                    END || ' days')::interval)::date,
+                updated_at = NOW()
+            WHERE name = ANY(%s)
+        """, (today, today, names))
         conn.commit()
         return jsonify({'success': True, 'message': f'已完成 {len(names)} 个'})
     finally: cur.close(); conn.close()
