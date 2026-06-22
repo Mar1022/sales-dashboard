@@ -2547,20 +2547,45 @@ function renderTaskList() {
         return;
     }
     var isEditable = (activeTaskTab !== 'done' && activeTaskTab !== 'quotes');
-    // Group by level
-    var grouped = {};
-    list.forEach(function(t){
-        var key = getLevelGroupKey(t);
-        if (!grouped[key]) grouped[key] = [];
-        grouped[key].push(t);
-    });
-    var order = ['A','B','C1','C2','C3','C','D1','D2','D'];
     var html = '';
-    order.forEach(function(key){
-        if (!grouped[key] || !grouped[key].length) return;
-        var items = grouped[key];
-        items.sort(function(a,b){ return (b.last_order_date||'') > (a.last_order_date||'') ? 1 : -1; });
-        var label = getLevelGroupLabel(key);
+    if (activeTaskTab === 'done' || activeTaskTab === 'quotes') {
+        // 已完成和报价不分组，直接平铺
+        list.sort(function(a,b){ return (b.next_followup||'') > (a.next_followup||'') ? 1 : -1; });
+        list.forEach(function(task){
+            // inline rendering without groups
+            var safeName = escapeHtml(task.name);
+            var escName = JSON.stringify(safeName).slice(1,-1);
+            var lvlClass = 'level-badge level-badge-' + (task.level || 'D');
+            html += '<div class=\"task-row\" id=\"row_'+escName+'\">';
+            html += '<span style=\"width:3%\"></span>';
+            html += '<span style=\"width:20%;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap\">'+safeName+'</span>';
+            html += '<span style=\"width:10%\"><span class=\"'+lvlClass+'\">'+(task.level||'?')+'类</span></span>';
+            html += '<span style=\"width:10%;font-size:11px;color:#999\">'+(task.last_followup||'—')+'</span>';
+            html += '<span style=\"width:10%;font-size:11px;color:#999\">'+(task.next_followup||'—')+'</span>';
+            html += '<span style=\"width:10%;font-size:11px;color:#999\">'+(task.last_order_date||'—')+'</span>';
+            html += '<span style=\"width:25%;font-size:11px;color:#666\">'+(task.suggestion||'')+'</span>';
+            html += '<span style=\"text-align:right;display:flex;gap:4px;justify-content:flex-end\">';
+            if (activeTaskTab === 'done') {
+                html += '<button class=\"task-btn task-btn-postpone\" onclick=\"undoComplete(\''+escName+'\')\" style=\"font-size:10px;padding:3px 6px\">撤回</button>';
+            } else {
+                html += '<button class=\"mark-done-btn\" onclick=\"markDone(\''+escName+'\')\">完成</button>';
+            }
+            html += '</span></div>';
+        });
+    } else {
+        // 逾期/常规/挽回：按等级分组
+        var grouped = {};
+        list.forEach(function(t){
+            var key = getLevelGroupKey(t);
+            if (!grouped[key]) grouped[key] = [];
+            grouped[key].push(t);
+        });
+        var order = ['A','B','C1','C2','C3','C','D1','D2','D'];
+        order.forEach(function(key){
+            if (!grouped[key] || !grouped[key].length) return;
+            var items = grouped[key];
+            items.sort(function(a,b){ return (b.last_order_date||'') > (a.last_order_date||'') ? 1 : -1; });
+            var label = getLevelGroupLabel(key);
         var gid = 'grp_'+key;
         html += '<div style="margin-bottom:2px">';
         html += '<div style="display:flex;align-items:center;padding:8px 16px;background:#F5F5F5;border-radius:6px;margin-bottom:4px;font-size:13px;font-weight:600;color:#333;cursor:pointer" onclick="var e=document.getElementById(\''+gid+'\');e.style.display=e.style.display===\'none\'?\'\':\'none\'">';
@@ -2601,6 +2626,7 @@ function renderTaskList() {
     });
         html += '</div></div>';
     });
+    } // end grouped block
     container.innerHTML = html;
     // Ensure all groups start collapsed
     setTimeout(function(){ document.querySelectorAll('[id^="grp_"]').forEach(function(el){ el.style.display = 'none'; }); }, 10);
