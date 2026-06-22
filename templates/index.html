@@ -2623,8 +2623,8 @@ function toggleGroupSelect(key, cb) {
 }
 
 function toggleRow(cb, safeName) {
-    if (cb.checked) selectedRows[escName] = true;
-    else delete selectedRows[escName];
+    if (cb.checked) selectedRows[safeName] = true;
+    else delete selectedRows[safeName];
     document.getElementById('selected-count').innerText = Object.keys(selectedRows).length;
 }
 
