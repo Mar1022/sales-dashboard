@@ -2463,17 +2463,26 @@ function switchTaskTab(tab) {
 }
 
 function filterCustomerList() {
-    var kw = document.getElementById('cust-filter-input').value.trim();
+    var kw = document.getElementById('cust-filter-input').value.trim().toLowerCase();
     if (!kw) { loadTodayTasks(); return; }
-    var resp = fetch('/api/customers/all?search='+encodeURIComponent(kw)+'&limit=100').then(function(r){return r.json();});
-    resp.then(function(result){
-        if (!result.success) return;
-        taskData = result.data.map(function(c){return {
-            name:c.name, level:c.level, last_followup:null, next_followup:null,
-            peak_level:c.level, purpose:'手动搜索', suggestion:'', priority:9
-        };});
-        renderTaskList();
+    // 根据当前tab确定搜索的数据源
+    var source, key;
+    if (activeTaskTab === 'done') {
+        source = completedData; key = 'completedData';
+    } else if (activeTaskTab === 'quotes') {
+        source = quoteData; key = 'quoteData';
+    } else {
+        source = taskData; key = 'taskData';
+    }
+    // 仅按客户名称模糊搜索（不匹配编码）
+    var filtered = source.filter(function(item) {
+        return item.name && item.name.toLowerCase().indexOf(kw) !== -1;
     });
+    // 暂存原始数据，替换后渲染，再恢复
+    var orig = source;
+    window[key] = filtered;
+    renderTaskList();
+    window[key] = orig;
 }
 
 async function loadTodayTasks() {
