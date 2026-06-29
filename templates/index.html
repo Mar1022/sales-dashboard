@@ -2541,7 +2541,7 @@ async function loadTodayTasks() {
     document.getElementById('tab-count-recovery').innerText = recovery.length;
     document.getElementById('tab-count-quotes').innerText = quoteData.length;
     document.getElementById('tab-count-done').innerText = completedData.length;
-    switchTaskTab('overdue');
+    switchTaskTab(activeTaskTab);
     loadTaskStats();
 }
 
@@ -2639,7 +2639,7 @@ function renderTaskList() {
         html += '<div id="'+gid+'">';
         items.forEach(function(task){
         var safeName = escapeHtml(task.name);
-        var escName = safeName.replace(/'/g, "\\'");
+        var escName = JSON.stringify(safeName).slice(1,-1);
         var lvlClass = 'level-badge level-badge-' + task.level;
         var isChecked = selectedRows[escName] ? 'checked' : '';
         html += '<div class="task-row" id="row_'+escName+'">';
@@ -2713,8 +2713,16 @@ async function batchMarkDone() {
     // Single API call with all names
     fetch('/api/customers/followup/batch-mark-names', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({names:names})}).then(function(){
         var levelMap = {}; taskData.forEach(function(t){ levelMap[t.name] = t.level; });
-        names.forEach(function(n){ completedData.push({name:n, level:levelMap[n]||'D', last_followup:'', next_followup:new Date().toISOString().slice(0,10), suggestion:'', purpose:'已完成'}); });
+        names.forEach(function(n){
+            // 去重：避免重复 push
+            if (!completedData.some(function(t){return t.name === n;})) {
+                completedData.push({name:n, level:levelMap[n]||'D', last_followup:'', next_followup:new Date().toISOString().slice(0,10), suggestion:'', purpose:'已完成'});
+            }
+        });
         localStorage.setItem('completed_'+window.todayStr, JSON.stringify(completedData));
+        // 从 quoteData 中也移除这些客户
+        quoteData = quoteData.filter(function(t){return names.indexOf(t.name) === -1;});
+        localStorage.setItem('quote_customers', JSON.stringify(quoteData));
         selectedRows = {};
         showToast('批量完成 '+names.length+' 个', 'success');
         loadTodayTasks();
@@ -2727,12 +2735,18 @@ async function markDone(custName) {
     var resp = await fetch('/api/customers/followup/mark', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({customer_name:custName})});
     var result = await resp.json();
     if (result.success) {
-        var cust = taskData.find(function(t){return t.name === custName;}) || {};
-        completedData.push({name:custName, level:cust.level||'', last_followup:cust.last_followup||'', next_followup:new Date().toISOString().slice(0,10), suggestion:cust.suggestion||'', purpose:'已完成'});
+        var cust = taskData.find(function(t){return t.name === custName;}) || quoteData.find(function(t){return t.name === custName;}) || {};
+        // 去重：避免重复 push
+        if (!completedData.some(function(t){return t.name === custName;})) {
+            completedData.push({name:custName, level:cust.level||'', last_followup:cust.last_followup||'', next_followup:new Date().toISOString().slice(0,10), suggestion:cust.suggestion||'', purpose:'已完成'});
+        }
         localStorage.setItem('completed_'+window.todayStr, JSON.stringify(completedData));
         taskData = taskData.filter(function(t){return t.name !== custName;});
+        quoteData = quoteData.filter(function(t){return t.name !== custName;});
+        localStorage.setItem('quote_customers', JSON.stringify(quoteData));
         document.getElementById('tab-count-done').innerText = completedData.length;
-        
+        document.getElementById('tab-count-quotes').innerText = quoteData.length;
+
         // Update current tab count
         var today = new Date().toISOString().slice(0,10);
         document.getElementById('tab-count-overdue').innerText = taskData.filter(function(t){return t.next_followup < today;}).length;
@@ -2756,7 +2770,10 @@ function applyNote(custName, note) {
     document.querySelectorAll('.note-dropdown-menu.show').forEach(function(el){el.classList.remove('show');});
     if (note === '近期有报价') {
         var cust = taskData.find(function(t){return t.name === custName;}) || {};
-        quoteData.push({name:custName, level:cust.level||'', last_followup:cust.last_followup||'', next_followup:new Date().toISOString().slice(0,10), suggestion:cust.suggestion||'', purpose:'近期报价'});
+        // 去重：避免重复 push
+        if (!quoteData.some(function(t){return t.name === custName;})) {
+            quoteData.push({name:custName, level:cust.level||'', last_followup:cust.last_followup||'', next_followup:new Date().toISOString().slice(0,10), suggestion:cust.suggestion||'', purpose:'近期报价'});
+        }
         localStorage.setItem('quote_customers', JSON.stringify(quoteData));
         taskData = taskData.filter(function(t){return t.name !== custName;});
         document.getElementById('tab-count-quotes').innerText = quoteData.length;
@@ -2804,7 +2821,18 @@ async function undoComplete(custName) {
     localStorage.setItem('completed_'+window.todayStr, JSON.stringify(completedData));
     document.getElementById('tab-count-done').innerText = completedData.length;
     await fetch('/api/customers/followup/undo', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({customer_name:custName})});
-    loadTodayTasks();
+    // 重新从服务器加载任务数据以获取正确的 next_followup，但停留在当前 Tab
+    var resp = await fetch('/api/customers/followup/today');
+    var result = await resp.json();
+    if (result.success) {
+        taskData = result.data;
+        // 更新各 Tab 计数
+        var today = new Date().toISOString().slice(0,10);
+        document.getElementById('tab-count-overdue').innerText = taskData.filter(function(t){return t.next_followup < today;}).length;
+        document.getElementById('tab-count-regular').innerText = taskData.filter(function(t){return t.next_followup === today && !(t.peak_level&&(t.peak_level==='A'||t.peak_level==='B')&&(t.level==='C'||t.level==='D'));}).length;
+        document.getElementById('tab-count-recovery').innerText = taskData.filter(function(t){return t.peak_level&&(t.peak_level==='A'||t.peak_level==='B')&&(t.level==='C'||t.level==='D')&&t.next_followup===today;}).length;
+    }
+    renderTaskList();
     showToast('已撤回', 'success');
 }
 
