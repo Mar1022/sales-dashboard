@@ -2667,7 +2667,7 @@ function renderTaskList() {
     } // end grouped block
     container.innerHTML = html;
     // Ensure all groups start collapsed
-    setTimeout(function(){ document.querySelectorAll('[id^="grp_"]').forEach(function(el){ el.style.display = 'none'; }); }, 10);
+    setTimeout(function(){ document.querySelectorAll('[id^="grp_"]').forEach(function(el){ el.style.display = ''; }); }, 10);
     document.getElementById('selected-count').innerText = Object.keys(selectedRows).length;
 }
 
@@ -2752,7 +2752,23 @@ async function markDone(custName) {
         document.getElementById('tab-count-overdue').innerText = taskData.filter(function(t){return t.next_followup < today;}).length;
         document.getElementById('tab-count-regular').innerText = taskData.filter(function(t){return t.next_followup === today && !(t.peak_level&&(t.peak_level==='A'||t.peak_level==='B')&&(t.level==='C'||t.level==='D'));}).length;
         document.getElementById('tab-count-recovery').innerText = taskData.filter(function(t){return t.peak_level&&(t.peak_level==='A'||t.peak_level==='B')&&(t.level==='C'||t.level==='D')&&t.next_followup===today;}).length;
-        renderTaskList();
+
+        // 局部移除行，不重建整个列表，避免闪烁和分组收拢
+        if (row) {
+            row.style.transition = 'opacity .2s, max-height .2s';
+            row.style.opacity = '0';
+            row.style.maxHeight = '0';
+            row.style.overflow = 'hidden';
+            setTimeout(function(){ if (row.parentNode) row.parentNode.removeChild(row); }, 250);
+        }
+        // 更新组计数
+        updateGroupCounts();
+        // 检查当前列表是否为空
+        setTimeout(function(){
+            if (!document.querySelector('#task-list-container .task-row') && activeTaskTab !== 'done') {
+                renderTaskList(); // 全空了才重建（显示"暂无"提示）
+            }
+        }, 300);
     } else {
         if (row) row.classList.remove('removing');
         showToast(result.error, 'error');
@@ -2777,9 +2793,28 @@ function applyNote(custName, note) {
         localStorage.setItem('quote_customers', JSON.stringify(quoteData));
         taskData = taskData.filter(function(t){return t.name !== custName;});
         document.getElementById('tab-count-quotes').innerText = quoteData.length;
-        // removed
+        // 更新各 tab 计数
+        var today = new Date().toISOString().slice(0,10);
+        document.getElementById('tab-count-overdue').innerText = taskData.filter(function(t){return t.next_followup < today;}).length;
+        document.getElementById('tab-count-regular').innerText = taskData.filter(function(t){return t.next_followup === today && !(t.peak_level&&(t.peak_level==='A'||t.peak_level==='B')&&(t.level==='C'||t.level==='D'));}).length;
+        document.getElementById('tab-count-recovery').innerText = taskData.filter(function(t){return t.peak_level&&(t.peak_level==='A'||t.peak_level==='B')&&(t.level==='C'||t.level==='D')&&t.next_followup===today;}).length;
+        // API调用
         fetch('/api/customers/note', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({customer_name:custName, note:note, status:'quotes'})});
-        renderTaskList();
+        // 局部移除行，不重建整个列表
+        var row = document.getElementById('row_'+custName);
+        if (row) {
+            row.style.transition = 'opacity .2s, max-height .2s';
+            row.style.opacity = '0';
+            row.style.maxHeight = '0';
+            row.style.overflow = 'hidden';
+            setTimeout(function(){ if (row.parentNode) row.parentNode.removeChild(row); }, 250);
+        }
+        updateGroupCounts();
+        setTimeout(function(){
+            if (!document.querySelector('#task-list-container .task-row') && activeTaskTab !== 'quotes') {
+                renderTaskList();
+            }
+        }, 300);
     }
     showToast('已备注：'+note, 'success');
 }
@@ -2821,7 +2856,7 @@ async function undoComplete(custName) {
     localStorage.setItem('completed_'+window.todayStr, JSON.stringify(completedData));
     document.getElementById('tab-count-done').innerText = completedData.length;
     await fetch('/api/customers/followup/undo', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({customer_name:custName})});
-    // 重新从服务器加载任务数据以获取正确的 next_followup，但停留在当前 Tab
+    // 重新从服务器加载任务数据以获取正确的 next_followup
     var resp = await fetch('/api/customers/followup/today');
     var result = await resp.json();
     if (result.success) {
@@ -2832,6 +2867,8 @@ async function undoComplete(custName) {
         document.getElementById('tab-count-regular').innerText = taskData.filter(function(t){return t.next_followup === today && !(t.peak_level&&(t.peak_level==='A'||t.peak_level==='B')&&(t.level==='C'||t.level==='D'));}).length;
         document.getElementById('tab-count-recovery').innerText = taskData.filter(function(t){return t.peak_level&&(t.peak_level==='A'||t.peak_level==='B')&&(t.level==='C'||t.level==='D')&&t.next_followup===today;}).length;
     }
+    // 撤回后停留在已完成 Tab，但数据已重载需要渲染
+    activeTaskTab = 'done';
     renderTaskList();
     showToast('已撤回', 'success');
 }
