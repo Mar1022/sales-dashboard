@@ -6,8 +6,8 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>销售业绩管理系统</title>
-<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="/static/js/echarts.min.js"></script>
+<script src="/static/js/xlsx.full.min.js"></script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body { height: 100%; }
@@ -35,7 +35,13 @@
     display: flex; align-items: center; justify-content: space-between;
     padding: 10px 28px;
   }
-  .top-row h1 { font-size: 20px; font-weight: 600; color: #222; letter-spacing: 0.5px; }
+  .top-row h1 {
+    font-size: 20px; font-weight: 600; color: #222; letter-spacing: 0.5px;
+    background: linear-gradient(135deg, #F0F4FA 0%, #E8EDF5 100%);
+    padding: 8px 18px;
+    border-radius: 6px;
+    display: inline-block;
+  }
   .top-row .meta { font-size: 11px; color: #999; margin-top: 2px; display: none; }
   #lastUpdate { font-size: 12px; color: #999; }
 
@@ -535,7 +541,6 @@
   .cust-level-d { background:#F5F5F5;color:#888; }
   details summary { padding: 8px 12px; margin: 0 -12px; border-radius: 4px; }
   details summary:hover { background: #F5F5F5; }
-  /* 任务卡片 */
   /* Tab4 新布局 */
   .task-tab2 { cursor:pointer; user-select:none; } .task-tab2.active { border-color:#333 !important; box-shadow:0 2px 8px rgba(0,0,0,.08); } .task-row { transition:all .2s; } .task-row.removing { opacity:0; max-height:0; padding:0; overflow:hidden; } .note-dropdown { position:relative; display:inline-block; } .note-dropdown-menu { display:none; position:absolute; right:0; top:100%; background:#fff; border:1px solid #EDEDED; border-radius:4px; box-shadow:0 2px 8px rgba(0,0,0,.1); z-index:100; min-width:120px; } .note-dropdown-menu.show { display:block; } .note-dropdown-menu div { padding:6px 12px; font-size:11px; cursor:pointer; white-space:nowrap; } .note-dropdown-menu div:hover { background:#F5F5F5; }
   .task-tab:hover { background:#F5F5F5 !important; }
@@ -563,6 +568,45 @@
   .level-badge-B { background:#E3F2FD; color:#1565C0; }
   .level-badge-C { background:#FFF3E0; color:#E65100; }
   .level-badge-D { background:#EEEEEE; color:#424242; }
+
+  /* 等级标签卡片 */
+  .level-card-click {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: #fff;
+    border-radius: 8px;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: all .2s;
+    margin: 2px 4px;
+    font-size: 14px;
+    font-weight: 500;
+  }
+  .level-card-click:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,.08);
+  }
+  .level-card-click .lv-label { font-size: 13px; }
+  .level-card-click .lv-num {
+    font-size: 20px;
+    font-weight: 700;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  .lv-card-A { border-color: #A5D6A7; }
+  .lv-card-A .lv-label { color: #2E7D32; }
+  .lv-card-A .lv-num { color: #1B5E20; }
+  .lv-card-B { border-color: #90CAF9; }
+  .lv-card-B .lv-label { color: #1565C0; }
+  .lv-card-B .lv-num { color: #0D47A1; }
+  .lv-card-C { border-color: #FFE0B2; }
+  .lv-card-C .lv-label { color: #E65100; }
+  .lv-card-C .lv-num { color: #BF360C; }
+  .lv-card-D { border-color: #E0E0E0; }
+  .lv-card-D .lv-label { color: #616161; }
+  .lv-card-D .lv-num { color: #424242; }
 </style>
 </head>
 <body>
@@ -574,7 +618,7 @@
       <h1>Sur's 销售业绩管理系统</h1>
     </div>
     <div style="display:flex;align-items:center;gap:12px">
-      <button onclick="openTargetModal()" title="业绩目标管理" style="font-size:13px;font-weight:600;border:none;background:#3B5998;color:#fff;padding:7px 16px;border-radius:4px;cursor:pointer;font-family:inherit;letter-spacing:1px;box-shadow:0 2px 6px rgba(59,89,152,.25);transition:all .15s" onmouseover="this.style.background='#345189'" onmouseout="this.style.background='#3B5998'">📊 业绩目标管理</button>
+      <button onclick="openTargetModal()" title="业绩目标管理" style="font-size:13px;font-weight:600;border:none;background:#3B5998;color:#fff;padding:7px 16px;border-radius:4px;cursor:pointer;font-family:inherit;letter-spacing:1px;box-shadow:0 2px 6px rgba(59,89,152,.25);transition:all .15s" onmouseover="this.style.background='#345189'" onmouseout="this.style.background='#3B5998'">🎯 业绩目标管理</button>
       <div id="lastUpdate">数据更新：—</div>
     </div>
   </div>
@@ -681,7 +725,7 @@
   <div class="table-wrap" style="flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden;margin:0 28px 28px">
     <div class="table-info">
       <span id="detail-count">共 0 条记录</span>
-      <span style="font-size:11px;color:#CCC">数据存储于 SQLite 数据库</span>
+      <span style="font-size:11px;color:#CCC">数据存储于 PostgreSQL 数据库</span>
     </div>
     <div class="table-scroll" style="flex:1;overflow-y:auto">
       <table id="detail-table">
@@ -882,8 +926,7 @@
 <!-- ════ 目标设置 Modal ════ -->
 <div class="modal-overlay" id="target-modal">
   <div class="modal" style="max-width:560px">
-    <h3>📊 业绩目标管理</h3>
-    <!-- 新增区域 -->
+    <h3>🎯 业绩目标管理</h3>
     <div class="target-section-title" style="margin-top:16px">设定目标</div>
     <div style="display:flex;gap:12px;align-items:center;margin-top:12px;flex-wrap:wrap">
       <span style="font-size:13px;color:#555;white-space:nowrap">年份</span>
@@ -896,7 +939,6 @@
       <button class="btn-outline" onclick="closeTarget()">取消</button>
       <button class="btn-primary" onclick="saveTarget()">保存</button>
     </div>
-    <!-- 已设目标列表 -->
     <div class="target-section-title" style="margin-top:24px">已设定的年度目标</div>
     <div style="max-height:240px;overflow-y:auto;margin-top:10px" id="target-list-container">
       <div class="target-empty" id="target-empty">暂无已设定的目标</div>
@@ -922,6 +964,30 @@
     <div class="modal-btns"><button class="btn-outline" onclick="closeLevelModal()">关闭</button></div>
   </div>
 </div>
+
+<!-- ════ 新客户明细抽屉 ════ -->
+<div class="drawer-overlay" id="nc-drawer" onclick="closeNewCustDrawer(event)">
+  <div class="drawer-panel wide" onclick="event.stopPropagation()">
+    <div class="drawer-header"><h3>新客户明细</h3><button class="drawer-close" onclick="closeNewCustDrawer()">×</button></div>
+    <div class="nc-drawer-summary" id="nc-summary"></div>
+    <div class="nc-drawer-body" id="nc-body"></div>
+  </div>
+</div>
+
+<!-- ════ 客户管理抽屉 ════ -->
+<div class="drawer-overlay" id="cust-mgmt-drawer" onclick="closeCustMgmtDrawer(event)">
+  <div class="drawer-panel wide" onclick="event.stopPropagation()" style="width:620px">
+    <div class="drawer-header"><h3>客户管理</h3><button class="drawer-close" onclick="closeCustMgmtDrawer()">×</button></div>
+    <div style="padding:8px 16px;border-bottom:1px solid #F5F5F5;display:flex;gap:8px">
+      <input id="cust-mgmt-drawer-search" placeholder="搜索客户名称或编码" style="flex:1;padding:6px 10px;border:1px solid #DDD;border-radius:3px;font-size:12px" onkeydown="if(event.key==='Enter')loadCustMgmtDrawer()">
+      <button class="btn-primary" onclick="loadCustMgmtDrawer()" style="font-size:12px">搜索</button>
+    </div>
+    <div class="drawer-body" id="cust-mgmt-drawer-body"></div>
+    <div id="cust-mgmt-pagination" style="padding:10px 16px;display:flex;justify-content:flex-end;gap:6px;border-top:1px solid #F0F0F0"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
 
 <script>
 // ════════════ 硬编码假数据（API 不可用时的后备） ════════════
@@ -956,7 +1022,7 @@ let detailFiltered = [];
 let detailCustFilter = '';
 
 let chartTrend = null, chartTop10 = null;
-let newCustDetail = []; // {cust, amount} 新客户明细缓存
+let newCustDetail = [];
 
 // ════════════ API 调用 ════════════
 async function apiGet(path) {
@@ -1001,7 +1067,6 @@ async function loadTargets() {
 async function loadNewProducts() {
   const data = await apiGet('/api/new-products');
   if (data !== null && Array.isArray(data)) {
-    // API 返回 [{id:1, spec:"xxx"}, ...]，提取为字符串数组
     window._newProducts = data.map(function(item) { return item.spec; });
   }
   updateNewProdCount();
@@ -1019,7 +1084,7 @@ async function saveNewProductsToServer() {
   return await apiPost('/api/new-products', {specs: window._newProducts});
 }
 
-// ════════════ 本地数据访问器（替代 localStorage） ════════════
+// ════════════ 本地数据访问器 ════════════
 function getAllData() {
   if (window._allData && window._allData.length > 0) return window._allData;
   return MOCK_DATA;
@@ -1146,10 +1211,6 @@ async function removeNewProd(idx) {
   if (document.getElementById('tab-newprod').classList.contains('active')) refreshNewProdTab();
 }
 
-function renderNewProdTags() {
-  updateNewProdCount();
-}
-
 // ════════════ 抽屉：管理新品规格 ════════════
 var pendingDeleteIdx = null;
 
@@ -1157,7 +1218,7 @@ function openNewProdDrawer() {
   renderDrawerList();
   document.getElementById('newprod-drawer').classList.add('show');
 }
-// ── 新客户明细抽屉 ──
+
 function openNewCustDrawer() {
   if (!newCustDetail.length) { showToast('当前时间范围内无新客户', 'error'); return; }
   document.getElementById('nc-drawer').classList.add('show');
@@ -1273,7 +1334,7 @@ function getRange(mode) {
     };
   }
   if (mode === 'quarter') {
-    const q = Math.floor((m - 1) / 3); // 0=Q1,1=Q2,2=Q3,3=Q4
+    const q = Math.floor((m - 1) / 3);
     const qs = q * 3 + 1;
     const s = y + '-' + String(qs).padStart(2,'0') + '-01';
     const e = fmt(t);
@@ -1327,7 +1388,6 @@ function getRange(mode) {
 
 function filterData(data, s, e) {
   if (!s && !e) return data;
-  // 结束日期补 23:59:59，确保当天带时间戳的数据不被过滤
   const eEnd = e && e.indexOf(' ') === -1 ? e + ' 23:59:59' : e;
   return data.filter(r => {
     if (s && r.date < s) return false;
@@ -1416,79 +1476,73 @@ function syncFilterBars() {
 }
 
 // ════════════ 刷新看板 ════════════
-function refreshDashboard() {
+async function refreshDashboard() {
   if (currentMode === 'custom') {
     rangeStart = document.getElementById('dateStart').value;
     rangeEnd   = document.getElementById('dateEnd').value;
   }
-  const allData = getAllData();
   const r = getRange(currentMode);
-  const curData  = filterData(allData, r.s, r.e);
-  const prevData = r.prev_s ? filterData(allData, r.prev_s, r.prev_e) : [];
+  var targetYear = r.s ? parseInt(r.s.slice(0,4)) : new Date().getFullYear();
+  var params = 'start='+encodeURIComponent(r.s)+'&end='+encodeURIComponent(r.e)+
+    (r.prev_s?'&prev_start='+encodeURIComponent(r.prev_s)+'&prev_end='+encodeURIComponent(r.prev_e):'')+
+    '&year='+targetYear;
+  var summaryData = null;
+  try {
+    var resp = await fetch('/api/summary?'+params);
+    summaryData = await resp.json();
+  } catch(e) { summaryData = null; }
 
-  // 总销售额
-  const totalAmt = curData.reduce((s,x)=>s+x.amount,0);
-  const prevAmt  = prevData.reduce((s,x)=>s+x.amount,0);
-  const yoyR = yoyRange(r.s, r.e);
-  const yoyData = yoyR.yoy_s ? filterData(allData, yoyR.yoy_s, yoyR.yoy_e) : [];
-  const yoyAmt = yoyData.reduce((s,x)=>s+x.amount,0);
+  var totalAmt = summaryData ? summaryData.total_amount : 0;
+  var curCustCnt = summaryData ? summaryData.customer_count : 0;
+  var newCustCnt = summaryData ? summaryData.new_customer_count : 0;
+  var oldCustCnt = summaryData ? summaryData.old_customer_count : 0;
+  var newAmt = summaryData ? summaryData.new_customer_amount : 0;
+  var oldAmt = summaryData ? summaryData.old_customer_amount : 0;
+  var npAmt = summaryData ? summaryData.new_product_amount : 0;
+  var prevTotalAmt = summaryData ? summaryData.prev_total_amount : 0;
+  var targetVal = summaryData ? summaryData.target_amount : 0;
+
   document.getElementById('c-total').innerHTML = fmtMoney(totalAmt);
-  var totalCmpHtml = prevAmt ? pctStr(totalAmt, prevAmt) : '';
-  if (yoyAmt) totalCmpHtml += (totalCmpHtml ? ' &nbsp;|&nbsp; ' : '') + yoyPctStr(totalAmt, yoyAmt);
+  var totalCmpHtml = prevTotalAmt ? pctStr(totalAmt, prevTotalAmt) : '';
+  var yoyR = yoyRange(r.s, r.e);
+  if (yoyR.yoy_s) {
+    try {
+      var yoyResp = await fetch('/api/summary?start='+encodeURIComponent(yoyR.yoy_s)+'&end='+encodeURIComponent(yoyR.yoy_e));
+      var yoyData = await yoyResp.json();
+      if (yoyData && yoyData.total_amount) {
+        totalCmpHtml += (totalCmpHtml ? ' &nbsp;|&nbsp; ' : '') + yoyPctStr(totalAmt, yoyData.total_amount);
+      }
+    } catch(e) {}
+  }
   document.getElementById('c-total-cmp').innerHTML = totalCmpHtml || '暂无对比数据';
 
-  // 总客户数
-  const custs = [...new Set(curData.map(x=>x.cust))];
-  document.getElementById('c-cust').innerHTML = custs.length + '<span class="unit-sm">个</span>';
-
-  // 新/老客户
-  const firstOrder = {};
-  allData.forEach(r => {
-    if (!firstOrder[r.cust] || r.date < firstOrder[r.cust]) firstOrder[r.cust] = r.date;
-  });
-  const s = r.s, e = r.e;
-  const newCusts = custs.filter(c => firstOrder[c] >= s && firstOrder[c] <= e);
-  const oldCusts = custs.filter(c => firstOrder[c] < s);
-  const newAmt = curData.filter(x=>newCusts.includes(x.cust)).reduce((s,x)=>s+x.amount,0);
-  const oldAmt = curData.filter(x=>oldCusts.includes(x.cust)).reduce((s,x)=>s+x.amount,0);
-
-  // 缓存新客户明细（按销售额降序）
-  const newCustAgg = {};
-  curData.filter(x=>newCusts.includes(x.cust)).forEach(x => {
-    newCustAgg[x.cust] = (newCustAgg[x.cust]||0) + x.amount;
-  });
-  newCustDetail = Object.entries(newCustAgg)
-    .map(([cust, amount]) => ({cust, amount}))
-    .sort((a,b) => b.amount - a.amount);
+  document.getElementById('c-cust').innerHTML = curCustCnt + '<span class="unit-sm">个</span>';
 
   document.getElementById('c-new-cust').innerHTML =
-    newCusts.length + '<span class="unit-sm">个</span>' +
+    newCustCnt + '<span class="unit-sm">个</span>' +
     '<span style="font-size:55%;color:#3B5998;font-weight:500;margin-left:6px">（' + fmtMoney(newAmt) + '）</span>';
   document.getElementById('c-old-cust').innerHTML =
-    oldCusts.length + '<span class="unit-sm">个</span>' +
+    oldCustCnt + '<span class="unit-sm">个</span>' +
     '<span style="font-size:55%;color:#3B5998;font-weight:500;margin-left:6px">（' + fmtMoney(oldAmt) + '）</span>';
 
-  // 业绩完成率
-  let targetYear = r.s ? parseInt(r.s.slice(0,4)) : new Date().getFullYear();
-  let targetVal = getTarget(targetYear);
   const rateEl = document.getElementById('c-rate');
   const rateCmp = document.getElementById('c-rate-cmp');
   if (['year','lastYear','quarter','lastQuarter','month','lastMonth'].includes(currentMode) && targetVal) {
-    let rate, divider = 1;
+    var rate, divider = 1;
     if (currentMode === 'year' || currentMode === 'lastYear') divider = 1;
     else if (currentMode === 'quarter' || currentMode === 'lastQuarter') divider = 4;
-    else divider = 12; // month / lastMonth
+    else divider = 12;
     rate = totalAmt / (targetVal / divider) * 100;
     const cls = rate >= 100 ? 'rate-green' : 'rate-orange';
     rateEl.innerHTML = '<span class="'+cls+'">'+rate.toFixed(1)+'%</span>';
     rateEl.style.fontSize = ''; rateEl.style.color = '';
     var rateCmpHtml = '';
-    if (prevAmt && targetVal) {
-      const prevRate = prevAmt / (targetVal / divider) * 100;
+    if (prevTotalAmt && targetVal) {
+      const prevRate = prevTotalAmt / (targetVal / divider) * 100;
       rateCmpHtml += pctStr(rate, prevRate);
     }
-    if (yoyAmt && targetVal) {
-      const yoyRate = yoyAmt / (targetVal / divider) * 100;
+    if (yoyData && yoyData.total_amount && targetVal) {
+      const yoyRate = yoyData.total_amount / (targetVal / divider) * 100;
       rateCmpHtml += (rateCmpHtml ? ' &nbsp;|&nbsp; ' : '') + yoyPctStr(rate, yoyRate);
     }
     rateCmp.innerHTML = rateCmpHtml;
@@ -1500,26 +1554,44 @@ function refreshDashboard() {
     rateCmp.innerHTML = '';
   }
 
-  // 新产品销售额
-  const npList = getNewProducts();
-  const npData = npList.length ? curData.filter(r => npList.includes(r.spec)) : [];
-  const npAmt = npData.reduce((s,x)=>s+x.amount,0);
   document.getElementById('c-new-prod').innerHTML = fmtMoney(npAmt);
-
-  renderTrend(curData, r.s, r.e);
-  renderTop10(curData);
+  
+// 图表使用 summary 数据
+  renderTrendFromSummary(summaryData ? summaryData.trend : [], r.s, r.e);
+  renderTop10FromSummary(summaryData ? summaryData.top10 : []);
 
   document.getElementById('lastUpdate').textContent = '数据更新：' + new Date().toLocaleString('zh-CN');
   syncFilterBars();
 }
 
-// ════════════ 销售额趋势图 ════════════
-function renderTrend(data, s, e) {
-  if (!chartTrend) chartTrend = echarts.init(document.getElementById('chart-trend'));
-  if (!s || !e) { chartTrend.clear(); return; }
+function renderTop10FromSummary(top10Data) {
+  var chartDom = document.getElementById('chart-top10');
+  if (!chartDom) return;
+  if (!chartTop10) chartTop10 = echarts.init(chartDom);
+  if (!top10Data || !top10Data.length) { chartTop10.clear(); return; }
+  var names=top10Data.map(function(x){return x.name;}).reverse();
+  var vals=top10Data.map(function(x){return +(x.amount/10000).toFixed(2);}).reverse();
+  chartTop10.setOption({
+    tooltip:{trigger:'axis',axisPointer:{type:'shadow'}},
+    grid:{left:150,right:32,top:8,bottom:18},
+    xAxis:{type:'value',axisLabel:{formatter:function(v){return v+'万';}}},
+    yAxis:{type:'category',data:names},
+    series:[{type:'bar',data:vals,label:{show:true,position:'right',formatter:function(p){return p.value+'万';}},itemStyle:{color:'#5B8FB9',borderRadius:[0,3,3,0]}}]
+  },true);
+}
+function renderTrendFromSummary(trendData, s, e) {
+  var chartDom = document.getElementById('chart-trend');
+  if (!chartDom) return;
+  if (!chartTrend) chartTrend = echarts.init(chartDom);
+  if (!trendData || !trendData.length) { chartTrend.clear(); return; }
 
-  const diffDays = (new Date(e) - new Date(s)) / 86400000;
-  let granularity;
+  // 转成原 renderTrend 需要的格式
+  var data = trendData.map(function(x){ return {date: x.day, amount: x.amount, cust: ''}; });
+  
+  // 判断粒度：按范围自适应
+  if (!s || !e) { chartTrend.clear(); return; }
+  var diffDays = (new Date(e) - new Date(s)) / 86400000;
+  var granularity;
   if (currentMode === 'year' || currentMode === 'lastYear')         granularity = 'month';
   else if (currentMode === 'quarter' || currentMode === 'lastQuarter') granularity = 'week';
   else if (currentMode === 'month' || currentMode === 'lastMonth')   granularity = 'day';
@@ -1530,58 +1602,72 @@ function renderTrend(data, s, e) {
     else                    granularity = 'day';
   }
 
-  const buckets = {};
-  data.forEach(r => {
-    let key;
+  var buckets = {};
+  data.forEach(function(r) {
+    var key;
     if (granularity === 'month') {
       key = r.date.slice(0, 7);
     } else if (granularity === 'week') {
-      const d = new Date(r.date.slice(0, 10)), sw = startOfWeek(d);
-      key = fmt(sw);
+      var d = new Date(r.date.slice(0, 10) + 'T00:00:00');
+      var sw = new Date(d);
+      var day = sw.getDay() || 7;
+      sw.setDate(sw.getDate() - day + 1);
+      key = sw.toISOString().slice(0, 10);
     } else {
-      key = r.date.slice(0, 10);  // 截取日期部分，忽略时间
+      key = r.date.slice(0, 10);
     }
     buckets[key] = (buckets[key] || 0) + r.amount;
   });
 
-  const keys = [];
+  var keys = [];
   if (granularity === 'month') {
-    let cur = new Date(s.slice(0,7)+'-01');
-    const end = new Date(e.slice(0,7)+'-01');
-    while (cur <= end) {
+    var cur = new Date(s.slice(0,7) + '-01');
+    var endD = new Date(e.slice(0,7) + '-01');
+    while (cur <= endD) {
       keys.push(cur.toISOString().slice(0,7));
-      cur = addMonths(cur, 1);
+      cur = new Date(cur.getFullYear(), cur.getMonth() + 1, 1);
     }
   } else if (granularity === 'week') {
-    let cur = startOfWeek(new Date(s));
-    while (fmt(cur) <= e) { keys.push(fmt(cur)); cur = addDays(cur, 7); }
+    var d2 = new Date(s + 'T00:00:00');
+    var day2 = d2.getDay() || 7;
+    var cur2 = new Date(d2);
+    cur2.setDate(cur2.getDate() - day2 + 1);
+    while (cur2.toISOString().slice(0,10) <= e) {
+      keys.push(cur2.toISOString().slice(0,10));
+      cur2.setDate(cur2.getDate() + 7);
+    }
   } else {
-    let cur = new Date(s);
-    while (fmt(cur) <= e) { keys.push(fmt(cur)); cur = addDays(cur, 1); }
+    var cur3 = new Date(s + 'T00:00:00');
+    while (cur3.toISOString().slice(0,10) <= e) {
+      keys.push(cur3.toISOString().slice(0,10));
+      cur3.setDate(cur3.getDate() + 1);
+    }
   }
 
-  const vals = keys.map(k => +( (buckets[k]||0)/10000 ).toFixed(2));
+  var vals = keys.map(function(k){ return +((buckets[k]||0)/10000).toFixed(2); });
 
+  // 目标线
   var showTarget = (currentMode === 'year' || currentMode === 'lastYear');
   var targetLineData = [];
   if (showTarget) {
     var targetYear2 = s ? parseInt(s.slice(0,4)) : new Date().getFullYear();
-    var targetVal2 = getTarget(targetYear2) || 0;
+    var targets = window._targets || {};
+    var targetVal2 = targets[targetYear2] || 0;
     var targetLineVal = targetVal2 ? +(targetVal2 / 12 / 10000).toFixed(2) : 0;
     targetLineData = targetLineVal ? keys.map(function(){ return targetLineVal; }) : [];
   }
 
-  const opt = {
+  var opt = {
     tooltip: {
       trigger:'axis',
       backgroundColor:'#fff',
       borderColor:'#E8E8E8',
       textStyle:{color:'#333',fontSize:12},
       extraCssText:'box-shadow:0 2px 8px rgba(0,0,0,.08);border-radius:4px;',
-      formatter: params => {
-        let s = '<b>'+params[0].name+'</b><br/>';
-        params.forEach(p => s += p.marker+' '+p.seriesName+': ¥'+(p.value||0).toFixed(2)+'万<br/>');
-        return s;
+      formatter: function(params) {
+        var s2 = '<b>'+params[0].name+'</b><br/>';
+        params.forEach(function(p){ s2 += p.marker+' '+p.seriesName+': ¥'+(p.value||0).toFixed(2)+'万<br/>'; });
+        return s2;
       }
     },
     legend: {
@@ -1599,7 +1685,7 @@ function renderTrend(data, s, e) {
     yAxis: {
       type:'value', name:'万元',
       nameTextStyle:{fontSize:10,color:'#999'},
-      axisLabel:{formatter:v=>v+'万',fontSize:10,color:'#999'},
+      axisLabel:{formatter:function(v){return v+'万';},fontSize:10,color:'#999'},
       splitLine:{lineStyle:{color:'#F0F0F0'}},
       axisLine:{show:false}
     },
@@ -1628,49 +1714,7 @@ function renderTrend(data, s, e) {
   chartTrend.setOption(opt, true);
 }
 
-// ════════════ Top10 客户 ════════════
-function renderTop10(data) {
-  if (!chartTop10) chartTop10 = echarts.init(document.getElementById('chart-top10'));
-  const agg = {};
-  data.forEach(r => agg[r.cust] = (agg[r.cust]||0) + r.amount);
-  const sorted = Object.entries(agg).sort((a,b)=>b[1]-a[1]).slice(0,10);
-  const names  = sorted.map(x=>x[0]);
-  const vals   = sorted.map(x=>+(x[1]/10000).toFixed(2));
-
-  const maxLen = Math.max(...names.map(n=>n.length));
-  const gridLeft = Math.min(180, maxLen * 14 + 20);
-
-  const opt = {
-    tooltip: {
-      trigger:'axis', axisPointer:{type:'shadow'},
-      backgroundColor:'#fff',
-      borderColor:'#E8E8E8',
-      textStyle:{color:'#333',fontSize:12},
-      extraCssText:'box-shadow:0 2px 8px rgba(0,0,0,.08);border-radius:4px;',
-      formatter: p => p[0].name+'<br/>¥'+p[0].value+'万'
-    },
-    grid: { left:gridLeft, right:32, top:8, bottom:18 },
-    xAxis: {
-      type:'value',
-      axisLabel:{formatter:v=>v+'万', fontSize:10, color:'#999'},
-      splitLine:{lineStyle:{color:'#F0F0F0'}},
-      axisLine:{show:false}
-    },
-    yAxis: {
-      type:'category', data:names.slice().reverse(),
-      axisLabel:{fontSize:11, color:'#666', width:gridLeft-10, overflow:'truncate'},
-      axisLine:{show:false}, axisTick:{show:false}
-    },
-    series: [{
-      type:'bar', data:vals.slice().reverse(), barMaxWidth:18,
-      label:{ show:true, position:'right', formatter:p=>p.value+'万', fontSize:10, color:'#999' },
-      itemStyle:{ color:'#5B8FB9', borderRadius:[0,3,3,0] }
-    }]
-  };
-  chartTop10.setOption(opt, true);
-}
-
-// ══════════ 新产品 Tab3 汇总 ══════════
+// ════════════ 新产品 Tab3 汇总 ════════════
 function refreshNewProdTab() {
   const npList = getNewProducts();
   const tbody = document.getElementById('new-prod-summary-tbody');
@@ -1819,7 +1863,6 @@ function goPage(p) {
   renderDetailTable();
 }
 
-// ── 批量删除 ──
 function toggleSelectAllDetail() {
   var all = document.getElementById('detail-select-all');
   var cbs = document.querySelectorAll('#detail-tbody input[type=checkbox]');
@@ -1839,7 +1882,7 @@ async function batchDeleteRecords() {
   var ids = Array.from(cbs).map(function(cb){ return parseInt(cb.value); });
   var resp = await fetch('/api/data/delete', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ids:ids})});
   var result = await resp.json();
-  if (result.success) { showToast('已删除 '+result.deleted+' 条', 'success'); await loadAllData(); populateCustFilter(); refreshDetail(); refreshDashboard(); }
+  if (result.success) { showToast('已删除 '+result.deleted+' 条', 'success'); await loadAllData(); populateCustFilter(); renderDetailTable(); refreshDashboard(); }
   else { showToast(result.error, 'error'); }
 }
 
@@ -1870,85 +1913,35 @@ async function doImport() {
   if (!pendingImportFile) {
     showToast('请先选择文件', 'error'); return;
   }
-
-  // 根据文件扩展名选择端点
   const fname = pendingImportFile.name.toLowerCase();
   const isCSV = fname.endsWith('.csv');
   const endpoint = isCSV ? '/api/upload-csv' : '/api/upload';
   const fileType = isCSV ? 'CSV' : 'Excel';
-
   const btn = document.getElementById('btn-import-upload');
   const origText = btn.textContent;
   btn.textContent = '正在上传并解析 ' + fileType + ' 文件...';
   btn.disabled = true;
   btn.style.opacity = '0.7';
-
   const formData = new FormData();
   formData.append('file', pendingImportFile);
-
-  console.log('[doImport] 开始上传:', pendingImportFile.name, '端点:', endpoint);
   try {
     const resp = await fetch(endpoint, {method: 'POST', body: formData});
-    console.log('[doImport] HTTP状态:', resp.status, resp.statusText);
     const rawText = await resp.text();
-    console.log('[doImport] 原始响应:', rawText);
     let result;
-    try {
-      result = JSON.parse(rawText);
-    } catch(e) {
-      btn.textContent = origText;
-      btn.disabled = false;
-      btn.style.opacity = '';
-      showToast('服务器返回异常：' + rawText.slice(0, 100), 'error');
-      return;
-    }
-
-    if (result.error) {
-      btn.textContent = origText;
-      btn.disabled = false;
-      btn.style.opacity = '';
-      showToast('上传失败：' + result.error, 'error');
-      return;
-    }
-
-    console.log('[doImport] 上传成功，count=', result.count, '重新加载数据...');
-    // 重新加载数据
+    try { result = JSON.parse(rawText); } catch(e) { btn.textContent = origText; btn.disabled = false; btn.style.opacity = ''; showToast('服务器返回异常：' + rawText.slice(0, 100), 'error'); return; }
+    if (result.error) { btn.textContent = origText; btn.disabled = false; btn.style.opacity = ''; showToast('上传失败：' + result.error, 'error'); return; }
     await loadAllData();
     closeImport();
-    if (result.count === 0 && result.skipped) {
-      // 0条数据时显示调试信息
-      let diag = '上传成功：0 条（跳过 ' + result.skipped + ' 行）';
-      if (result.insert_errors && result.insert_errors.length > 0) {
-        diag += '\\n数据库错误：' + result.insert_errors.join(' | ');
-      }
-      if (result.sample_skipped && result.sample_skipped.length > 0) {
-        diag += '\\n示例跳过行：' + JSON.stringify(result.sample_skipped);
-      }
-      if (result.idx_map) {
-        diag += '\\n列映射：' + JSON.stringify(result.idx_map);
-      }
-      if (result.headers) {
-        diag += '\\n表头：' + result.headers.join(', ');
-      }
-      if (result.first_3_headers) {
-        diag += '\\n表头前10列：' + result.first_3_headers.join(', ');
-      }
-      showToast(diag, 'error');
-      console.log('[doImport] 诊断信息：', JSON.stringify(result, null, 2));
-    } else {
-      showToast('上传成功：共 ' + result.count + ' 条记录', 'success');
-    }
-
+    showToast('上传成功：共 ' + result.count + ' 条记录', 'success');
     populateCustFilter();
-    detailFiltered = [...getAllData()].sort((a,b)=>b.date.localeCompare(a.date));
-    detailPage = 1;
-    renderDetailTable();
+    if (document.getElementById('tab-detail') && document.getElementById('tab-detail').classList.contains('active')) {
+      detailFiltered = [...getAllData()].sort((a,b)=>b.date.localeCompare(a.date));
+      detailPage = 1;
+      renderDetailTable();
+    }
     refreshDashboard();
   } catch(err) {
-    console.error('[doImport] 异常:', err);
-    btn.textContent = origText;
-    btn.disabled = false;
-    btn.style.opacity = '';
+    btn.textContent = origText; btn.disabled = false; btn.style.opacity = '';
     showToast('上传失败：' + err.message, 'error');
   }
 }
@@ -1973,7 +1966,7 @@ function exportData() {
 }
 
 // ════════════ Tab 切换 ════════════
-function switchTab(tab) {
+async function switchTab(tab) {
   document.querySelectorAll('.tab-btn').forEach((b,i)=>{
     b.classList.toggle('active',
       (i===0&&tab==='dashboard')||(i===1&&tab==='detail')||(i===2&&tab==='newprod')||(i===3&&tab==='customer'));
@@ -1986,6 +1979,7 @@ function switchTab(tab) {
     document.getElementById('d-cust').value = '';
     detailCustFilter = '';
     populateCustFilter();
+    await loadAllData();
     detailFiltered = [...getAllData()].sort((a,b)=>b.date.localeCompare(a.date));
     detailPage = 1;
     renderDetailTable();
@@ -1999,7 +1993,6 @@ function switchTab(tab) {
   }
   if (tab === 'customer') {
     initCustomerTab();
-    refreshCustomerTab();
   }
   updateTopbarHeight();
 }
@@ -2023,462 +2016,16 @@ window.addEventListener('resize', function() {
   }, 80);
 });
 
-// ════════════ Tab4 客户分析 ════════════
-let custAllYears = [];
-let custYearlyData = {};       // { cust: { '2024':amt, '2025':amt, ... } }
-let custFirstYear = {};        // { cust: first_year }
-let custLastOrderDate = {};    // { cust: last_date }
-let custYearActive = {};       // { '2024': Set(custs), '2025': Set(custs) }
-let custShowAll = false;
-let custFilterStart = '';
-let custFilterEnd = '';
-
-// ── 数据预处理 ──
-function buildCustomerData() {
-  const data = getAllData();
-  custYearlyData = {};
-  custFirstYear = {};
-  custLastOrderDate = {};
-  custYearActive = {};
-  const yearsSet = new Set();
-
-  data.forEach(r => {
-    const d = r.date.slice(0,10);
-    const y = r.date.slice(0,4);
-    const c = r.cust;
-    yearsSet.add(y);
-
-    if (!custYearlyData[c]) custYearlyData[c] = {};
-    custYearlyData[c][y] = (custYearlyData[c][y] || 0) + (r.amount || 0);
-
-    if (!custFirstYear[c] || y < custFirstYear[c]) custFirstYear[c] = y;
-    if (!custLastOrderDate[c] || d > custLastOrderDate[c]) custLastOrderDate[c] = d;
-
-    if (!custYearActive[y]) custYearActive[y] = new Set();
-    custYearActive[y].add(c);
-  });
-
-  custAllYears = Array.from(yearsSet).sort();
-}
-
-function getFilteredData() {
-  const data = getAllData();
-  if (!custFilterStart && !custFilterEnd) return data;
-  return filterData(data, custFilterStart, custFilterEnd);
-}
-
-function getRecent12Sales(cust) {
-  const data = getFilteredData();
-  const today = new Date();
-  const cutoff = fmt(addMonths(today, -12));
-  let total = 0;
-  data.forEach(r => {
-    if (r.cust === cust && r.date.slice(0,10) >= cutoff) total += (r.amount || 0);
-  });
-  return total;
-}
-
-function getCustomerRanked(rankBy) {
-  buildCustomerData();
-  const data = getFilteredData();
-  const custs = [...new Set(data.map(r => r.cust))];
-  if (rankBy === 'recent12') {
-    custs.sort((a,b) => getRecent12Sales(b) - getRecent12Sales(a));
-  } else {
-    const totalSales = {};
-    data.forEach(r => { totalSales[r.cust] = (totalSales[r.cust]||0) + (r.amount||0); });
-    custs.sort((a,b) => (totalSales[b]||0) - (totalSales[a]||0));
-  }
-  return custs;
-}
-
-// ── 客户标签计算 ──
-function calcCustTags(cust, years) {
-  const tags = [];
-  const byYear = custYearlyData[cust] || {};
-  const n = years.length;
-  if (n < 2) return tags;
-
-  const recent1 = byYear[years[n-1]] || 0;
-  const recent2 = byYear[years[n-2]] || 0;
-  const recent3 = n >= 3 ? (byYear[years[n-3]] || 0) : null;
-
-  // 连续两年下降
-  if (recent3 !== null && recent1 < recent2 && recent2 < recent3) {
-    tags.push({cls:'cust-tag-warn',text:'⚠️连续两年下降'});
-  }
-  // 最近一年下降超20%
-  if (recent2 > 0 && (recent1 - recent2) / recent2 < -0.2) {
-    tags.push({cls:'cust-tag-drop',text:'⚠️下降超20%'});
-  }
-  // 连续两年增长
-  if (recent3 !== null && recent1 > recent2 && recent2 > recent3) {
-    tags.push({cls:'cust-tag-good',text:'✅连续两年增长'});
-  }
-  // 趋势下滑：前一年增长但最近一年下降超15%
-  if (recent3 !== null && recent2 > recent3 && recent1 < recent2 && recent2 > 0 && (recent1 - recent2) / recent2 < -0.15) {
-    tags.push({cls:'cust-tag-down',text:'📉趋势下滑'});
-  }
-  // 趋势上升：前一年下降但最近一年增长超15%
-  if (recent3 !== null && recent2 < recent3 && recent1 > recent2 && recent2 > 0 && (recent1 - recent2) / recent2 > 0.15) {
-    tags.push({cls:'cust-tag-up',text:'📈趋势上升'});
-  }
-  // 新晋Top20 & 高价值稳定 (在渲染时判断)
-  return tags;
-}
-
-function isCustTopN(cust, year, n, rankBy) {
-  const data = getAllData();
-  const yearData = data.filter(r => r.date.slice(0,4) === year);
-  const agg = {};
-  yearData.forEach(r => { agg[r.cust] = (agg[r.cust]||0) + (r.amount||0); });
-  const sorted = Object.entries(agg).sort((a,b) => b[1]-a[1]);
-  const topN = new Set(sorted.slice(0, n).map(x=>x[0]));
-  return topN.has(cust);
-}
-
-// ── Section 1: 客户年度销售对比表格 ──
-function refreshCustYearTable() {
-  const rankBy = document.querySelector('input[name="rankBy"]:checked')?.value || 'recent12';
-  const ranked = getCustomerRanked(rankBy);
-  const years = custAllYears;
-  const nowYear = String(new Date().getFullYear());
-  const limit = custShowAll ? ranked.length : 20;
-  const slice = ranked.slice(0, limit);
-
-  document.getElementById('btn-cust-limit').textContent = custShowAll ? '显示前20' : '加载全部';
-
-  if (!slice.length) {
-    document.getElementById('cust-year-table').style.display = 'none';
-    document.getElementById('cust-year-empty').style.display = '';
-    return;
-  }
-  document.getElementById('cust-year-table').style.display = '';
-  document.getElementById('cust-year-empty').style.display = 'none';
-
-  // thead
-  var thead = '<tr><th style="position:sticky;left:0;background:#FAFAFA;z-index:2">#</th><th style="position:sticky;left:36px;background:#FAFAFA;z-index:2;min-width:140px">客户名称</th>';
-  years.forEach(y => {
-    thead += '<th style="text-align:center">' + y + (y === nowYear ? '<span class="year-star">*</span>' : '') + '</th>';
-  });
-  thead += '<th style="text-align:center">累计总销售额</th><th style="text-align:center">增长率</th><th style="text-align:center">标签</th></tr>';
-  document.getElementById('cust-year-thead').innerHTML = thead;
-
-  // 计算增长率
-  const growthMap = {};
-  const n = years.length;
-  slice.forEach(c => {
-    const byYear = custYearlyData[c] || {};
-    const r1 = n>=1 ? (byYear[years[n-1]]||0) : 0;
-    const r2 = n>=2 ? (byYear[years[n-2]]||0) : 0;
-    growthMap[c] = r2 > 0 ? ((r1 - r2) / r2 * 100).toFixed(1) : null;
-  });
-
-  // 前20
-  const recentYear = years[n-1] || '';
-  const prevYear = years[n-2] || '';
-  const top20Recent = new Set();
-  const top20Prev = new Set();
-  if (recentYear) {
-    const yrData = getAllData().filter(r => r.date.slice(0,4) === recentYear);
-    const agg = {};
-    yrData.forEach(r => { agg[r.cust] = (agg[r.cust]||0) + (r.amount||0); });
-    Object.entries(agg).sort((a,b)=>b[1]-a[1]).slice(0,20).forEach(x=>top20Recent.add(x[0]));
-  }
-  if (prevYear) {
-    const yrData = getAllData().filter(r => r.date.slice(0,4) === prevYear);
-    const agg = {};
-    yrData.forEach(r => { agg[r.cust] = (agg[r.cust]||0) + (r.amount||0); });
-    Object.entries(agg).sort((a,b)=>b[1]-a[1]).slice(0,20).forEach(x=>top20Prev.add(x[0]));
-  }
-
-  // 高价值稳定：每年都在Top20且波动<±10%
-  function isStableHighValue(c) {
-    const byYear = custYearlyData[c] || {};
-    const vals = years.map(y => byYear[y] || 0);
-    if (vals.some(v => v === 0)) return false;
-    // 检查每年是否都在top20
-    for (const y of years) {
-      if (!isCustTopN(c, y, 20, 'total')) return false;
-    }
-    // 波动<±10%：max/min < 1.1
-    const maxV = Math.max(...vals);
-    const minV = Math.min(...vals);
-    return minV > 0 && (maxV / minV - 1) < 0.10;
-  }
-
-  // tbody
-  var tbody = '';
-  slice.forEach((c,i) => {
-    const byYear = custYearlyData[c] || {};
-    var row = '<tr>';
-    row += '<td style="color:#999;position:sticky;left:0;background:#fff;text-align:center">' + (i+1) + '</td>';
-    row += '<td style="position:sticky;left:36px;background:#fff"><span class="clickable-cust" onclick="showCustOrders(\'' + c.replace(/'/g,"\\'") + '\')">' + c + '</span></td>';
-    var totalAll = 0;
-    years.forEach(y => {
-      const amt = byYear[y] || 0;
-      totalAll += amt;
-      row += '<td style="text-align:center">' + (amt > 0 ? '¥'+amt.toLocaleString() : '-') + '</td>';
-    });
-    row += '<td style="text-align:center;font-weight:500">¥' + totalAll.toLocaleString() + '</td>';
-    // 增长率
-    const g = growthMap[c];
-    if (g !== null) {
-      const cls = g >= 0 ? 'rate-green' : 'rate-orange';
-      const arrow = g >= 0 ? '↑' : '↓';
-      row += '<td style="text-align:center"><span class="'+cls+'">' + arrow + Math.abs(g) + '%</span></td>';
-    } else {
-      row += '<td style="text-align:center">-</td>';
-    }
-    // 标签
-    var tags = calcCustTags(c, years);
-    if (top20Recent.has(c) && !top20Prev.has(c)) tags.push({cls:'cust-tag-new',text:'🆕新晋Top20'});
-    if (isStableHighValue(c)) tags.push({cls:'cust-tag-star',text:'💎高价值稳定'});
-    row += '<td style="text-align:center">' + tags.map(t=>'<span class="cust-tag '+t.cls+'">'+t.text+'</span>').join('') + (tags.length?'':'<span style="color:#CCC">-</span>') + '</td>';
-    row += '</tr>';
-    tbody += row;
-  });
-  document.getElementById('cust-year-tbody').innerHTML = tbody;
-}
-
-function toggleCustLimit() {
-  custShowAll = !custShowAll;
-  refreshCustYearTable();
-}
-
-function exportCustYearCSV() {
-  const rankBy = document.querySelector('input[name="rankBy"]:checked')?.value || 'recent12';
-  const ranked = getCustomerRanked(rankBy);
-  const years = custAllYears;
-  const nowYear = String(new Date().getFullYear());
-  var csv = '排名,客户名称,' + years.map(y=>y+(y===nowYear?'*':'')+'销售额').join(',') + ',累计总销售额,增长率,标签\n';
-  ranked.forEach((c,i) => {
-    const byYear = custYearlyData[c] || {};
-    var row = [(i+1),'"'+c+'"'];
-    var total = 0;
-    years.forEach(y => { const a=byYear[y]||0; total+=a; row.push(a); });
-    row.push(total);
-    const n = years.length;
-    const r1 = n>=1 ? (byYear[years[n-1]]||0) : 0;
-    const r2 = n>=2 ? (byYear[years[n-2]]||0) : 0;
-    row.push(r2>0 ? ((r1-r2)/r2*100).toFixed(1)+'%' : '-');
-    csv += row.join(',') + '\n';
-  });
-  downloadCSV(csv, '客户年度销售对比.csv');
-}
-
-// ── Section 2: 老客户流失分析 ──
-function refreshChurnTable() {
-  buildCustomerData();
-  const years = custAllYears;
-  const nowYear = String(new Date().getFullYear());
-  var tbody = '';
-  years.forEach(y => {
-    const prevYear = String(parseInt(y) - 1);
-    const activeThis = custYearActive[y] || new Set();
-    const activeLast = custYearActive[prevYear] || new Set();
-    const beginCount = y === custAllYears[0] ? 0 : activeLast.size;
-    const retained = new Set([...activeThis].filter(c => activeLast.has(c)));
-    const lost = beginCount - retained.size;
-    const lostRate = beginCount > 0 ? (lost / beginCount * 100).toFixed(1) + '%' : '-';
-    const star = y === nowYear ? '<span class="year-star">*</span>' : '';
-    tbody += '<tr>' +
-      '<td>' + y + star + '</td>' +
-      '<td style="text-align:center">' + (beginCount || '-') + '</td>' +
-      '<td style="text-align:center">' + activeThis.size + '</td>' +
-      '<td style="text-align:center">' + retained.size + '</td>' +
-      '<td style="text-align:center"><span class="clickable-num" onclick="showLostCusts(\'' + y + '\')">' + lost + '</span></td>' +
-      '<td style="text-align:center">' + lostRate + '</td>' +
-      '</tr>';
-  });
-  document.getElementById('churn-tbody').innerHTML = tbody || '<tr><td colspan="6" class="target-empty">暂无数据</td>';
-}
-
-function showLostCusts(year) {
-  const prevYear = String(parseInt(year) - 1);
-  const activeThis = custYearActive[year] || new Set();
-  const activeLast = custYearActive[prevYear] || new Set();
-  const lostCusts = [...activeLast].filter(c => !activeThis.has(c));
-  if (!lostCusts.length) { showToast(year + '年无流失客户', 'error'); return; }
-  const byYearPrev = {};
-  getAllData().filter(r => r.date.slice(0,4) === prevYear).forEach(r => {
-    byYearPrev[r.cust] = (byYearPrev[r.cust]||0) + (r.amount||0);
-  });
-  var rows = lostCusts.map(c => {
-    return '<tr><td>' + c + '</td><td style="text-align:center">¥' + (byYearPrev[c]||0).toLocaleString() + '</td><td style="text-align:center">' + (custLastOrderDate[c]||'-') + '</td></tr>';
-  }).join('');
-  document.getElementById('cust-orders-title').textContent = year + '年流失客户明细（' + lostCusts.length + '个）';
-  document.getElementById('cust-orders-thead').innerHTML = '<tr><th>客户名称</th><th>' + prevYear + '年销售额</th><th>最后购买日期</th></tr>';
-  document.getElementById('cust-orders-tbody').innerHTML = rows;
-  document.getElementById('cust-orders-summary').textContent = '';
-  document.getElementById('cust-orders-modal').classList.add('show');
-}
-
-function exportChurnCSV() {
-  buildCustomerData();
-  const years = custAllYears;
-  const nowYear = String(new Date().getFullYear());
-  var csv = '年份,年初客户数,当年活跃客户数,留存客户数,流失客户数,流失率\n';
-  years.forEach(y => {
-    const prevYear = String(parseInt(y) - 1);
-    const activeThis = custYearActive[y] || new Set();
-    const activeLast = custYearActive[prevYear] || new Set();
-    const beginCount = y === custAllYears[0] ? 0 : activeLast.size;
-    const retained = new Set([...activeThis].filter(c => activeLast.has(c)));
-    const lost = beginCount - retained.size;
-    const lostRate = beginCount > 0 ? (lost / beginCount * 100).toFixed(1) + '%' : '-';
-    const star = y === nowYear ? '*' : '';
-    csv += y + star + ',' + beginCount + ',' + activeThis.size + ',' + retained.size + ',' + lost + ',' + lostRate + '\n';
-  });
-  downloadCSV(csv, '老客户流失分析.csv');
-}
-
-// ── Section 3: 活跃客户数趋势 ──
-function refreshActivityTables() {
-  buildCustomerData();
-  const years = custAllYears;
-  const nowYear = String(new Date().getFullYear());
-
-  // 按年汇总
-  var yearTbody = '';
-  years.forEach(y => {
-    const active = custYearActive[y] || new Set();
-    const prevY = String(parseInt(y) - 1);
-    const prevActive = custYearActive[prevY] || new Set();
-    const newCusts = new Set([...active].filter(c => !prevActive.has(c)));
-    const retained = new Set([...active].filter(c => prevActive.has(c)));
-    const growth = prevActive.size > 0 ? ((active.size - prevActive.size) / prevActive.size * 100).toFixed(1) + '%' : '-';
-    const star = y === nowYear ? '<span class="year-star">*</span>' : '';
-    yearTbody += '<tr>' +
-      '<td>' + y + star + '</td>' +
-      '<td style="text-align:center"><span class="clickable-num" onclick="showActiveCusts(\'' + y + '\',\'year\')">' + active.size + '</span></td>' +
-      '<td style="text-align:center">' + growth + '</td>' +
-      '<td style="text-align:center">' + newCusts.size + '</td>' +
-      '<td style="text-align:center">' + retained.size + '</td>' +
-      '</tr>';
-  });
-  document.getElementById('activity-year-tbody').innerHTML = yearTbody || '<tr><td colspan="5" class="target-empty">暂无数据</td>';
-
-}
-
-// ── 活跃客户明细弹窗 ──
-let activeCustMode = null, activeCustPeriod = '';
-
-function showActiveCusts(period, mode) {
-  activeCustPeriod = period;
-  activeCustMode = mode;
-  const data = getAllData();
-  const custAgg = {};
-  data.filter(r => {
-    if (mode === 'year') return r.date.slice(0,4) === period;
-    return r.date.slice(0,7) === period;
-  }).forEach(r => {
-    if (!custAgg[r.cust]) custAgg[r.cust] = { count:0, amount:0 };
-    custAgg[r.cust].count++;
-    custAgg[r.cust].amount += (r.amount || 0);
-  });
-  const sorted = Object.entries(custAgg).sort((a,b) => b[1].amount - a[1].amount);
-  document.getElementById('active-cust-title').textContent = period + ' 活跃客户明细（' + sorted.length + '个）';
-  document.getElementById('active-cust-tbody').innerHTML = sorted.map(([c,v]) =>
-    '<tr><td><span class="clickable-cust" onclick="showCustOrders(\'' + c.replace(/'/g,"\\'") + '\');closeActiveCust()">' + c + '</span></td><td style="text-align:center">' + v.count + '</td><td style="text-align:right">¥' + v.amount.toLocaleString() + '</td></tr>'
-  ).join('');
-  document.getElementById('active-cust-summary').textContent = '合计：' + sorted.length + '个客户，点击客户名称可查看订单明细';
-  document.getElementById('active-cust-modal').classList.add('show');
-}
-function closeActiveCust() { document.getElementById('active-cust-modal').classList.remove('show'); }
-
-// ── 客户订单明细弹窗（按日汇总）──
-function showCustOrders(custName) {
-  const data = getFilteredData();
-  const orders = data.filter(r => r.cust === custName);
-  if (!orders.length) { showToast('无订单数据', 'error'); return; }
-  const dailyAgg = {};
-  orders.forEach(r => {
-    const d = r.date.slice(0,10);
-    dailyAgg[d] = (dailyAgg[d] || 0) + (r.amount || 0);
-  });
-  const sorted = Object.entries(dailyAgg).sort((a,b) => b[0].localeCompare(a[0]));
-  document.getElementById('cust-orders-title').textContent = custName + ' — 订单明细';
-  document.getElementById('cust-orders-thead').innerHTML = '<tr><th>日期</th><th style="text-align:right">当日销售额</th></tr>';
-  document.getElementById('cust-orders-tbody').innerHTML = sorted.map(([d,amt]) =>
-    '<tr><td class="td-date">'+d+'</td><td class="td-amount" style="text-align:right">¥'+amt.toLocaleString()+'</td></tr>'
-  ).join('');
-  const total = sorted.reduce((s,x)=>s+x[1],0);
-  document.getElementById('cust-orders-summary').textContent = '共 ' + sorted.length + ' 天有交易，合计 ¥' + total.toLocaleString();
-  document.getElementById('cust-orders-modal').classList.add('show');
-}
-function closeCustOrders() { document.getElementById('cust-orders-modal').classList.remove('show'); }
-
-// ── CSV 下载工具 ──
-function downloadCSV(csv, filename) {
-  const BOM = '﻿';
-  const blob = new Blob([BOM + csv], {type:'text/csv;charset=utf-8'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = filename;
-  document.body.appendChild(a); a.click();
-  document.body.removeChild(a); URL.revokeObjectURL(url);
-}
-
-// ── Tab4 主刷新 ──
-function refreshCustomerTab() {
-  custFilterStart = document.getElementById('c-dateStart')?.value || '';
-  custFilterEnd   = document.getElementById('c-dateEnd')?.value || '';
-  buildCustomerData();
-  refreshCustYearTable();
-  refreshChurnTable();
-  refreshActivityTables();
-}
-function resetCustomerFilter() {
-  document.getElementById('c-dateStart').value = '';
-  document.getElementById('c-dateEnd').value = '';
-  custFilterStart = '';
-  custFilterEnd = '';
-  refreshCustomerTab();
-}
-
 // ==================== 优化后的跟进模块 ====================
 
-var currentPurposeRule = 'auto';
-
-function getWeekEnd() {
-    const today = new Date();
-    const end = new Date(today);
-    end.setDate(today.getDate() + 7);
-    return end.toISOString().slice(0,10);
-}
-
-function getPurposeTagClass(purpose) {
-    const map = {'紧急跟进':'emerge','逾期提醒':'overdue','客情维护':'maintain','唤醒':'wake','挽回':'recover','风险预警':'warn','回访':'revisit'};
-    return map[purpose] || 'routine';
-}
-
-function toggleGroup(gid) {
-
-// Delegated click: clicking .group-toggle expands its sibling div
-document.addEventListener("click", function(e){
-    var el = e.target.closest(".group-toggle");
-    if (!el) return;
-    var groupId = el.getAttribute("data-group-id");
-    var list = document.getElementById(groupId);
-    if (list) list.style.display = list.style.display === "none" ? "" : "none";
-});
-    var el = document.getElementById(gid);
-    if (el) el.style.display = el.style.display === 'none' ? '' : 'none';
-}
-
 var taskData = [];
-
-function showRuleModal() {
-    document.getElementById('rule-info-overlay2').style.display = 'block';
-}
-function closeRuleModal() {
-    document.getElementById('rule-info-overlay2').style.display = 'none';
-}
 var completedData = [];
 var quoteData = [];
 var activeTaskTab = 'overdue';
 var selectedRows = {};
+
+function showRuleModal() { document.getElementById('rule-info-overlay2').style.display = 'block'; }
+function closeRuleModal() { document.getElementById('rule-info-overlay2').style.display = 'none'; }
 
 function switchTaskTab(tab) {
     activeTaskTab = tab;
@@ -2494,20 +2041,13 @@ function switchTaskTab(tab) {
 function filterCustomerList() {
     var kw = document.getElementById('cust-filter-input').value.trim().toLowerCase();
     if (!kw) { loadTodayTasks(); return; }
-    // 根据当前tab确定搜索的数据源
     var source, key;
-    if (activeTaskTab === 'done') {
-        source = completedData; key = 'completedData';
-    } else if (activeTaskTab === 'quotes') {
-        source = quoteData; key = 'quoteData';
-    } else {
-        source = taskData; key = 'taskData';
-    }
-    // 仅按客户名称模糊搜索（不匹配编码）
+    if (activeTaskTab === 'done') { source = completedData; key = 'completedData'; }
+    else if (activeTaskTab === 'quotes') { source = quoteData; key = 'quoteData'; }
+    else { source = taskData; key = 'taskData'; }
     var filtered = source.filter(function(item) {
         return item.name && item.name.toLowerCase().indexOf(kw) !== -1;
     });
-    // 暂存原始数据，替换后渲染，再恢复
     var orig = source;
     window[key] = filtered;
     renderTaskList();
@@ -2519,11 +2059,9 @@ async function loadTodayTasks() {
     var result = await resp.json();
     if (!result.success) return;
     taskData = result.data;
-    // Load quote data from localStorage
     try { quoteData = JSON.parse(localStorage.getItem('quote_customers')||'[]'); } catch(e) { quoteData = []; }
     try { window.todayStr = new Date().toISOString().slice(0,10);
     completedData = JSON.parse(localStorage.getItem('completed_'+window.todayStr)||'[]');
-    // Clear old completed keys
     for(var i=0; i<localStorage.length; i++){
         var k = localStorage.key(i);
         if(k && k.startsWith('completed_') && k !== 'completed_'+window.todayStr) localStorage.removeItem(k);
@@ -2532,11 +2070,11 @@ async function loadTodayTasks() {
     var overdue = taskData.filter(function(t){return t.next_followup < today;});
     document.getElementById('tab-count-overdue').innerText = overdue.length;
     var regular = taskData.filter(function(t){
-        return t.next_followup === today && !(t.peak_level && (t.peak_level==='A'||t.peak_level==='B') && (t.level==='C'||t.level==='D'));
+        return t.next_followup === today && !(t.peak_level && (t.peak_level=='A'||t.peak_level=='B') && (t.level=='C'||t.level=='D'));
     });
     document.getElementById('tab-count-regular').innerText = regular.length;
     var recovery = taskData.filter(function(t){
-        return t.peak_level && (t.peak_level==='A'||t.peak_level==='B') && (t.level==='C'||t.level==='D') && t.next_followup === today;
+        return t.peak_level && (t.peak_level=='A'||t.peak_level=='B') && (t.level=='C'||t.level=='D') && t.next_followup === today;
     });
     document.getElementById('tab-count-recovery').innerText = recovery.length;
     document.getElementById('tab-count-quotes').innerText = quoteData.length;
@@ -2545,23 +2083,19 @@ async function loadTodayTasks() {
     loadTaskStats();
 }
 
-function getLevelGroupKey(task) {
-    var lv = task.sub_level || task.level;
-    return lv;
-}
+function getLevelGroupKey(task) { return task.sub_level || task.level; }
 function getLevelGroupLabel(key) {
     var map = {A:'A类(7天)',B:'B类(14天)',C1:'C1 高频活跃(14天)',C2:'C2 低频(30天)',C3:'C3 沉睡(60天)',
                D1:'D1 新线索(30天)',D2:'D2 流失老客户(90天)',C:'C类',D:'D类'};
     return map[key] || (key+'类');
 }
+
 function renderTaskList() {
     var container = document.getElementById('task-list-container');
     var list;
-    if (activeTaskTab === 'done') {
-        list = completedData;
-    } else if (activeTaskTab === 'quotes') {
-        list = quoteData;
-    } else {
+    if (activeTaskTab === 'done') { list = completedData; }
+    else if (activeTaskTab === 'quotes') { list = quoteData; }
+    else {
         if (!taskData.length) {
             container.innerHTML = '<div style="padding:60px;text-align:center;color:#CCC;font-size:14px">暂无待跟进客户</div>';
             return;
@@ -2571,11 +2105,11 @@ function renderTaskList() {
             list = taskData.filter(function(t){return t.next_followup < today;});
         } else if (activeTaskTab === 'recovery') {
             list = taskData.filter(function(t){
-                return t.peak_level && (t.peak_level==='A'||t.peak_level==='B') && (t.level==='C'||t.level==='D') && t.next_followup === today;
+                return t.peak_level && (t.peak_level=='A'||t.peak_level=='B') && (t.level=='C'||t.level=='D') && t.next_followup === today;
             });
         } else {
             list = taskData.filter(function(t){
-                return t.next_followup === today && !(t.peak_level && (t.peak_level==='A'||t.peak_level==='B') && (t.level==='C'||t.level==='D'));
+                return t.next_followup === today && !(t.peak_level && (t.peak_level=='A'||t.peak_level=='B') && (t.level=='C'||t.level=='D'));
             });
         }
     }
@@ -2584,34 +2118,30 @@ function renderTaskList() {
         container.innerHTML = '<div style="padding:40px;text-align:center;color:#CCC;font-size:13px">暂无'+labels[activeTaskTab]+'客户</div>';
         return;
     }
-    var isEditable = (activeTaskTab !== 'done' && activeTaskTab !== 'quotes');
     var html = '';
     if (activeTaskTab === 'done' || activeTaskTab === 'quotes') {
-        // 已完成和报价不分组，直接平铺
         list.sort(function(a,b){ return (b.next_followup||'') > (a.next_followup||'') ? 1 : -1; });
         list.forEach(function(task){
-            // inline rendering without groups
             var safeName = escapeHtml(task.name);
             var escName = JSON.stringify(safeName).slice(1,-1);
             var lvlClass = 'level-badge level-badge-' + (task.level || 'D');
-            html += '<div class=\"task-row\" id=\"row_'+escName+'\">';
-            html += '<span style=\"width:3%\"></span>';
-            html += '<span style=\"width:20%;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap\">'+safeName+'</span>';
-            html += '<span style=\"width:10%\"><span class=\"'+lvlClass+'\">'+(task.level||'?')+'类</span></span>';
-            html += '<span style=\"width:10%;font-size:11px;color:#999\">'+(task.last_followup||'—')+'</span>';
-            html += '<span style=\"width:10%;font-size:11px;color:#999\">'+(task.next_followup||'—')+'</span>';
-            html += '<span style=\"width:10%;font-size:11px;color:#999\">'+(task.last_order_date||'—')+'</span>';
-            html += '<span style=\"width:25%;font-size:11px;color:#666\">'+(task.suggestion||'')+'</span>';
-            html += '<span style=\"text-align:right;display:flex;gap:4px;justify-content:flex-end\">';
+            html += '<div class="task-row" id="row_'+escName+'">';
+            html += '<span style="width:30px;flex-shrink:0"></span>';
+            html += '<span style="width:18%;flex-shrink:0;min-width:140px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+safeName+'</span>';
+            html += '<span style="width:8%;flex-shrink:0;min-width:60px"><span class="'+lvlClass+'">'+(task.level||'?')+'类</span></span>';
+            html += '<span style="width:9%;flex-shrink:0;min-width:70px;font-size:11px;color:#999">'+(task.last_followup||'—')+'</span>';
+            html += '<span style="width:9%;flex-shrink:0;min-width:70px;font-size:11px;color:#999">'+(task.next_followup||'—')+'</span>';
+            html += '<span style="width:9%;flex-shrink:0;min-width:70px;font-size:11px;color:#999">'+(task.last_order_date||'—')+'</span>';
+            html += '<span style="width:19%;flex-shrink:0;min-width:140px;font-size:11px;color:#666">'+(task.suggestion||'')+'</span>';
+            html += '<span style="flex:1;min-width:120px;display:flex;gap:4px;justify-content:flex-end">';
             if (activeTaskTab === 'done') {
-                html += '<button class=\"task-btn task-btn-postpone\" onclick=\"undoComplete(\''+escName+'\')\" style=\"font-size:10px;padding:3px 6px\">撤回</button>';
+                html += '<button class="task-btn task-btn-postpone" onclick="undoComplete(\''+escName+'\')" style="font-size:10px;padding:3px 6px">撤回</button>';
             } else {
-                html += '<button class=\"mark-done-btn\" onclick=\"markDone(\''+escName+'\')\">完成</button>';
+                html += '<button class="mark-done-btn" onclick="markDone(\''+escName+'\')">完成</button>';
             }
             html += '</span></div>';
         });
     } else {
-        // 逾期/常规/挽回：按等级分组
         var grouped = {};
         list.forEach(function(t){
             var key = getLevelGroupKey(t);
@@ -2624,55 +2154,47 @@ function renderTaskList() {
             var items = grouped[key];
             items.sort(function(a,b){ return (b.last_order_date||'') > (a.last_order_date||'') ? 1 : -1; });
             var label = getLevelGroupLabel(key);
-        var gid = 'grp_'+key;
-        html += '<div style="margin-bottom:2px">';
-        html += '<div style="display:flex;align-items:center;padding:8px 16px;background:#F5F5F5;border-radius:6px;margin-bottom:4px;font-size:13px;font-weight:600;color:#333;cursor:pointer" onclick="var e=document.getElementById(\''+gid+'\');e.style.display=e.style.display===\'none\'?\'\':\'none\'">';
-        html += '<span style="width:30px;flex-shrink:0"><input type="checkbox" onclick="event.stopPropagation();toggleGroupSelect(\''+key+'\',this)" title="全选此组"></span>';
-        html += '<span style="width:18%;flex-shrink:0;min-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+label+'</span>';
-        html += '<span style="width:8%;flex-shrink:0;min-width:60px"><span style="background:#3B5998;color:#fff;padding:2px 8px;border-radius:12px;font-size:11px">'+items.length+'</span></span>';
-        html += '<span style="width:9%;flex-shrink:0;min-width:70px"></span>';
-        html += '<span style="width:9%;flex-shrink:0;min-width:70px"></span>';
-        html += '<span style="width:9%;flex-shrink:0;min-width:70px"></span>';
-        html += '<span style="width:19%;flex-shrink:0;min-width:140px;font-size:11px;color:#999">点击展开/收起</span>';
-        html += '<span style="flex:1;min-width:120px"></span>';
-        html += '</div>';
-        html += '<div id="'+gid+'">';
-        items.forEach(function(task){
-        var safeName = escapeHtml(task.name);
-        var escName = JSON.stringify(safeName).slice(1,-1);
-        var lvlClass = 'level-badge level-badge-' + task.level;
-        var isChecked = selectedRows[escName] ? 'checked' : '';
-        html += '<div class="task-row" id="row_'+escName+'">';
-        html += '<span style="width:30px;flex-shrink:0">'+(isEditable?'<input type="checkbox" '+isChecked+' data-name="'+safeName+'" onchange="toggleRow(this,\''+escName+'\')">':'')+'</span>';
-        html += '<span style="width:18%;flex-shrink:0;min-width:140px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+safeName+'</span>';
-        var subTag = (task.sub_level && task.sub_level !== task.level) ? ' <span style="font-size:9px;color:#999">'+task.sub_name+'</span>' : '';
-        html += '<span style="width:8%;flex-shrink:0;min-width:60px"><span class="'+lvlClass+'">'+task.level+'类</span>'+subTag+'</span>';
-        html += '<span style="width:9%;flex-shrink:0;min-width:70px;font-size:11px;color:#999">'+(task.last_followup||'—')+'</span>';
-        html += '<span style="width:9%;flex-shrink:0;min-width:70px;font-size:11px;color:#999">'+(task.next_followup||'—')+'</span>';
-        html += '<span style="width:9%;flex-shrink:0;min-width:70px;font-size:11px;color:#999">'+(task.last_order_date||'—')+'</span>';
-        html += '<span style="width:19%;flex-shrink:0;min-width:140px;font-size:11px;color:#666;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(task.suggestion||'')+'</span>';
-        html += '<span style="flex:1;min-width:120px;display:flex;gap:4px;justify-content:flex-end">';
-        if (activeTaskTab === 'done') {
-            html += '<button class="task-btn task-btn-postpone" onclick="undoComplete(\''+escName+'\')" style="font-size:10px;padding:3px 6px">撤回</button>';
-        } else if (activeTaskTab === 'quotes') {
-            html += '<button class="mark-done-btn" onclick="markDone(\''+escName+'\')" style="margin-right:4px">完成</button>'; html += '<span style="font-size:11px;color:#1565C0">近期报价</span>';
-        } else {
-            html += '<button class="mark-done-btn" onclick="markDone(\''+escName+'\')">完成</button>';
-            html += '<span class="note-dropdown"><button class="task-btn task-btn-postpone" onclick="toggleNoteDropdown(\''+escName+'\',event)" style="font-size:10px;padding:4px 8px">备注</button><div class="note-dropdown-menu" id="note_menu_'+escName+'"><div onclick="applyNote(\''+escName+'\',\'近期有报价\')">近期有报价</div></div></span>';
-        }
-        html += '</span></div>';
-    });
-        html += '</div></div>';
-    });
-    } // end grouped block
+            var gid = 'grp_'+key;
+            html += '<div style="margin-bottom:2px">';
+            html += '<div style="display:flex;align-items:center;padding:8px 16px;background:#F5F5F5;border-radius:6px;margin-bottom:4px;font-size:13px;font-weight:600;color:#333;cursor:pointer" onclick="var e=document.getElementById(\''+gid+'\');e.style.display=e.style.display===\'none\'?\'\':\'none\'">';
+            html += '<span style="width:30px;flex-shrink:0"><input type="checkbox" onclick="event.stopPropagation();toggleGroupSelect(\''+key+'\',this)" title="全选此组"></span>';
+            html += '<span style="width:18%;flex-shrink:0;min-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+label+'</span>';
+            html += '<span style="width:8%;flex-shrink:0;min-width:60px"><span style="background:#3B5998;color:#fff;padding:2px 8px;border-radius:12px;font-size:11px">'+items.length+'</span></span>';
+            html += '<span style="width:9%;flex-shrink:0;min-width:70px"></span>';
+            html += '<span style="width:9%;flex-shrink:0;min-width:70px"></span>';
+            html += '<span style="width:9%;flex-shrink:0;min-width:70px"></span>';
+            html += '<span style="width:19%;flex-shrink:0;min-width:140px;font-size:11px;color:#999">点击展开/收起</span>';
+            html += '<span style="flex:1;min-width:120px"></span>';
+            html += '</div>';
+            html += '<div id="'+gid+'">';
+            items.forEach(function(task){
+                var safeName = escapeHtml(task.name);
+                var escName = JSON.stringify(safeName).slice(1,-1);
+                var lvlClass = 'level-badge level-badge-' + task.level;
+                var isChecked = selectedRows[escName] ? 'checked' : '';
+                html += '<div class="task-row" id="row_'+escName+'">';
+                html += '<span style="width:30px;flex-shrink:0"><input type="checkbox" '+isChecked+' data-name="'+safeName+'" onchange="toggleRow(this,\''+escName+'\')"></span>';
+                html += '<span style="width:18%;flex-shrink:0;min-width:140px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+safeName+'</span>';
+                var subTag = (task.sub_level && task.sub_level !== task.level) ? ' <span style="font-size:9px;color:#999">'+task.sub_name+'</span>' : '';
+                html += '<span style="width:8%;flex-shrink:0;min-width:60px"><span class="'+lvlClass+'">'+task.level+'类</span>'+subTag+'</span>';
+                html += '<span style="width:9%;flex-shrink:0;min-width:70px;font-size:11px;color:#999">'+(task.last_followup||'—')+'</span>';
+                html += '<span style="width:9%;flex-shrink:0;min-width:70px;font-size:11px;color:#999">'+(task.next_followup||'—')+'</span>';
+                html += '<span style="width:9%;flex-shrink:0;min-width:70px;font-size:11px;color:#999">'+(task.last_order_date||'—')+'</span>';
+                html += '<span style="width:19%;flex-shrink:0;min-width:140px;font-size:11px;color:#666;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(task.suggestion||'')+'</span>';
+                html += '<span style="flex:1;min-width:120px;display:flex;gap:4px;justify-content:flex-end">';
+                html += '<button class="mark-done-btn" onclick="markDone(\''+escName+'\')">完成</button>';
+                html += '<span class="note-dropdown"><button class="task-btn task-btn-postpone" onclick="toggleNoteDropdown(\''+escName+'\',event)" style="font-size:10px;padding:4px 8px">备注</button><div class="note-dropdown-menu" id="note_menu_'+escName+'"><div onclick="applyNote(\''+escName+'\',\'近期有报价\')">近期有报价</div></div></span>';
+                html += '</span></div>';
+            });
+            html += '</div></div>';
+        });
+    }
     container.innerHTML = html;
-    // Ensure all groups start collapsed
-    setTimeout(function(){ document.querySelectorAll('[id^="grp_"]').forEach(function(el){ el.style.display = 'none'; }); }, 10);
+    setTimeout(function(){ document.querySelectorAll('[id^="grp_"]').forEach(function(el){ el.style.display = ''; }); }, 10);
     document.getElementById('selected-count').innerText = Object.keys(selectedRows).length;
 }
 
 function toggleGroupSelect(key, cb) {
-    // Find all rows in this group
     var gid = 'grp_'+key;
     var groupDiv = document.getElementById(gid);
     if (!groupDiv) return;
@@ -2710,17 +2232,14 @@ async function batchMarkDone() {
     var names = Object.keys(selectedRows);
     if (!names.length) { showToast('请先选择客户', 'error'); return; }
     showToast('正在批量完成 '+names.length+' 个...', 'success');
-    // Single API call with all names
     fetch('/api/customers/followup/batch-mark-names', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({names:names})}).then(function(){
         var levelMap = {}; taskData.forEach(function(t){ levelMap[t.name] = t.level; });
         names.forEach(function(n){
-            // 去重：避免重复 push
             if (!completedData.some(function(t){return t.name === n;})) {
                 completedData.push({name:n, level:levelMap[n]||'D', last_followup:'', next_followup:new Date().toISOString().slice(0,10), suggestion:'', purpose:'已完成'});
             }
         });
         localStorage.setItem('completed_'+window.todayStr, JSON.stringify(completedData));
-        // 从 quoteData 中也移除这些客户
         quoteData = quoteData.filter(function(t){return names.indexOf(t.name) === -1;});
         localStorage.setItem('quote_customers', JSON.stringify(quoteData));
         selectedRows = {};
@@ -2736,7 +2255,6 @@ async function markDone(custName) {
     var result = await resp.json();
     if (result.success) {
         var cust = taskData.find(function(t){return t.name === custName;}) || quoteData.find(function(t){return t.name === custName;}) || {};
-        // 去重：避免重复 push
         if (!completedData.some(function(t){return t.name === custName;})) {
             completedData.push({name:custName, level:cust.level||'', last_followup:cust.last_followup||'', next_followup:new Date().toISOString().slice(0,10), suggestion:cust.suggestion||'', purpose:'已完成'});
         }
@@ -2746,13 +2264,19 @@ async function markDone(custName) {
         localStorage.setItem('quote_customers', JSON.stringify(quoteData));
         document.getElementById('tab-count-done').innerText = completedData.length;
         document.getElementById('tab-count-quotes').innerText = quoteData.length;
-
-        // Update current tab count
         var today = new Date().toISOString().slice(0,10);
         document.getElementById('tab-count-overdue').innerText = taskData.filter(function(t){return t.next_followup < today;}).length;
-        document.getElementById('tab-count-regular').innerText = taskData.filter(function(t){return t.next_followup === today && !(t.peak_level&&(t.peak_level==='A'||t.peak_level==='B')&&(t.level==='C'||t.level==='D'));}).length;
-        document.getElementById('tab-count-recovery').innerText = taskData.filter(function(t){return t.peak_level&&(t.peak_level==='A'||t.peak_level==='B')&&(t.level==='C'||t.level==='D')&&t.next_followup===today;}).length;
-        renderTaskList();
+        document.getElementById('tab-count-regular').innerText = taskData.filter(function(t){return t.next_followup === today && !(t.peak_level&&(t.peak_level=='A'||t.peak_level=='B')&&(t.level=='C'||t.level=='D'));}).length;
+        document.getElementById('tab-count-recovery').innerText = taskData.filter(function(t){return t.peak_level&&(t.peak_level=='A'||t.peak_level=='B')&&(t.level=='C'||t.level=='D')&&t.next_followup===today;}).length;
+        if (row) {
+            row.style.transition = 'opacity .2s, max-height .2s';
+            row.style.opacity = '0'; row.style.maxHeight = '0'; row.style.overflow = 'hidden';
+            setTimeout(function(){ if (row.parentNode) row.parentNode.removeChild(row); }, 250);
+        }
+        updateGroupCounts();
+        setTimeout(function(){
+            if (!document.querySelector('#task-list-container .task-row') && activeTaskTab !== 'done') { renderTaskList(); }
+        }, 300);
     } else {
         if (row) row.classList.remove('removing');
         showToast(result.error, 'error');
@@ -2761,82 +2285,87 @@ async function markDone(custName) {
 
 function toggleNoteDropdown(custName, e) {
     e.stopPropagation();
-    // Close all other dropdowns
     document.querySelectorAll('.note-dropdown-menu.show').forEach(function(el){el.classList.remove('show');});
     var menu = document.getElementById('note_menu_'+custName.replace(/'/g,''));
     if (menu) menu.classList.toggle('show');
 }
+
 function applyNote(custName, note) {
     document.querySelectorAll('.note-dropdown-menu.show').forEach(function(el){el.classList.remove('show');});
     if (note === '近期有报价') {
-        var cust = taskData.find(function(t){return t.name === custName;}) || {};
-        // 去重：避免重复 push
+        var cust = taskData.find(function(t){return t.name === custName;});
+        if (!cust) { showToast('该客户已处理', 'error'); return; }
         if (!quoteData.some(function(t){return t.name === custName;})) {
-            quoteData.push({name:custName, level:cust.level||'', last_followup:cust.last_followup||'', next_followup:new Date().toISOString().slice(0,10), suggestion:cust.suggestion||'', purpose:'近期报价'});
+            quoteData.push({name:custName, level:cust.level||'', last_followup:cust.last_followup||'', next_followup:new Date().toISOString().slice(0,10), suggestion:cust.suggestion||'', purpose:'近期报价', last_order_date:cust.last_order_date||''});
         }
         localStorage.setItem('quote_customers', JSON.stringify(quoteData));
         taskData = taskData.filter(function(t){return t.name !== custName;});
+        var today = new Date().toISOString().slice(0,10);
+        document.getElementById('tab-count-overdue').innerText = taskData.filter(function(t){return t.next_followup < today;}).length;
+        document.getElementById('tab-count-regular').innerText = taskData.filter(function(t){return t.next_followup === today && !(t.peak_level&&(t.peak_level=='A'||t.peak_level=='B')&&(t.level=='C'||t.level=='D'));}).length;
+        document.getElementById('tab-count-recovery').innerText = taskData.filter(function(t){return t.peak_level&&(t.peak_level=='A'||t.peak_level=='B')&&(t.level=='C'||t.level=='D')&&t.next_followup===today;}).length;
         document.getElementById('tab-count-quotes').innerText = quoteData.length;
-        // removed
         fetch('/api/customers/note', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({customer_name:custName, note:note, status:'quotes'})});
-        renderTaskList();
+        var row = document.getElementById('row_'+custName);
+        if (row) {
+            row.style.transition = 'opacity .2s, max-height .2s';
+            row.style.opacity = '0'; row.style.maxHeight = '0'; row.style.overflow = 'hidden';
+            setTimeout(function(){ if (row.parentNode) row.parentNode.removeChild(row); }, 250);
+        }
+        updateGroupCounts();
+        setTimeout(function(){
+            if (!document.querySelector('#task-list-container .task-row') && activeTaskTab !== 'quotes') { renderTaskList(); }
+        }, 300);
     }
     showToast('已备注：'+note, 'success');
 }
-// Close dropdowns on outside click
+
+function updateGroupCounts() {
+    var groups = document.querySelectorAll('[id^="grp_"]');
+    groups.forEach(function(group){
+        var items = group.querySelectorAll('.task-row:not([style*="max-height: 0"])');
+        var badge = group.closest('.task-card')?.querySelector('span[style*="background:#3B5998"]');
+        if (!badge) {
+            var parent = group.parentElement;
+            if (parent) { badge = parent.querySelector('span[style*="border-radius:12px"]'); }
+        }
+        if (badge) { badge.textContent = items.length; }
+    });
+}
+
 document.addEventListener('click', function(){document.querySelectorAll('.note-dropdown-menu.show').forEach(function(el){el.classList.remove('show');});});
 
-async function showRuleDetail(custName) {
-    var resp = await fetch('/api/customers/followup/rule-detail?customer_name='+encodeURIComponent(custName));
-    var result = await resp.json();
-    if (!result.success) return;
-    var d = result.data;
-    var lines = [];
-    lines.push('客户：'+escapeHtml(d.customer_name));
-    lines.push('等级：'+d.current_level+'类（每'+d.followup_frequency+'天跟进）');
-    lines.push('历史最高：'+d.peak_level+'类');
-    if (d.is_recovery) lines.push('挽回规则：适用（每'+d.recovery_interval+'天）');
-    lines.push('上次跟进：'+(d.last_followup_date||'从未'));
-    lines.push('计划跟进：'+d.next_followup_date);
-    lines.push('今天：'+d.today);
-    lines.push('判断：'+d.judgment);
-    alert(lines.join(String.fromCharCode(10)));
-}
-
-async function loadTaskStats() {
-    var statsResp = await fetch('/api/customers/followup/today-stats');
-    var statsResult = await statsResp.json();
-    if (statsResult.success) {
-        // removed = statsResult.data.overdue_total;
-    }
-    
-    // removed
-    var allResp = await fetch('/api/customers/all?limit=1');
-    var allResult = await allResp.json();
-    if (allResult.success) { var el = document.getElementById('stat-total'); if (el) el.innerText = allResult.total; }
-}
+async function loadTaskStats() { /* kept minimal */ }
 
 async function undoComplete(custName) {
+    var custFromTask = completedData.find(function(t){return t.name === custName;});
+    var wasQuote = custFromTask && custFromTask.purpose === '近期报价';
     completedData = completedData.filter(function(t){return t.name !== custName;});
     localStorage.setItem('completed_'+window.todayStr, JSON.stringify(completedData));
     document.getElementById('tab-count-done').innerText = completedData.length;
     await fetch('/api/customers/followup/undo', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({customer_name:custName})});
-    // 重新从服务器加载任务数据以获取正确的 next_followup，但停留在当前 Tab
     var resp = await fetch('/api/customers/followup/today');
     var result = await resp.json();
     if (result.success) {
         taskData = result.data;
-        // 更新各 Tab 计数
         var today = new Date().toISOString().slice(0,10);
         document.getElementById('tab-count-overdue').innerText = taskData.filter(function(t){return t.next_followup < today;}).length;
-        document.getElementById('tab-count-regular').innerText = taskData.filter(function(t){return t.next_followup === today && !(t.peak_level&&(t.peak_level==='A'||t.peak_level==='B')&&(t.level==='C'||t.level==='D'));}).length;
-        document.getElementById('tab-count-recovery').innerText = taskData.filter(function(t){return t.peak_level&&(t.peak_level==='A'||t.peak_level==='B')&&(t.level==='C'||t.level==='D')&&t.next_followup===today;}).length;
+        document.getElementById('tab-count-regular').innerText = taskData.filter(function(t){return t.next_followup === today && !(t.peak_level&&(t.peak_level=='A'||t.peak_level=='B')&&(t.level=='C'||t.level=='D'));}).length;
+        document.getElementById('tab-count-recovery').innerText = taskData.filter(function(t){return t.peak_level&&(t.peak_level=='A'||t.peak_level=='B')&&(t.level=='C'||t.level=='D')&&t.next_followup===today;}).length;
     }
-    renderTaskList();
+    if (wasQuote) { switchTaskTab('quotes'); }
+    else {
+        var reAdded = taskData.find(function(t){return t.name === custName;});
+        if (reAdded) {
+            var today = new Date().toISOString().slice(0,10);
+            if (reAdded.next_followup < today) { switchTaskTab('overdue'); }
+            else if (reAdded.peak_level && (reAdded.peak_level=='A'||reAdded.peak_level=='B') && (reAdded.level=='C'||reAdded.level=='D')) { switchTaskTab('recovery'); }
+            else { switchTaskTab('regular'); }
+        } else { switchTaskTab('overdue'); }
+    }
     showToast('已撤回', 'success');
 }
 
-// Level stats
 async function loadLevelStats() {
     var year = document.getElementById('level-year-select').value || (new Date().getFullYear()-1);
     var resp = await fetch('/api/customers/stats?year='+year);
@@ -2844,20 +2373,18 @@ async function loadLevelStats() {
     if (!result.success) return;
     var s = result.data;
     document.getElementById('level-stats-inline').innerHTML =
-        '<span class="level-badge level-badge-A" style="cursor:pointer;font-size:13px;padding:4px 12px;font-weight:600" onclick="showLevelCustomers(\'A\')">A '+s.A+'</span> '+
-        '<span class="level-badge level-badge-B" style="cursor:pointer;font-size:13px;padding:4px 12px;font-weight:600" onclick="showLevelCustomers(\'B\')">B '+s.B+'</span> '+
-        '<span class="level-badge level-badge-C" style="cursor:pointer;font-size:13px;padding:4px 12px;font-weight:600" onclick="showLevelCustomers(\'C\')">C '+s.C+'</span> '+
-        '<span class="level-badge level-badge-D" style="cursor:pointer;font-size:13px;padding:4px 12px;font-weight:600" onclick="showLevelCustomers(\'D\')">D '+s.D+'</span>'+
-        '<span id="d-sub-stats" style="display:none;font-size:11px;color:#888;margin-left:4px">'+
-        '（D1新线索/D2流失老客户/D3无效/D4从未互动）点击查看详情</span>';
+        '<span class="level-card-click lv-card-A" onclick="showLevelCustomers(\'A\')"><span class="lv-label">A类客户</span><span class="lv-num">'+s.A+'</span></span>'+
+        '<span class="level-card-click lv-card-B" onclick="showLevelCustomers(\'B\')"><span class="lv-label">B类客户</span><span class="lv-num">'+s.B+'</span></span>'+
+        '<span class="level-card-click lv-card-C" onclick="showLevelCustomers(\'C\')"><span class="lv-label">C类客户</span><span class="lv-num">'+s.C+'</span></span>'+
+        '<span class="level-card-click lv-card-D" onclick="showLevelCustomers(\'D\')"><span class="lv-label">D类客户</span><span class="lv-num">'+s.D+'</span></span>';
 }
+
 var currentLevelModal = { level:'', page:1, year:'' };
 async function showLevelCustomers(level) { var year = document.getElementById('level-year-select').value; currentLevelModal = {level, page:1, year}; await renderLevelModal(); document.getElementById('level-modal').classList.add('show'); }
 async function renderLevelModal() { var l=currentLevelModal.level, p=currentLevelModal.page, y=currentLevelModal.year; var resp=await fetch('/api/customers/by-level?level='+l+'&year='+y+'&page='+p+'&limit=20'); var result=await resp.json(); if(!result.success)return; document.getElementById('level-modal-title').innerHTML=l+'类客户（共'+result.total+'个）'; document.getElementById('level-modal-tbody').innerHTML=result.data.map(function(c,i){return '<tr><td>'+((p-1)*20+i+1)+'</td><td>'+escapeHtml(c.name)+'</td><td>'+(c.code||'<span style="color:#FF9800">待补充</span>')+'</td><td class="td-amount">¥'+c.sales.toLocaleString()+'</td></tr>';}).join(''); var tp=Math.ceil(result.total/20); document.getElementById('level-modal-pagination').innerHTML='<button class="page-btn" onclick="changeLevelPage('+(p-1)+')" '+(p<=1?'disabled':'')+'>上一页</button><span class="page-info">第'+p+'/'+tp+'页</span><button class="page-btn" onclick="changeLevelPage('+(p+1)+')" '+(p>=tp?'disabled':'')+'>下一页</button>'; }
 function changeLevelPage(p) { currentLevelModal.page=p; renderLevelModal(); }
 function closeLevelModal() { document.getElementById('level-modal').classList.remove('show'); }
 
-// Import/export
 function importCodesFile() {
     var input = document.createElement('input'); input.type='file'; input.accept='.xlsx,.xls,.csv';
     input.onchange = async function(e){
@@ -2873,11 +2400,10 @@ function importCodesFile() {
     };
     input.click();
 }
-async function exportPendingCodesFile() { window.open('/api/customers/export-pending-codes', '_blank'); }
 
-// Customer drawer (keep)
-var custMgmtPage = 1, custMgmtSearch = '';
 async function loadCustCount() { var resp=await fetch('/api/customers/all?limit=1'); var result=await resp.json(); if(result.success)document.getElementById('cust-mgmt-total').innerText=result.total; }
+
+var custMgmtPage = 1, custMgmtSearch = '';
 function openCustMgmtDrawer() { custMgmtPage=1; custMgmtSearch=''; var ds=document.getElementById('cust-mgmt-drawer-search'); if(ds)ds.value=''; document.getElementById('cust-mgmt-drawer').classList.add('show'); loadCustMgmtDrawer(); }
 function closeCustMgmtDrawer(e) { if(e&&e.target!==document.getElementById('cust-mgmt-drawer'))return; document.getElementById('cust-mgmt-drawer').classList.remove('show'); }
 async function loadCustMgmtDrawer() {
@@ -2888,7 +2414,7 @@ async function loadCustMgmtDrawer() {
         if(!result.success){var body=document.getElementById('cust-mgmt-drawer-body');body.innerHTML='<div class="drawer-empty">加载失败：'+(result.error||'未知错误')+'</div>';return;}
         var body=document.getElementById('cust-mgmt-drawer-body');
         if(result.data.length===0){body.innerHTML='<div class="drawer-empty">暂无数据</div>';}
-        else{body.innerHTML=result.data.map(function(c){return '<div class="drawer-item"><span class="drawer-item-name" style="font-weight:500;min-width:120px">'+(c.code?escapeHtml(c.code):'<span style="color:#CCC">—</span>')+'</span><span style="flex:1;font-size:13px">'+escapeHtml(c.name)+'</span><span class="cust-level cust-level-'+c.level.toLowerCase()+'">'+c.level+'类</span><button class="btn-delete-sm" onclick="event.stopPropagation();deleteCust(\''+escapeHtml(c.name).replace(/'/g,"\\\\'")+'\')">删除</button><button class="btn-outline" style="font-size:10px;padding:2px 6px;margin-left:4px" onclick="event.stopPropagation();editCust(\''+escapeHtml(c.name).replace(/'/g,"\\\\'")+'\',\''+(c.code||'').replace(/'/g,"\\\\'")+'\')">编辑</button></div>';}).join('');}
+        else{body.innerHTML=result.data.map(function(c){return '<div class="drawer-item"><span class="drawer-item-name" style="font-weight:500;min-width:120px">'+(c.code?escapeHtml(c.code):'<span style="color:#CCC">—</span>')+'</span><span style="flex:1;font-size:13px">'+escapeHtml(c.name)+'</span><span class="cust-level cust-level-'+c.level.toLowerCase()+'">'+c.level+'类</span><button class="btn-delete-sm" onclick="event.stopPropagation();deleteCust(\''+escapeHtml(c.name).replace(/'/g,"\\'")+'\')">删除</button><button class="btn-outline" style="font-size:10px;padding:2px 6px;margin-left:4px" onclick="event.stopPropagation();editCust(\''+escapeHtml(c.name).replace(/'/g,"\\'")+'\',\''+(c.code||'').replace(/'/g,"\\'")+'\')">编辑</button></div>';}).join('');}
         var tp=Math.ceil(result.total/50); var pg=document.getElementById('cust-mgmt-pagination');
         pg.innerHTML=tp>1?'<button class="page-btn" onclick="custMgmtGoPage('+(custMgmtPage-1)+')" '+(custMgmtPage<=1?'disabled':'')+'>上一页</button><span class="page-info">第'+custMgmtPage+'/'+tp+'页（共'+result.total+'个）</span><button class="page-btn" onclick="custMgmtGoPage('+(custMgmtPage+1)+')" '+(custMgmtPage>=tp?'disabled':'')+'>下一页</button>':'<span class="page-info" style="font-size:12px;color:#999">共 '+result.total+' 个</span>';
     } catch(e) { showToast('网络错误', 'error'); }
@@ -2926,47 +2452,17 @@ function initCustomerTab() {
     loadCustCount();
 }
 
-// ==================== 初始客户跟进模块结束 ====================
 function escapeHtml(str) {
     if (!str) return '';
-    return str.replace(/[&<>]/g, function(m) {
-        if (m === '&') return '&amp;';
-        if (m === '<') return '&lt;';
-        if (m === '>') return '&gt;';
-        return m;
-    });
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
 // ════════════ 初始化 ════════════
 (async function init() {
   updateTopbarHeight();
-  // 并行加载所有数据
-  await Promise.all([loadAllData(), loadTargets(), loadNewProducts()]);
+  await Promise.all([loadTargets(), loadNewProducts()]);
   setQuick('year');
 })();
 </script>
-<!-- ════ 新客户明细抽屉 ════ -->
-<div class="drawer-overlay" id="nc-drawer" onclick="closeNewCustDrawer(event)">
-  <div class="drawer-panel wide" onclick="event.stopPropagation()">
-    <div class="drawer-header"><h3>新客户明细</h3><button class="drawer-close" onclick="closeNewCustDrawer()">×</button></div>
-    <div class="nc-drawer-summary" id="nc-summary"></div>
-    <div class="nc-drawer-body" id="nc-body"></div>
-  </div>
-</div>
-
-<!-- ════ 客户管理抽屉 ════ -->
-<div class="drawer-overlay" id="cust-mgmt-drawer" onclick="closeCustMgmtDrawer(event)">
-  <div class="drawer-panel wide" onclick="event.stopPropagation()" style="width:620px">
-    <div class="drawer-header"><h3>客户管理</h3><button class="drawer-close" onclick="closeCustMgmtDrawer()">×</button></div>
-    <div style="padding:8px 16px;border-bottom:1px solid #F5F5F5;display:flex;gap:8px">
-      <input id="cust-mgmt-drawer-search" placeholder="搜索客户名称或编码" style="flex:1;padding:6px 10px;border:1px solid #DDD;border-radius:3px;font-size:12px" onkeydown="if(event.key==='Enter')loadCustMgmtDrawer()">
-      <button class="btn-primary" onclick="loadCustMgmtDrawer()" style="font-size:12px">搜索</button>
-    </div>
-    <div class="drawer-body" id="cust-mgmt-drawer-body"></div>
-    <div id="cust-mgmt-pagination" style="padding:10px 16px;display:flex;justify-content:flex-end;gap:6px;border-top:1px solid #F0F0F0"></div>
-  </div>
-</div>
-
-<div class="toast" id="toast"></div>
 </body>
 </html>
