@@ -4,8 +4,9 @@ import json
 import csv
 import io
 import traceback
-from datetime import datetime, timedelta
-from flask import Flask, render_template, request, jsonify
+import time
+from datetime import datetime, timedelta, date
+from flask import Flask, render_template, request, jsonify, Response
 import psycopg2
 import psycopg2.extras
 from psycopg2.extras import execute_values
@@ -18,6 +19,11 @@ app = Flask(__name__)
 DATABASE_URL = os.environ.get('DATABASE_URL', '')
 UPLOAD_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'uploads')
 os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+# ── 缓存 ──
+_today_cache = None
+_today_cache_time = 0
+_sub_level_cache = {}
 
 
 
@@ -123,6 +129,8 @@ def init_db():
 
         cur.execute('CREATE INDEX IF NOT EXISTS idx_customers_name ON customers(name)')
         cur.execute('CREATE INDEX IF NOT EXISTS idx_customers_level ON customers(level)')
+        cur.execute('CREATE INDEX IF NOT EXISTS idx_sales_records_date ON sales_records(date)')
+        cur.execute('CREATE INDEX IF NOT EXISTS idx_sales_records_cust ON sales_records(cust)')
 
         cur.execute("ALTER TABLE customers ADD COLUMN IF NOT EXISTS purpose_rule TEXT DEFAULT 'auto'")
         cur.execute("ALTER TABLE customers ADD COLUMN IF NOT EXISTS custom_suggestion TEXT")
@@ -332,6 +340,30 @@ def get_summary():
             if t:
                 target_val = float(t["amount"])
 
+        # 趋势数据（按月汇总，供图表使用）
+        trend = []
+        if s_val and e_fixed:
+            cur.execute("""
+                SELECT date::date as day, SUM(amount) as total
+                FROM sales_records
+                WHERE date >= %s AND date <= %s
+                GROUP BY date::date
+                ORDER BY day
+            """, (s_val, e_fixed))
+            trend = [{"day": r["day"].strftime('%Y-%m-%d') if hasattr(r["day"], 'strftime') else str(r["day"])[:10], "amount": float(r["total"])} for r in cur.fetchall()]
+
+        # Top10 客户（供图表使用）
+        top10 = []
+        if s_val and e_fixed:
+            cur.execute("""
+                SELECT cust, SUM(amount) as total
+                FROM sales_records
+                WHERE date >= %s AND date <= %s
+                GROUP BY cust
+                ORDER BY total DESC LIMIT 10
+            """, (s_val, e_fixed))
+            top10 = [{"name": r["cust"], "amount": float(r["total"])} for r in cur.fetchall()]
+
         return jsonify({
             "total_amount": cur_total,
             "customer_count": cur_cust_cnt,
@@ -341,7 +373,9 @@ def get_summary():
             "old_customer_amount": old_amt,
             "new_product_amount": np_amt,
             "prev_total_amount": prev_total,
-            "target_amount": target_val
+            "target_amount": target_val,
+            "trend": trend,
+            "top10": top10
         })
     finally:
         cur.close()
@@ -885,18 +919,13 @@ def get_customer_peak_level(cust_name):
     return peak
 
 
-# 子等级缓存（请求级，避免重复查询）
-_sub_level_cache = {}
-
 def get_customer_sub_level(cust_name, level):
     """获取C/D类客户的子标签（C1-C4, D1-D4），优先用缓存"""
     if level not in ('C', 'D'):
         return level, level, FOLLOWUP_DAYS.get(level, 30)
-    # 缓存命中
     cache_key = cust_name
     if cache_key in _sub_level_cache:
         return _sub_level_cache[cache_key]
-    # 未命中，返回默认（批量查询后再填充）
     return level, level, FOLLOWUP_DAYS.get(level, 30)
 
 
@@ -904,7 +933,6 @@ def preload_all_sub_levels():
     """一次性载入所有 C/D 客户的子标签（1条SQL），存入缓存"""
     global _sub_level_cache
     _sub_level_cache = {}
-    from datetime import date
     today = date.today()
     conn = get_db()
     cur = get_cursor(conn)
@@ -963,17 +991,6 @@ def preload_all_sub_levels():
     finally:
         cur.close()
         conn.close()
-    """获取客户近3年内的最高等级"""
-    current_year = datetime.now().year
-    years = [current_year - 2, current_year - 1, current_year]
-    peak = 'D'
-    level_order = {'A': 4, 'B': 3, 'C': 2, 'D': 1}
-    for y in years:
-        sales = get_customer_year_sales(cust_name, y)
-        level = get_customer_level_by_sales(sales)
-        if level_order.get(level, 0) > level_order.get(peak, 0):
-            peak = level
-    return peak
 
 
 def refresh_all_customer_levels():
@@ -1000,10 +1017,9 @@ def refresh_all_customer_levels():
 
 def calculate_next_followup(level, peak_level, last_followup):
     """计算下次跟进日期"""
-    from datetime import date, timedelta
     today = date.today()
     if last_followup is None:
-        return today  # Will be updated by caller with last_purchase_date
+        return today
     base_days = FOLLOWUP_DAYS.get(level, 30)
     next_date = last_followup + timedelta(days=base_days)
     if peak_level in ['A', 'B'] and level in ['C', 'D']:
@@ -1043,13 +1059,11 @@ def _adjust_followup_after_upload():
     conn = get_db()
     cur = get_cursor(conn)
     try:
-        # 先更新所有客户的最后下单日期
         cur.execute("""
             UPDATE customers c SET last_purchase_date = (
                 SELECT MAX(s.date)::date FROM sales_records s WHERE s.cust = c.name
             )
         """)
-        # 再调整计划跟进日期
         cur.execute("""
             UPDATE customers c SET next_followup = (
                 c.last_purchase_date + (
@@ -1088,41 +1102,27 @@ def sync_customers_from_sales():
 
 
 def get_task_purpose_and_suggestion(cust_name, level, peak_level, last_order_date, last_followup, year_sales, consecutive_decline=False):
-    """
-    根据客户数据判断任务目的和行动建议
-    返回: {'purpose': str, 'suggestion': str, 'priority': int}
-    """
-    from datetime import date, timedelta, datetime as dt
+    """根据客户数据判断任务目的和行动建议"""
     today = date.today()
-    # Normalize to date
     lod = last_order_date.date() if hasattr(last_order_date, 'date') else (last_order_date if isinstance(last_order_date, date) else None)
     lfu = last_followup.date() if hasattr(last_followup, 'date') else (last_followup if isinstance(last_followup, date) else None)
     days_since_last_order = (today - lod).days if lod else 999
-    days_since_followup = (today - lfu).days if lfu else 999
     days_overdue = (today - lfu).days if lfu and lfu < today else 0
 
-    # 1. 逾期超过7天 且 A/B类
     if days_overdue > 7 and level in ('A', 'B'):
         return {'purpose': '紧急跟进', 'suggestion': '客户已逾期一周，建议立即电话联系，了解是否存在问题', 'priority': 1}
-    # 2. 逾期超过3天
     if days_overdue > 3:
         return {'purpose': '逾期提醒', 'suggestion': '已逾期，建议尽快联系客户', 'priority': 2}
-    # 3. A类 且 30天内有订单
     if level == 'A' and days_since_last_order <= 30:
         return {'purpose': '客情维护', 'suggestion': '了解使用情况，推送新品信息，保持良好的客户关系', 'priority': 3}
-    # 4. A类 且 超过60天无订单
     if level == 'A' and days_since_last_order > 60:
         return {'purpose': '唤醒', 'suggestion': '客户长时间未下单，了解是否被竞争对手抢占，邀请参加新品发布会', 'priority': 4}
-    # 5. C/D 且 历史为A/B
     if level in ('C', 'D') and peak_level in ('A', 'B'):
         return {'purpose': '挽回', 'suggestion': '历史大客户已流失，发送优惠券或新品资料，了解流失原因', 'priority': 5}
-    # 6. 连续销售额下降
     if consecutive_decline:
         return {'purpose': '风险预警', 'suggestion': '销售额连续下降，了解客户经营状况，是否需要支持', 'priority': 6}
-    # 7. 新客户（首次成交后14天内）
     if days_since_last_order <= 14 and (year_sales or 0) > 0:
         return {'purpose': '回访', 'suggestion': '新客户首次购买后回访，询问使用体验，收集反馈', 'priority': 7}
-    # 8. 默认
     return {'purpose': '常规跟进', 'suggestion': '了解近期需求，推送产品资料，保持联系', 'priority': 8}
 
 
@@ -1222,23 +1222,16 @@ def get_customers_by_level():
         conn.close()
 
 
-# 今日任务缓存
-_today_cache = None
-_today_cache_time = 0
-
 @app.route('/api/customers/followup/today')
 def get_today_tasks():
     """获取今日需跟进的客户（含任务目的和建议）"""
-    from datetime import date
-    global _today_cache, _today_cache_time
-    now_ts = __import__('time').time()
+    global _today_cache, _today_cache_time, _sub_level_cache
+    now_ts = time.time()
     if _today_cache and (now_ts - _today_cache_time) < 30:
         return _today_cache
     today = date.today()
     y0, y1, y2 = today.year, today.year - 1, today.year - 2
     conn = get_db()
-    # 预加载子等级（复用同一连接）
-    global _sub_level_cache
     _sub_level_cache = {}
     try:
         cur2 = get_cursor(conn)
@@ -1277,7 +1270,7 @@ def get_today_tasks():
                 _sub_level_cache[nm] = (sub, lbl, FOLLOWUP_DAYS.get(sub, 30))
         cur2.close()
     except Exception:
-        pass  # Fallback: get_customer_sub_level will return defaults
+        pass
     cur = get_cursor(conn)
     try:
         cur.execute("""
@@ -1324,7 +1317,6 @@ def get_today_tasks():
             last_followup = r['last_followup']
             level = r['level']
             peak_level = r['peak_level'] or 'D'
-            # Use auto rule if set to auto, or if custom_suggestion is empty
             use_auto = (r['purpose_rule'] != 'manual') or (not r['custom_suggestion'])
             if use_auto:
                 ps = get_task_purpose_and_suggestion(
@@ -1339,7 +1331,6 @@ def get_today_tasks():
                 purpose = '自定义'
                 suggestion = r['custom_suggestion'] or ''
                 priority = 5
-            # Get sub-level for C/D
             sub_level, sub_name, sub_freq = get_customer_sub_level(r['name'], level)
             result.append({
                 'name': r['name'],
@@ -1360,7 +1351,7 @@ def get_today_tasks():
             })
         resp = jsonify({'success': True, 'data': result})
         _today_cache = resp
-        _today_cache_time = __import__('time').time()
+        _today_cache_time = time.time()
         return resp
     finally:
         cur.close()
@@ -1370,7 +1361,6 @@ def get_today_tasks():
 @app.route('/api/customers/followup/rule-detail')
 def get_rule_detail():
     """返回某个客户的计算详情（用于前端浮层展示）"""
-    from datetime import date
     cust_name = request.args.get('customer_name', '')
     if not cust_name:
         return jsonify({'error': '缺少客户名称'}), 400
@@ -1415,15 +1405,12 @@ def get_rule_detail():
 @app.route('/api/customers/followup/today-stats')
 def get_today_stats():
     """获取今日统计：已完成数、逾期总数"""
-    from datetime import date
     today = date.today()
     conn = get_db()
     cur = get_cursor(conn)
     try:
-        # 逾期总数
         cur.execute("SELECT COUNT(*) as cnt FROM customers WHERE next_followup < %s", (today,))
         overdue_total = cur.fetchone()['cnt']
-        # 今日待跟进总数
         cur.execute("SELECT COUNT(*) as cnt FROM customers WHERE next_followup <= %s", (today,))
         today_total = cur.fetchone()['cnt']
         return jsonify({'success': True, 'data': {
@@ -1438,7 +1425,6 @@ def get_today_stats():
 @app.route('/api/customers/followup/week')
 def get_week_tasks():
     """获取本周需跟进的客户"""
-    from datetime import date, timedelta
     today = date.today()
     week_end = today + timedelta(days=7)
     conn = get_db()
@@ -1466,7 +1452,7 @@ def get_week_tasks():
 @app.route('/api/customers/followup/mark', methods=['POST'])
 def mark_followup():
     """标记客户已跟进"""
-    from datetime import date
+    global _today_cache, _today_cache_time
     data = request.get_json()
     cust_name = data.get('customer_name', '')
     if not cust_name:
@@ -1486,7 +1472,6 @@ def mark_followup():
             (today, next_followup, cust_name)
         )
         conn.commit()
-        global _today_cache, _today_cache_time
         _today_cache = None
         return jsonify({'success': True, 'message': '已标记跟进', 'next_followup': next_followup.isoformat()})
     finally:
@@ -1497,7 +1482,6 @@ def mark_followup():
 @app.route('/api/customers/followup/batch', methods=['POST'])
 def batch_mark_followup():
     """批量标记跟进"""
-    from datetime import date
     data = request.get_json()
     level = data.get('level', '')
     conn = get_db()
@@ -1527,14 +1511,13 @@ def batch_mark_followup():
 
 @app.route('/api/customers/followup/batch-mark-names', methods=['POST'])
 def batch_mark_by_names():
-    from datetime import date
+    global _today_cache, _today_cache_time
     data = request.get_json()
     names = data.get('names', [])
     if not names:
         return jsonify({'error': '缺少客户名称列表'}), 400
     conn = get_db(); cur = get_cursor(conn); today = date.today()
     try:
-        # 单条 SQL 批量更新：根据等级自动计算下次跟进日期
         cur.execute("""
             UPDATE customers SET
                 last_followup = %s,
@@ -1547,13 +1530,14 @@ def batch_mark_by_names():
             WHERE name = ANY(%s)
         """, (today, today, names))
         conn.commit()
+        _today_cache = None
         return jsonify({'success': True, 'message': f'已完成 {len(names)} 个'})
     finally: cur.close(); conn.close()
 
 
 @app.route('/api/customers/followup/undo', methods=['POST'])
 def undo_followup():
-    from datetime import date
+    global _today_cache, _today_cache_time
     data = request.get_json()
     cust_name = data.get('customer_name', '')
     if not cust_name: return jsonify({'error': '缺少客户名称'}), 400
@@ -1561,6 +1545,7 @@ def undo_followup():
     try:
         cur.execute("UPDATE customers SET next_followup = %s, updated_at = NOW() WHERE name = %s", (today, cust_name))
         conn.commit()
+        _today_cache = None
         return jsonify({'success': True, 'message': '已撤回'})
     finally: cur.close(); conn.close()
 
@@ -1719,13 +1704,11 @@ def import_codes():
     file = request.files['file']
     if file.filename == '':
         return jsonify({'error': '文件名为空'}), 400
-    import openpyxl
     wb = openpyxl.load_workbook(file, data_only=True)
     ws = wb.active
     conn = get_db()
     cur = get_cursor(conn)
     try:
-        # 读取表头，自动识别"名称"和"编码"列位置
         headers = [str(c.value).strip() if c.value else '' for c in next(ws.iter_rows(min_row=1, max_row=1))]
         name_idx = None
         code_idx = None
@@ -1737,9 +1720,7 @@ def import_codes():
                 if code_idx is None or '编码' in h:
                     code_idx = i
 
-        # 回退：如果没找到名称列，用最后一列；编码列用倒数第二列
         if name_idx is None and code_idx is None and len(headers) >= 2:
-            # 最后一列是名称，倒数第二列是编码
             name_idx = len(headers) - 1
             code_idx = len(headers) - 2
         elif name_idx is None and code_idx is not None:
@@ -1750,7 +1731,6 @@ def import_codes():
         if name_idx is None or code_idx is None:
             return jsonify({'error': f'无法识别列名，当前表头：{headers[:10]}'}), 400
 
-        # 收集有效数据，跳过无效行
         batch = []
         for row in ws.iter_rows(min_row=2, values_only=True):
             if not row or len(row) <= max(name_idx, code_idx):
@@ -1762,7 +1742,6 @@ def import_codes():
             if name and code:
                 batch.append((name, code))
 
-        # 批量写入（500条/批），避免逐行网络往返
         BATCH_SIZE = 500
         total = 0
         for i in range(0, len(batch), BATCH_SIZE):
@@ -1785,8 +1764,6 @@ def import_codes():
 @app.route('/api/customers/export-pending-codes')
 def export_pending_codes():
     """导出待编码客户"""
-    import csv
-    import io
     conn = get_db()
     cur = get_cursor(conn)
     try:
@@ -1798,7 +1775,6 @@ def export_pending_codes():
         for row in rows:
             writer.writerow([row['name'], ''])
         output.seek(0)
-        from flask import Response
         return Response(
             output.getvalue(),
             mimetype='text/csv',
