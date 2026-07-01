@@ -2852,6 +2852,10 @@ async function loadTaskStats() {
 }
 
 async function undoComplete(custName) {
+    // 记录撤回客户的原始分类
+    var custFromTask = completedData.find(function(t){return t.name === custName;});
+    var wasQuote = custFromTask && custFromTask.purpose === '近期报价';
+
     completedData = completedData.filter(function(t){return t.name !== custName;});
     localStorage.setItem('completed_'+window.todayStr, JSON.stringify(completedData));
     document.getElementById('tab-count-done').innerText = completedData.length;
@@ -2867,9 +2871,24 @@ async function undoComplete(custName) {
         document.getElementById('tab-count-regular').innerText = taskData.filter(function(t){return t.next_followup === today && !(t.peak_level&&(t.peak_level==='A'||t.peak_level==='B')&&(t.level==='C'||t.level==='D'));}).length;
         document.getElementById('tab-count-recovery').innerText = taskData.filter(function(t){return t.peak_level&&(t.peak_level==='A'||t.peak_level==='B')&&(t.level==='C'||t.level==='D')&&t.next_followup===today;}).length;
     }
-    // 撤回后停留在已完成 Tab，但数据已重载需要渲染
-    activeTaskTab = 'done';
-    renderTaskList();
+    // 撤回后跳转到客户原本所属的 Tab
+    if (wasQuote) {
+        switchTaskTab('quotes');
+    } else {
+        var today = new Date().toISOString().slice(0,10);
+        var reAdded = taskData.find(function(t){return t.name === custName;});
+        if (reAdded) {
+            if (reAdded.next_followup < today) {
+                switchTaskTab('overdue');
+            } else if (reAdded.peak_level && (reAdded.peak_level==='A'||reAdded.peak_level==='B') && (reAdded.level==='C'||reAdded.level==='D')) {
+                switchTaskTab('recovery');
+            } else {
+                switchTaskTab('regular');
+            }
+        } else {
+            switchTaskTab('overdue');
+        }
+    }
     showToast('已撤回', 'success');
 }
 
